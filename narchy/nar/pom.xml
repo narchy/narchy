@@ -1,52 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <!--    &lt;!&ndash; TODO is this necessary? &ndash;&gt;-->
-
-
 
     <parent>
         <groupId>narchy</groupId>
         <artifactId>narchy</artifactId>
         <version>1.0</version>
-        <!--<relativePath>../pom.xml</relativePath>-->
     </parent>
-
 
     <artifactId>nar</artifactId>
 
-<!--    <build>-->
-<!--        <plugins>-->
-<!--            <plugin>-->
-<!--                <groupId>org.pitest</groupId>-->
-<!--                <artifactId>pitest-maven</artifactId>-->
-<!--                <version>1.6.2</version>-->
-<!--                <configuration>-->
-<!--                    <targetClasses>-->
-<!--                        <param>nars.term.*</param>-->
-<!--                    </targetClasses>-->
-<!--                    <targetTests>-->
-<!--                        <param>nars.term.*</param>-->
-<!--                    </targetTests>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
-<!--        </plugins>-->
-<!--    </build>-->
     <dependencies>
-
-
-        <dependency>
-            <groupId>narchy</groupId>
-            <artifactId>nal</artifactId>
-            <version>1.0</version>
-        </dependency>
-
         <dependency>
             <groupId>dumb</groupId>
-            <artifactId>db</artifactId>
+            <artifactId>io</artifactId>
             <version>1.0</version>
         </dependency>
         <dependency>
@@ -54,76 +23,56 @@
             <artifactId>graph</artifactId>
             <version>1.0</version>
         </dependency>
-
         <dependency>
             <groupId>dumb</groupId>
-            <!-- TODO extract GasNet (used in NavigableMaBeliefTable) to sub-module -->
+            <artifactId>memoize</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>1.17.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.fge</groupId>
+            <artifactId>grappa</artifactId>
+            <version>2.1.0-beta.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>asm-debug-all</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>tec.uom</groupId>
+            <artifactId>uom-se</artifactId>
+            <version>1.0.10</version>
+        </dependency>
+        <dependency>
+            <groupId>net.byteseek</groupId>
+            <artifactId>byteseek</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+        <dependency>
+            <groupId>dumb</groupId>
+            <artifactId>db</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>dumb</groupId>
             <artifactId>learn</artifactId>
             <version>1.0</version>
         </dependency>
-
-        <!--        <dependency>-->
-        <!--            <groupId>narchy</groupId>-->
-        <!--            <artifactId>rtree</artifactId>-->
-        <!--            <version>1.0</version>-->
-        <!--        </dependency>-->
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-generator-annprocess</artifactId>
             <version>1.37</version>
             <scope>test</scope>
-            <!--            <exclusions>-->
-            <!--                <exclusion>-->
-            <!--                    <groupId>org.apache.commons</groupId>-->
-            <!--                    <artifactId>commons-math3</artifactId>-->
-            <!--                </exclusion>-->
-            <!--            </exclusions>-->
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>org.pitest</groupId>-->
-<!--            <artifactId>pitest</artifactId>-->
-<!--            <version>1.6.6</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-
-<!--        <dependency>-->
-<!--            <groupId>org.pitest</groupId>-->
-<!--            <artifactId>pitest-junit5-plugin</artifactId>-->
-<!--            <version>0.14</version>-->
-<!--            <scope>test</scope>-->
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <artifactId>pitest</artifactId>-->
-<!--                    <groupId>*</groupId>-->
-<!--                </exclusion>-->
-<!--                <exclusion>-->
-<!--                    <artifactId>junit</artifactId>-->
-<!--                    <groupId>*</groupId>-->
-<!--                </exclusion>-->
-<!--                <exclusion>-->
-<!--                    <artifactId>testng</artifactId>-->
-<!--                    <groupId>*</groupId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
-<!--        </dependency>-->
     </dependencies>
-    <!--    <build>-->
-    <!--        <plugins>-->
-    <!--            <plugin>-->
-    <!--                <groupId>org.apache.maven.plugins</groupId>-->
-    <!--                <artifactId>maven-jar-plugin</artifactId>-->
-    <!--                <version>3.1.2</version>-->
-    <!--                <executions>-->
-    <!--                    <execution>-->
-    <!--                        <goals>-->
-    <!--                            <goal>jar</goal>-->
-    <!--                            <goal>test-jar</goal>-->
-    <!--                        </goals>-->
-    <!--                    </execution>-->
-    <!--                </executions>-->
-    <!--            </plugin>-->
-    <!--        </plugins>-->
-    <!--    </build>-->
-
 </project>

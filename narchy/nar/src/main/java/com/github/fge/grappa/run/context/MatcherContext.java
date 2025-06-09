@@ -18,8 +18,7 @@ package com.github.fge.grappa.run.context;
 
 import com.github.fge.grappa.matchers.base.Matcher;
 
-public interface MatcherContext<V>
-    extends Context<V>
+public interface MatcherContext<V> extends Context<V>
 {
     MatcherContext<V> getParent();
 

@@ -30,14 +30,12 @@ class TermReductionsTest extends NarseseTest {
 
     @Test
     void InterCONJxtReduction1() {
-
         assertEquals("(&&,P,Q,R)", CONJ.the(r, CONJ.the(p, q)).toString());
         assertEq("(&&,P,Q,R)", "(&&,R,(&&,P,Q))");
     }
 
     @Test
     void InterCONJxtReduction2() {
-
         assertEquals("(&&,P,Q,R,S)", CONJ.the(CONJ.the(p, q), CONJ.the(r, s)).toString());
         assertEq("(&&,P,Q,R,S)", "(&&,(&&,P,Q),(&&,R,S))");
     }
@@ -50,7 +48,6 @@ class TermReductionsTest extends NarseseTest {
 
     @Test
     void InterCONJxtReduction2_1() {
-
         assertEq("(&&,P,Q,R)", "(&&,R,(&&,P,Q))");
     }
 
@@ -61,7 +58,6 @@ class TermReductionsTest extends NarseseTest {
 
     @Test
     void InterCONJntReduction1() {
-
         //assertEquals("(||,P,Q,R)", CONJ.the(r, CONJ.the(p, q)).toString());
         assertEq("(||,P,Q,R)", "(||,R,(||,P,Q))");
     }
@@ -372,38 +368,38 @@ class TermReductionsTest extends NarseseTest {
 
     }
 
-    @Disabled static class StructuralMobius {
-
-        @Test
-        void AllowInhNegationStatements() throws Narsese.NarseseException {
-            assertEq(True, "(a-->a)");
-
-            assertEq("((--,a)-->b)", "((--,a) --> b)");
-            assertNotEquals("(a-->b)", $("((--,a) --> b)").toString());
-            assertEq("(b-->(--,a))", "(b --> (--,a))");
-            assertNotEquals("(a-->b)", $("(b --> (--,a))").toString());
-            assertEq("((--,a)-->(--,b))", "(--a --> --b)");
-
-            assertEq(Null /*"((--,a)-->a)"*/, "((--,a)-->a)");
-            assertEq(Null /*"(a-->(--,a))"*/, "(a-->(--,a))");
-
-        }
-
-        @Test
-        void SimilarityNegatedSubtermsDoubleNeg() {
-            assertEq("((--,(P))<->(--,(Q)))", "((--,(P))<->(--,(Q)))");
-        /*
-        <patham9> <-> is a relation in meaning not in truth
-        <patham9> so negation can't enforce any equivalence here
-        */
-        }
-
-        @Test
-        void SimilarityNegatedSubterms() {
-            assertEq("((--,(Q))<->(P))", "((P)<->(--,(Q)))");
-            assertEq("((--,(P))<->(Q))", "((--,(P))<->(Q))");
-        }
-    }
+//    @Disabled static class StructuralMobius {
+//
+//        @Test
+//        void AllowInhNegationStatements() throws Narsese.NarseseException {
+//            assertEq(True, "(a-->a)");
+//
+//            assertEq("((--,a)-->b)", "((--,a) --> b)");
+//            assertNotEquals("(a-->b)", $("((--,a) --> b)").toString());
+//            assertEq("(b-->(--,a))", "(b --> (--,a))");
+//            assertNotEquals("(a-->b)", $("(b --> (--,a))").toString());
+//            assertEq("((--,a)-->(--,b))", "(--a --> --b)");
+//
+//            assertEq(Null /*"((--,a)-->a)"*/, "((--,a)-->a)");
+//            assertEq(Null /*"(a-->(--,a))"*/, "(a-->(--,a))");
+//
+//        }
+//
+//        @Test
+//        void SimilarityNegatedSubtermsDoubleNeg() {
+//            assertEq("((--,(P))<->(--,(Q)))", "((--,(P))<->(--,(Q)))");
+//        /*
+//        <patham9> <-> is a relation in meaning not in truth
+//        <patham9> so negation can't enforce any equivalence here
+//        */
+//        }
+//
+//        @Test
+//        void SimilarityNegatedSubterms() {
+//            assertEq("((--,(Q))<->(P))", "((P)<->(--,(Q)))");
+//            assertEq("((--,(P))<->(Q))", "((--,(P))<->(Q))");
+//        }
+//    }
 
 
 }

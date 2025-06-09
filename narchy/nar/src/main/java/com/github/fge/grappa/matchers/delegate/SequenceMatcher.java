@@ -34,8 +34,7 @@ import java.util.Objects;
  * an argument, for instance {@code join(...)}, {@code zeroOrMore(...)}, {@code
  * test(...)} etc.</p>
  */
-public final class SequenceMatcher
-    extends CustomDefaultLabelMatcher<SequenceMatcher>
+public final class SequenceMatcher extends CustomDefaultLabelMatcher<SequenceMatcher>
 {
     public SequenceMatcher(Rule[] subRules)
     {

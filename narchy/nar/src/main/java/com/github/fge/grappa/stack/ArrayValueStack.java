@@ -16,8 +16,6 @@ import java.util.Iterator;
  * @param <X> type parameter of the stack's element
  */
 public final class ArrayValueStack<X> implements ValueStack<X> {
-//    @VisibleForTesting
-//    static final int INITIAL_SIZE = 16;
 
     @VisibleForTesting
     static final int SIZE_INCREASE = 8;
@@ -25,18 +23,7 @@ public final class ArrayValueStack<X> implements ValueStack<X> {
     private static final String SWAP_BADARG = "argument to swap(...) must be >= 2";
 
     private int arraySize;
-    private X[] array = (X[]) ArrayUtil.EMPTY_OBJECT_ARRAY;//(V[]) new Object[INITIAL_SIZE];
-
-    //    @VisibleForTesting
-//    ArrayValueStack(V[] values) {
-//        System.arraycopy(values, 0, array, 0, values.length);
-//        arraySize = values.length;
-//    }
-
-//    @VisibleForTesting
-//    V[] getArray() {
-//        return Arrays.copyOf(array, array.length);
-//    }
+    private X[] array = (X[]) ArrayUtil.EMPTY_OBJECT_ARRAY;
 
     private void doPush(int down, X value) {
         ensureCapacity();

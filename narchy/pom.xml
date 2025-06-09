@@ -22,7 +22,6 @@
     </properties>
 
     <modules>
-        <module>nal</module>
         <module>nar</module>
         <module>os</module>
         <module>app</module>

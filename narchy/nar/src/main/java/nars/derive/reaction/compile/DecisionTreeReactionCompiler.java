@@ -36,38 +36,38 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
 
     @Override
     public ReactionModel compile(ArrayHashSet<Reaction<Deriver>> reactions, NAR nar) {
-        Lst<Reaction<Deriver>> reactionList = reactions.list;
-        int reactionCount = reactionList.size();
+        var reactionList = reactions.list;
+        var reactionCount = reactionList.size();
         if (reactionCount == 0) {
             throw new IllegalStateException("No reactions to compile");
         }
 
-        Action[] actions = new Action[reactionCount];
-        TermPerfectTrie<PREDICATE<Deriver>, Action> predicateTrie = new TermPerfectTrie<>(reactionCount);
+        var actions = new Action[reactionCount];
+        var predicateTrie = new TermPerfectTrie<PREDICATE<Deriver>, Action>(reactionCount);
 
         // Build a queue of "causes" for each Reaction
         var causeQueue = nar.control.newCauses(reactionList.stream());
 
         // Gather predicate statistics
-        Map<PREDICATE<Deriver>, PredicateStats<Deriver>> predicateStatsMap = collectPredicateStats(reactionList);
+        var predicateStatsMap = collectPredicateStats(reactionList);
 
         // Choose a predicate ordering strategy based on information gain
-        Comparator<PREDICATE<Deriver>> predicateComparator =
+        var predicateComparator =
                 new InformationGainStrategy<>(predicateStatsMap, reactionCount).get();
 
         // Insert each Reaction's preconditions into the trie
-        int index = 0;
-        for (Reaction<Deriver> reaction : reactionList) {
-            Lst<PREDICATE<Deriver>> sortedPredicates = new Lst<>(reaction.pre);
+        var index = 0;
+        for (var reaction : reactionList) {
+            var sortedPredicates = new Lst<PREDICATE<Deriver>>(reaction.pre);
             // Sort using the chosen strategy
             sortedPredicates.sort(predicateComparator);
 
             // Add action as final predicate
-            Action action = reaction.action(causeQueue.poll());
+            var action = reaction.action(causeQueue.poll());
             sortedPredicates.add(action);
 
             // Insert into trie
-            Action existingAction = predicateTrie.put(sortedPredicates, action);
+            var existingAction = predicateTrie.put(sortedPredicates, action);
             if (existingAction != null && existingAction != action) {
                 throw new IllegalStateException("Duplicate reaction detected:\n" + sortedPredicates +
                         "\nExisting action: " + existingAction);
@@ -76,14 +76,14 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
         }
 
         // Compile the trie into a single optimized PREDICATE
-        PREDICATE<Deriver> compiledPredicate = compileTrie(predicateTrie);
+        var compiledPredicate = compileTrie(predicateTrie);
 
         return new ReactionModel(compiledPredicate, actions);
     }
 
     static <X> PREDICATE<X> compileTrie(TermPerfectTrie<PREDICATE<X>, Action> trie) {
         // Convert from Trie to raw PREDICATE structure
-        PREDICATE<X> rawPredicate = compileTrieNode(trie.root);
+        var rawPredicate = compileTrieNode(trie.root);
 
         // Optimize the structure
         PREDICATE optimizedPredicate = optimizePredicate(rawPredicate);
@@ -108,15 +108,15 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
         }
 
         // For an internal node with children, create a FORK
-        Lst<PREDICATE<X>> branches = new Lst<>(node.size());
-        for (TrieNode<List<PREDICATE<X>>, Action> child : node) {
+        var branches = new Lst<PREDICATE<X>>(node.size());
+        for (var child : node) {
             branches.add(compileSequenceWithChild(child));
         }
         return FORK.fork(branches);
     }
 
     static <X> PREDICATE<X> compileLeafNode(TrieNode<List<PREDICATE<X>>, Action> node) {
-        List<PREDICATE<X>> conditions = node.seq();
+        var conditions = node.seq();
         return conditions != null ? AND.the(conditions) : TRUE;
     }
 
@@ -125,7 +125,7 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
         int startIndex = node.start(), endIndex = node.end();
 
         // Create a list with all conditions plus the child result
-        Lst<PREDICATE<X>> sequenceWithChild = new Lst<>((endIndex - startIndex) + 1);
+        var sequenceWithChild = new Lst<PREDICATE<X>>((endIndex - startIndex) + 1);
         sequenceWithChild.addAll(node.seq().subList(startIndex, endIndex));
         sequenceWithChild.add(childResult);
 
@@ -154,9 +154,9 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
 
     static <X> PREDICATE<X> optimizeFork(FORK<X> fork) {
         // First, recursively optimize each branch
-        FORK<X> optimizedFork = (FORK<X>) fork.transform(DecisionTreeReactionCompiler::optimizePredicate);
-        PREDICATE<X>[] branches = optimizedFork.branch;
-        int branchCount = branches.length;
+        var optimizedFork = (FORK<X>) fork.transform(DecisionTreeReactionCompiler::optimizePredicate);
+        var branches = optimizedFork.branch;
+        var branchCount = branches.length;
 
         switch (branchCount) {
             case 0 -> {
@@ -167,12 +167,12 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
             }
             default -> {
                 // Try to find common predicates across branches
-                Set<PREDICATE<X>> commonPredicates = findCommonPredicates(branches);
+                var commonPredicates = findCommonPredicates(branches);
 
                 if (commonPredicates.isEmpty()) {
                     // No common predicates, try converting to IF structure
-                    Lst<PREDICATE<X>> branchList = new Lst<>(branchCount, branches.clone());
-                    PREDICATE<X> ifPredicate = tryConvertToIfStructure(branchList);
+                    var branchList = new Lst<PREDICATE<X>>(branchCount, branches.clone());
+                    var ifPredicate = tryConvertToIfStructure(branchList);
                     return (ifPredicate != null) ? ifPredicate : FORK.fork(branchList);
                 } else {
                     // Factor out common predicates for optimization
@@ -185,16 +185,16 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
     /* Common predicate extraction and handling */
 
     static <X> Set<PREDICATE<X>> findCommonPredicates(PREDICATE<X>[] branches) {
-        int branchCount = branches.length;
+        var branchCount = branches.length;
         if (branchCount == 0) {
             return Collections.emptySet();
         }
 
         // Start with all predicates from first branch
-        Set<PREDICATE<X>> commonPredicates = extractConjuncts(branches[0]);
+        var commonPredicates = extractConjuncts(branches[0]);
 
         // Retain only those present in all branches
-        for (int i = 1; i < branchCount && !commonPredicates.isEmpty(); i++) {
+        for (var i = 1; i < branchCount && !commonPredicates.isEmpty(); i++) {
             commonPredicates.retainAll(extractConjuncts(branches[i]));
         }
 
@@ -209,7 +209,7 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
 
     private static <X> void extractConjunctsRecursive(PREDICATE<X> predicate, Set<PREDICATE<X>> results) {
         if (predicate instanceof AND<X> and) {
-            for (PREDICATE<X> conjunct : and.conditions()) {
+            for (var conjunct : and.conditions()) {
                 extractConjunctsRecursive(conjunct, results);
             }
         }
@@ -220,15 +220,15 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
     }
 
     private static <X> PREDICATE<X> factorOutCommonPredicates(PREDICATE<X>[] branches, Set<PREDICATE<X>> commonPredicates) {
-        Lst<PREDICATE<X>> remainingPredicates = new Lst<>(branches.length);
+        var remainingPredicates = new Lst<PREDICATE<X>>(branches.length);
 
         // Remove common predicates from each branch
-        for (PREDICATE<X> branch : branches) {
+        for (var branch : branches) {
             remainingPredicates.add(removePredicates(branch, commonPredicates));
         }
 
         // Create AND of common predicates with FORK of remaining predicates
-        Lst<PREDICATE<X>> factored = new Lst<>(commonPredicates);
+        var factored = new Lst<PREDICATE<X>>(commonPredicates);
         factored.add(FORK.fork(remainingPredicates));
 
         return AND.the(factored);
@@ -238,7 +238,7 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
         if (source instanceof AND<X> and) {
             Lst<PREDICATE<X>> remaining = null;
 
-            for (PREDICATE<X> conjunct : and.conditions()) {
+            for (var conjunct : and.conditions()) {
                 if (!predicatesToRemove.contains(conjunct)) {
                     if (remaining == null) {
                         remaining = new Lst<>(1);
@@ -265,7 +265,7 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
         collectPredicateOccurrences(branches, positiveOccurrences, negativeOccurrences);
 
         // Find candidate predicates for IF conversion
-        List<ObjectDoublePair<PREDICATE<X>>> candidates = findIfCandidates(branches, positiveOccurrences, negativeOccurrences);
+        var candidates = findIfCandidates(branches, positiveOccurrences, negativeOccurrences);
         if (candidates == null) return null;
 
         // Sort candidates by score (highest first)
@@ -274,7 +274,7 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
         }
 
         // Use best candidate to create IF structure
-        PREDICATE<X> bestCandidate = candidates.get(0).getOne();
+        var bestCandidate = candidates.get(0).getOne();
         return createIfStructure(bestCandidate, branches, positiveOccurrences, negativeOccurrences);
     }
 
@@ -283,9 +283,9 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
             Map<PREDICATE<X>, IntArrayList> positiveOccurrences,
             Map<PREDICATE<X>, IntArrayList> negativeOccurrences)
     {
-        int branchCount = branches.size();
-        for (int i = 0; i < branchCount; i++) {
-            for (PREDICATE<X> predicate : extractConjuncts(branches.get(i))) {
+        var branchCount = branches.size();
+        for (var i = 0; i < branchCount; i++) {
+            for (var predicate : extractConjuncts(branches.get(i))) {
                 if (predicate instanceof NOT<X> negation) {
                     negativeOccurrences.computeIfAbsent(negation.cond, BRANCH_INDEX_CREATOR).add(i);
                 }
@@ -304,19 +304,19 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
     {
         List<ObjectDoublePair<PREDICATE<X>>> candidates = null;
 
-        for (Map.Entry<PREDICATE<X>, IntArrayList> entry : positiveOccurrences.entrySet()) {
-            PREDICATE<X> predicate = entry.getKey();
-            IntArrayList positiveBranches = entry.getValue();
+        for (var entry : positiveOccurrences.entrySet()) {
+            var predicate = entry.getKey();
+            var positiveBranches = entry.getValue();
 
             // Skip if no positive occurrences or no negative counterpart
             if (positiveBranches == null) continue;
 
-            IntArrayList negativeBranches = negativeOccurrences.get(predicate);
+            var negativeBranches = negativeOccurrences.get(predicate);
             if (negativeBranches == null) continue;
 
             // Branches must be disjoint for a clean split
             if (areDisjoint(positiveBranches, negativeBranches)) {
-                double score = calculateIfScore(branches, positiveBranches, negativeBranches, predicate);
+                var score = calculateIfScore(branches, positiveBranches, negativeBranches, predicate);
                 if (score > 0) {
                     if (candidates == null) {
                         candidates = new ArrayList<>(4);
@@ -335,21 +335,21 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
             Map<PREDICATE<X>, IntArrayList> positiveOccurrences,
             Map<PREDICATE<X>, IntArrayList> negativeOccurrences)
     {
-        int branchCount = branches.size();
+        var branchCount = branches.size();
 
         // Build true branch (branches containing splitPredicate)
-        Lst<PREDICATE<X>> trueBranches = new Lst<>();
-        IntArrayList trueIndices = collectTrueBranches(splitPredicate, branches, positiveOccurrences, trueBranches);
+        var trueBranches = new Lst<PREDICATE<X>>();
+        var trueIndices = collectTrueBranches(splitPredicate, branches, positiveOccurrences, trueBranches);
 
         // Build false branch (branches containing NOT splitPredicate)
-        Lst<PREDICATE<X>> falseBranches = new Lst<>();
-        IntArrayList falseIndices = collectFalseBranches(splitPredicate, branches, negativeOccurrences, falseBranches);
+        var falseBranches = new Lst<PREDICATE<X>>();
+        var falseIndices = collectFalseBranches(splitPredicate, branches, negativeOccurrences, falseBranches);
 
         // Collect remaining branches that don't fit cleanly into true/false paths
-        Lst<PREDICATE<X>> otherBranches = new Lst<>(branchCount + 1);
-        for (int i = 0; i < branchCount; i++) {
-            boolean inTrueBranch = (trueIndices != null && trueIndices.contains(i));
-            boolean inFalseBranch = (falseIndices != null && falseIndices.contains(i));
+        var otherBranches = new Lst<PREDICATE<X>>(branchCount + 1);
+        for (var i = 0; i < branchCount; i++) {
+            var inTrueBranch = (trueIndices != null && trueIndices.contains(i));
+            var inFalseBranch = (falseIndices != null && falseIndices.contains(i));
 
             // Add to others if in both or neither branch
             if ((inTrueBranch && inFalseBranch) || (!inTrueBranch && !inFalseBranch)) {
@@ -368,11 +368,11 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
             Map<PREDICATE<X>, IntArrayList> occurrences,
             List<PREDICATE<X>> targetBranches)
     {
-        IntArrayList branchIndices = occurrences.getOrDefault(predicate, null);
+        var branchIndices = occurrences.getOrDefault(predicate, null);
         if (branchIndices != null) {
             branchIndices.forEach(i -> {
                 // Remove the tested predicate since it's guaranteed by the IF condition
-                PREDICATE<X> simplifiedBranch = removePredicates(branches.get(i), Set.of(predicate));
+                var simplifiedBranch = removePredicates(branches.get(i), Set.of(predicate));
                 targetBranches.add(simplifiedBranch);
             });
         }
@@ -385,7 +385,7 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
             Map<PREDICATE<X>, IntArrayList> occurrences,
             List<PREDICATE<X>> targetBranches)
     {
-        IntArrayList branchIndices = occurrences.getOrDefault(predicate, null);
+        var branchIndices = occurrences.getOrDefault(predicate, null);
         if (branchIndices != null) {
             branchIndices.forEach(i -> {
                 // Determine which predicate to remove from the false branch
@@ -398,7 +398,7 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
                     predicateToRemove = predicate.neg();
                 }
 
-                PREDICATE<X> simplifiedBranch = removePredicates(branches.get(i), Set.of(predicateToRemove));
+                var simplifiedBranch = removePredicates(branches.get(i), Set.of(predicateToRemove));
                 targetBranches.add(simplifiedBranch);
             });
         }
@@ -408,8 +408,8 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
     /* Utility methods */
 
     private static boolean areDisjoint(IntArrayList first, IntArrayList second) {
-        IntArrayList smaller = (first.size() < second.size()) ? first : second;
-        IntArrayList larger = (smaller == first) ? second : first;
+        var smaller = (first.size() < second.size()) ? first : second;
+        var larger = (smaller == first) ? second : first;
         return !larger.containsAny(smaller);
     }
 
@@ -421,13 +421,13 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
     {
         final double positiveCount = (positiveBranches != null) ? positiveBranches.size() : 0;
         final double negativeCount = (negativeBranches != null) ? negativeBranches.size() : 0;
-        double totalCovered = positiveCount + negativeCount;
+        var totalCovered = positiveCount + negativeCount;
 
         if (totalCovered == 0) return 0;
 
-        double coverageRatio = totalCovered / branches.size();
-        double balanceFactor = Math.min(positiveCount, negativeCount) / Math.max(positiveCount, negativeCount);
-        double costEfficiency = 1 / (1.0 + predicate.cost());
+        var coverageRatio = totalCovered / branches.size();
+        var balanceFactor = Math.min(positiveCount, negativeCount) / Math.max(positiveCount, negativeCount);
+        var costEfficiency = 1 / (1.0 + predicate.cost());
 
         return coverageRatio * balanceFactor * costEfficiency;
     }
@@ -437,10 +437,10 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
     private static <X> Map<PREDICATE<X>, PredicateStats<X>> collectPredicateStats(Iterable<Reaction<X>> reactions) {
         Map<PREDICATE<X>, PredicateStats<X>> statsMap = new HashMap<>();
 
-        for (Reaction<X> reaction : reactions) {
-            for (PREDICATE<X> predicate : reaction.pre) {
+        for (var reaction : reactions) {
+            for (var predicate : reaction.pre) {
                 // Use un-negated form as the key
-                PREDICATE<X> basePredicate = (predicate instanceof NOT<X> negation) ? negation.cond : predicate;
+                var basePredicate = (predicate instanceof NOT<X> negation) ? negation.cond : predicate;
                 statsMap.computeIfAbsent(basePredicate, PredicateStats::new)
                         .incrementOccurrence(predicate instanceof NOT<X>);
             }
@@ -524,7 +524,7 @@ public class DecisionTreeReactionCompiler extends ReactionCompiler {
         }
 
         private PredicateStats<X> getPredicateStats(PREDICATE<X> predicate) {
-            PREDICATE<X> baseForm = predicate instanceof NOT ? ((NOT<X>)predicate).cond : predicate;
+            var baseForm = predicate instanceof NOT ? ((NOT<X>)predicate).cond : predicate;
             return statsMap.getOrDefault(baseForm, new PredicateStats<>(baseForm));
         }
     }
