@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/DECORATION/1.8.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/DECORATION/1.8.0 http://maven.apache.org/xsd/decoration-1.8.0.xsd">
+
+    <skin>
+        <groupId>com.bernardomg.maven.skins</groupId>
+        <artifactId>docs-maven-skin</artifactId>
+        <version>2.3.3</version>
+    </skin>
+    <custom>
+        <skinConfig>
+
+            <keywords>NARchy, NARS, OpenNARS, AGI, AI, Artificial, General, Intelligence</keywords>
+            <descriptionUrl>//</descriptionUrl>
+
+            <!-- Use the sketchy style -->
+            <bootswatchStyle>darkly</bootswatchStyle>
+            <shine>dark</shine>
+
+
+            <topNav>
+                <menu>Info</menu>
+                <menu>Modules</menu>
+                <menu>Reports</menu>
+            </topNav>
+<!--            <bottomNav>-->
+<!--                <menu>General Info</menu>-->
+<!--                <menu>Code</menu>-->
+<!--                <menu>Releases</menu>-->
+<!--            </bottomNav>-->
+            <iconNav>
+                <menu>Icons</menu>
+            </iconNav>
+        </skinConfig>
+    </custom>
+
+    <body>
+        <menu name="Modules" ref="modules" inherit="top"/>
+        <menu name="Reports" ref="reports" inherit="top"/>
+        <menu name="Info" inherit="top">
+            <item name="Features" href="./features.html" />
+            <item name="Usage" href="./usage.html" />
+<!--            <item name="Changes Log" href="./changes-report.html" />-->
+        </menu>
+<!--        <menu name="Documentation" inherit="bottom">-->
+<!--            <item name="Acquire" href="./acquire.html" />-->
+<!--            <item name="Usage" href="./usage.html" />-->
+<!--            <item name="Tests" href="./tests.html" />-->
+<!--        </menu>-->
+<!--        <menu name="Info and reports" inherit="bottom">-->
+<!--            <item name="Info" href="./info.html" />-->
+<!--            <item name="Reports" href="./reports.html" />-->
+<!--            <item name="JavaDocs" href="./apidocs/" />-->
+<!--        </menu>-->
+<!--        <menu name="Code" inherit="bottom">-->
+<!--            <item name="SCM" href="${project.scm.url}">-->
+<!--                <description>GitHub</description>-->
+<!--            </item>-->
+<!--            <item name="CI" href="${project.ciManagement.url}">-->
+<!--                <description>${project.ciManagement.system}</description>-->
+<!--            </item>-->
+<!--            <item name="Issues" href="${project.issueManagement.url}">-->
+<!--                <description>${project.issueManagement.system}</description>-->
+<!--            </item>-->
+<!--        </menu>-->
+<!--        <menu name="Releases" inherit="bottom">-->
+<!--            <item name="Maven Central" href="${mavenURL}" />-->
+<!--        </menu>-->
+<!--        <menu name="Icons" inherit="bottom">-->
+<!--            <item name="Github" img="fab fa-github" href="${project.scm.url}" />-->
+<!--        </menu>-->
+<!--        <footer><![CDATA[All rights reserved.]]></footer>-->
+    </body>
+</project>
