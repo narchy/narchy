@@ -1,9 +1,9 @@
 package nars.nal.nal7;
 
+import nars.NALTask;
 import nars.NAR;
 import nars.Task;
 import nars.Term;
-import nars.task.NALTask;
 import nars.term.Compound;
 
 import static nars.Op.ETERNAL;

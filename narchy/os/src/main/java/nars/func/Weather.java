@@ -5,11 +5,11 @@ import jcog.data.list.Lst;
 import jcog.io.Serials;
 import jcog.math.v2;
 import nars.$;
+import nars.NALTask;
 import nars.NAR;
-import nars.NARPart;
 import nars.Task;
-import nars.task.NALTask;
 import nars.time.clock.RealTime;
+import nars.util.NARPart;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;

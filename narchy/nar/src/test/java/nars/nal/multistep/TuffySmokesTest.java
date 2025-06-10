@@ -1,9 +1,9 @@
 package nars.nal.multistep;
 
+import nars.Concept;
 import nars.NAR;
 import nars.NARS;
 import nars.Narsese;
-import nars.concept.Concept;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

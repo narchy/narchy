@@ -1,10 +1,6 @@
 package nars.focus.util;
 
-import nars.NAR;
-import nars.NARS;
-import nars.Term;
-import nars.focus.Focus;
-import nars.task.NALTask;
+import nars.*;
 import org.junit.jupiter.api.Test;
 
 import static nars.$.$$;

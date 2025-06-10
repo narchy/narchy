@@ -5,13 +5,9 @@
 package nars.premise;
 
 import jcog.Util;
-import nars.NAL;
-import nars.Task;
-import nars.Term;
-import nars.derive.Deriver;
-import nars.derive.reaction.Reaction;
+import nars.*;
+import nars.deriver.reaction.Reaction;
 import nars.link.MutableTaskLink;
-import nars.task.NALTask;
 import nars.task.proxy.SpecialTermTask;
 import nars.term.Compound;
 import nars.term.CondAtomic;

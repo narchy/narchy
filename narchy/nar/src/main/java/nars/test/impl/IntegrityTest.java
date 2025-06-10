@@ -7,12 +7,8 @@ import jcog.data.list.Lst;
 import jcog.random.XoRoShiRo128PlusRandom;
 import jcog.sort.RankedN;
 import nars.*;
-import nars.concept.Concept;
 import nars.memory.SimpleMemory;
-import nars.table.BeliefTable;
-import nars.task.NALTask;
 import nars.term.atom.Atomic;
-import nars.truth.Truth;
 import org.eclipse.collections.impl.block.factory.Comparators;
 import org.jetbrains.annotations.Nullable;
 

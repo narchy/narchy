@@ -8,7 +8,7 @@
 //import jcog.pri.op.PriMerge;
 //import nars.$;
 //import nars.NAR;
-//import nars.NARPart;
+//import nars.util.NARPart;
 //import nars.func.java.Opjects;
 //import org.apache.commons.vfs2.FileChangeEvent;
 //import org.apache.commons.vfs2.FileListener;

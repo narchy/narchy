@@ -5,12 +5,12 @@ import jcog.data.list.Lst;
 import jcog.pri.Prioritized;
 import jcog.pri.bag.Bag;
 import jcog.pri.op.PriMerge;
+import nars.Deriver;
+import nars.Premise;
 import nars.Term;
-import nars.derive.Deriver;
 import nars.link.AtomicTaskLink;
 import nars.link.MutableTaskLink;
 import nars.link.TaskLink;
-import nars.premise.Premise;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.BiPredicate;

@@ -22,6 +22,7 @@ import jcog.data.list.Lst;
 import nars.Narsese;
 import nars.Op;
 import nars.Term;
+import nars.Truth;
 import nars.io.IO;
 import nars.subterm.Subterms;
 import nars.term.Compound;
@@ -30,7 +31,6 @@ import nars.term.Termed;
 import nars.term.Termlike;
 import nars.term.atom.Bool;
 import nars.term.var.Variable;
-import nars.truth.Truth;
 
 import java.util.List;
 import java.util.function.Supplier;

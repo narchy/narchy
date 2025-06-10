@@ -2,9 +2,10 @@ package nars.truth.func;
 
 import nars.NAL;
 import nars.Term;
+import nars.Truth;
+import nars.TruthFunctions;
 import nars.term.atom.Atomic;
 import nars.truth.AbstractMutableTruth;
-import nars.truth.Truth;
 import nars.truth.TruthCurve;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +36,7 @@ public interface TruthFunction {
     }
 
     default @Nullable Truth truth(@Nullable Truth task, @Nullable Truth belief, double eviMin) {
-        var confMin = (float)TruthFunctions.e2c(eviMin);
+        var confMin = (float) TruthFunctions.e2c(eviMin);
 
         if (task instanceof TruthCurve T && belief instanceof TruthCurve B) {
             //TODO spread T x B

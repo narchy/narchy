@@ -1,9 +1,9 @@
 package nars.task.util;
 
 import jcog.signal.FloatRange;
+import nars.NALTask;
 import nars.Op;
 import nars.Term;
-import nars.task.NALTask;
 import org.eclipse.collections.api.block.function.primitive.FloatFunction;
 
 public enum Eternalization { ;

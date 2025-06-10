@@ -1,9 +1,9 @@
 package nars.action.transform;
 
+import nars.Deriver;
 import nars.NAL;
 import nars.Term;
 import nars.action.TaskTermTransformAction;
-import nars.derive.Deriver;
 import org.jetbrains.annotations.Nullable;
 
 /** introduction applied to subconditions */

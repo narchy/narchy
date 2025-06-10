@@ -1,7 +1,7 @@
 package nars.truth;
 
 import jcog.math.Intervals;
-import nars.task.NALTask;
+import nars.NALTask;
 import nars.truth.proj.MutableTruthProjection;
 import org.jetbrains.annotations.Nullable;
 

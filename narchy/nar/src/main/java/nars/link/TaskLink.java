@@ -7,10 +7,10 @@ import jcog.pri.Prioritizable;
 import jcog.pri.UnitPri;
 import jcog.pri.op.PriMerge;
 import jcog.util.PriReturn;
+import nars.Deriver;
+import nars.NALTask;
+import nars.Premise;
 import nars.Term;
-import nars.derive.Deriver;
-import nars.premise.Premise;
-import nars.task.NALTask;
 import nars.task.util.PuncBag;
 import org.jetbrains.annotations.Nullable;
 

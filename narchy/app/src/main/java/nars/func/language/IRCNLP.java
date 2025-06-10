@@ -2,15 +2,10 @@
 package nars.func.language;
 
 import jcog.TODO;
-import nars.$;
-import nars.NAR;
-import nars.NARS;
-import nars.Term;
+import nars.*;
 import nars.func.language.util.IRC;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.time.clock.RealTime;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.events.MessageEvent;

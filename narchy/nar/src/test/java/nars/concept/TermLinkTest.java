@@ -1,5 +1,6 @@
 package nars.concept;
 
+import nars.Concept;
 import nars.NAR;
 import nars.NARS;
 import org.junit.jupiter.api.Disabled;

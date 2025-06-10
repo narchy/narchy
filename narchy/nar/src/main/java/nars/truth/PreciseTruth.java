@@ -1,11 +1,12 @@
 package nars.truth;
 
 import nars.NAL;
+import nars.Truth;
 import org.jetbrains.annotations.Nullable;
 
 import static nars.NAL.truth.hash;
-import static nars.truth.func.TruthFunctions.c2e;
-import static nars.truth.func.TruthFunctions.e2c;
+import static nars.TruthFunctions.c2e;
+import static nars.TruthFunctions.e2c;
 
 /**
  * extends DiscreteTruth's raw hash representation with

@@ -2,13 +2,8 @@ package nars.func;
 
 import jcog.Is;
 import jcog.pri.PLink;
-import nars.$;
-import nars.NAR;
-import nars.Task;
-import nars.Term;
-import nars.focus.Focus;
+import nars.*;
 import nars.func.language.NARHear;
-import nars.premise.Premise;
 import nars.term.Compound;
 import nars.term.Functor;
 import nars.term.atom.Atomic;

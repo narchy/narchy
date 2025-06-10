@@ -4,7 +4,7 @@ import jcog.pri.PLink;
 import jcog.pri.bag.impl.PriArrayBag;
 import jcog.pri.op.PriMerge;
 import nars.NAL;
-import nars.task.NALTask;
+import nars.NALTask;
 
 /** wraps tasks in a PLink, so that the bag's forgetting won't affect it */
 public class TaskBag extends PriArrayBag<PLink<NALTask>> {

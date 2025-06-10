@@ -1,11 +1,11 @@
 package nars.action.transform;
 
 import nars.$;
+import nars.Deriver;
 import nars.Op;
 import nars.Term;
 import nars.action.TaskTermTransformAction;
-import nars.derive.Deriver;
-import nars.derive.reaction.Reaction;
+import nars.deriver.reaction.Reaction;
 import nars.premise.NALPremise;
 import nars.premise.SubPremise;
 import nars.term.Compound;

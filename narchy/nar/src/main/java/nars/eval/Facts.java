@@ -2,9 +2,9 @@ package nars.eval;
 
 import nars.NAL;
 import nars.NAR;
+import nars.TaskTable;
 import nars.Term;
 import nars.concept.TaskConcept;
-import nars.table.TaskTable;
 import nars.unify.Unify;
 import nars.unify.UnifyAny;
 

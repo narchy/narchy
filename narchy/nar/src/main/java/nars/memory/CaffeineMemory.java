@@ -3,10 +3,10 @@ package nars.memory;
 import com.github.benmanes.caffeine.cache.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import jcog.exe.Exe;
+import nars.Concept;
 import nars.NAL;
 import nars.NAR;
 import nars.Term;
-import nars.concept.Concept;
 import nars.concept.PermanentConcept;
 import org.jetbrains.annotations.Nullable;
 

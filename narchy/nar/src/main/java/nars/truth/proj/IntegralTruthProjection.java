@@ -2,7 +2,7 @@ package nars.truth.proj;
 
 import jcog.Util;
 import jcog.math.LongInterval;
-import nars.task.NALTask;
+import nars.NALTask;
 import nars.truth.evi.EviInterval;
 
 /**

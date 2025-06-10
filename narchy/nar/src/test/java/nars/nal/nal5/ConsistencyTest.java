@@ -1,10 +1,10 @@
 package nars.nal.nal5;
 
 import jcog.data.list.Lst;
+import nars.NALTask;
 import nars.NAR;
 import nars.NARS;
 import nars.Term;
-import nars.task.NALTask;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;

@@ -1,7 +1,6 @@
 package nars.io;
 
 import nars.*;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.time.Tense;
 import org.junit.jupiter.api.Disabled;

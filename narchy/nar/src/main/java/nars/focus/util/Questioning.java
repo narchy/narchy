@@ -3,11 +3,7 @@ package nars.focus.util;
 import jcog.TODO;
 import jcog.data.map.MRUMap;
 import jcog.event.Off;
-import nars.Op;
-import nars.Task;
-import nars.Term;
-import nars.focus.Focus;
-import nars.task.NALTask;
+import nars.*;
 import nars.unify.UnifyAny;
 import org.jetbrains.annotations.Nullable;
 

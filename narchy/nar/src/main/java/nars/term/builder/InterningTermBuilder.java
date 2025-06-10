@@ -25,17 +25,6 @@ public abstract class InterningTermBuilder extends TermBuilder {
     final TermBuilder termBuilder;
     final int compoundVolMax;
 
-    @Deprecated public static final int volMaxDefault =
-        18;
-        //20;
-        //16;
-        //15;
-        //0;
-        //14;
-        //12;
-        //10;
-        //16;
-        //8;
 
 
     private static final int atomLengthMax = 16;

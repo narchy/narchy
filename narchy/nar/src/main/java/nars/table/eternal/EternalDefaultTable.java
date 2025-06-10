@@ -7,10 +7,8 @@ import nars.concept.TaskConcept;
 import nars.table.BeliefTables;
 import nars.table.dynamic.DynBeliefTable;
 import nars.task.EternalTask;
-import nars.task.NALTask;
 import nars.truth.AbstractMutableTruth;
 import nars.truth.MutableTruth;
-import nars.truth.Truth;
 
 import static nars.Op.BELIEF;
 

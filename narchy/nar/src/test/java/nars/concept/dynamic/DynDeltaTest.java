@@ -1,7 +1,7 @@
 package nars.concept.dynamic;
 
 import nars.Term;
-import nars.truth.func.TruthFunctions2;
+import nars.TruthFunctions;
 import org.junit.jupiter.api.Test;
 
 import static nars.$.$$;
@@ -29,7 +29,7 @@ class DynDeltaTest extends AbstractDynTaskTest {
         assertNotNull(deltaRange);
 
         //range
-        float dF = TruthFunctions2.delta(f0, f1);
+        float dF = TruthFunctions.delta(f0, f1);
         assertEquals(t(dF,  c*c).toString(), deltaRange.toString());
 
 //        //verify focusing

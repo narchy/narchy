@@ -3,7 +3,7 @@ package nars.truth;
 import jcog.Fuzzy;
 import jcog.Is;
 import jcog.math.LongInterval;
-import nars.truth.func.TruthFunctions;
+import nars.TruthFunctions;
 
 /** indicates an implementation has, or is associated with a specific TruthValue */
 public interface Truthed  {

@@ -4,8 +4,8 @@ import jcog.pri.PLink;
 import jcog.pri.PriReference;
 import jcog.pri.bag.impl.PriReferenceArrayBag;
 import jcog.pri.op.PriMerge;
+import nars.Premise;
 import nars.Term;
-import nars.premise.Premise;
 import nars.term.Compound;
 
 import java.util.Iterator;

@@ -1,10 +1,6 @@
 package nars.concept.dynamic;
 
-import nars.NAR;
-import nars.NARS;
-import nars.Narsese;
-import nars.Term;
-import nars.concept.Concept;
+import nars.*;
 import nars.table.dynamic.ImageBeliefTable;
 import nars.term.util.Image;
 import org.junit.jupiter.api.Disabled;

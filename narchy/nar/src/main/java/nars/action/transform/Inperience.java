@@ -1,12 +1,8 @@
 package nars.action.transform;
 
 import jcog.math.Intervals;
-import nars.$;
-import nars.Task;
-import nars.Term;
+import nars.*;
 import nars.action.TaskTransformAction;
-import nars.derive.Deriver;
-import nars.task.NALTask;
 import nars.task.SerialTask;
 import nars.task.proxy.SpecialPuncTermAndTruthTask;
 import nars.term.Functor;
@@ -19,16 +15,15 @@ import nars.term.util.transform.VariableTransform;
 import nars.term.var.Variable;
 import nars.time.When;
 import nars.truth.PreciseTruth;
-import nars.truth.Truth;
 import nars.unify.constraint.TermMatch;
 import org.jetbrains.annotations.Nullable;
 
 import static nars.$.$$;
 import static nars.Op.*;
+import static nars.TruthFunctions.c2e;
+import static nars.TruthFunctions.weak;
 import static nars.term.atom.Bool.Null;
 import static nars.term.util.Image.imageNormalize;
-import static nars.truth.func.TruthFunctions.c2e;
-import static nars.truth.func.TruthFunctions.weak;
 
 /**
  * Internal Experience (NAL9)

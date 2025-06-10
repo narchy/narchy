@@ -1,7 +1,6 @@
 package nars.io;
 
 import nars.*;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.term.atom.Atomic;
 import nars.term.util.Testing;

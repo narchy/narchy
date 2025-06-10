@@ -1,10 +1,10 @@
 package nars.task.proxy;
 
+import nars.NALTask;
 import nars.Term;
-import nars.task.NALTask;
+import nars.Truth;
 import nars.task.ProxyTask;
 import nars.term.Neg;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 public class SpecialPuncTermAndTruthTask extends ProxyTask {

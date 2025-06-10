@@ -1,17 +1,12 @@
 package nars.action.decompose;
 
 import jcog.Is;
-import nars.NAL;
-import nars.Op;
-import nars.Term;
+import nars.*;
 import nars.action.resolve.TaskResolver;
-import nars.derive.Deriver;
-import nars.derive.reaction.NativeReaction;
+import nars.deriver.reaction.NativeReaction;
 import nars.focus.time.TaskWhen;
 import nars.link.MutableTaskLink;
 import nars.premise.NALPremise;
-import nars.premise.Premise;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.term.Neg;
 import nars.term.Termed;

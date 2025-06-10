@@ -1,6 +1,5 @@
 package nars.nal.nal5;
 
-import nars.Derivers;
 import nars.NAR;
 import nars.NARS;
 import org.junit.jupiter.api.Disabled;
@@ -28,8 +27,8 @@ class ConversionAndContrapositionTest extends AbstractNAL5Test {
 
     @Override
     protected NAR nar() {
-        NARS.DefaultNAR nn = new NARS.DefaultNAR(0, 0, false);
-        nn.then("deriver", N-> nn.deriver(Derivers.nal(1, 6)
+        NARS nn = new NARS.DefaultNAR(0, 0, false);
+        nn.then("deriver", N-> nn.deriver(NARS.Rules.nal(1, 6)
             .core().stm().temporalInduction()
             .files("conversion.nal", "contraposition.nal")
         , N).everyCycle(N.main()));

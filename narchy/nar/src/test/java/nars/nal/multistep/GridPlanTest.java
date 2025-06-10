@@ -1,12 +1,8 @@
 package nars.nal.multistep;
 
-import nars.$;
-import nars.NAR;
-import nars.NARS;
-import nars.Term;
+import nars.*;
 import nars.term.atom.Atomic;
 import nars.term.atom.Int;
-import nars.truth.Truth;
 
 import java.util.Set;
 

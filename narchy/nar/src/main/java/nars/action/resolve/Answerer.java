@@ -1,16 +1,10 @@
 package nars.action.resolve;
 
 import jcog.Util;
-import nars.Answer;
-import nars.NAL;
-import nars.NAR;
-import nars.Term;
-import nars.derive.Deriver;
-import nars.derive.reaction.NativeReaction;
+import nars.*;
+import nars.deriver.reaction.NativeReaction;
 import nars.focus.time.TaskWhen;
-import nars.table.TaskTable;
 import nars.table.question.QuestionTable;
-import nars.task.NALTask;
 import nars.term.Neg;
 import nars.time.Tense;
 import nars.truth.evi.EviInterval;

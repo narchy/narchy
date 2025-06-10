@@ -1,12 +1,7 @@
 package nars.test.analyze;
 
-import nars.$;
-import nars.NAR;
-import nars.Narsese;
-import nars.Term;
-import nars.concept.Concept;
+import nars.*;
 import nars.concept.TaskConcept;
-import nars.table.BeliefTable;
 import nars.table.EmptyBeliefTable;
 import nars.term.Termed;
 import nars.time.Tense;

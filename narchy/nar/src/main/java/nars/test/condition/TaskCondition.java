@@ -2,8 +2,8 @@ package nars.test.condition;
 
 
 import jcog.Str;
+import nars.NALTask;
 import nars.Term;
-import nars.task.NALTask;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Predicate;

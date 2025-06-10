@@ -8,13 +8,12 @@ import jcog.pri.bag.Bag;
 import jcog.pri.bag.impl.hijack.PriHijackBag;
 import jcog.pri.op.PriMerge;
 import jcog.signal.FloatRange;
-import nars.control.channel.TaskChannel;
-import nars.focus.Focus;
 import nars.io.IO;
 import nars.io.TaskIO;
-import nars.task.NALTask;
 import nars.task.util.PriBuffer;
 import nars.time.clock.RealTime;
+import nars.util.NARPart;
+import nars.util.TaskChannel;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,7 +110,7 @@ public class InterNAR extends NARPart implements TriConsumer<NAR, Task /* questi
 //		add(send);
 
 
-        this.recv = new TaskChannel(nar.control.newCause(this));
+        this.recv = new TaskChannel(nar.causes.newCause(this));
 
 
 		finallyRun(peer.receive.on(this::receive));

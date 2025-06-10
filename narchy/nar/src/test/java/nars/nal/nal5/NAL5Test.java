@@ -2,7 +2,7 @@ package nars.nal.nal5;
 
 import nars.NAR;
 import nars.Narsese;
-import nars.truth.Truth;
+import nars.Truth;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

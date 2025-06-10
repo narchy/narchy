@@ -1,11 +1,11 @@
 package nars.action.transform;
 
 import jcog.signal.IntRange;
+import nars.Deriver;
+import nars.NALTask;
 import nars.Op;
-import nars.derive.Deriver;
-import nars.derive.reaction.TaskReaction;
-import nars.derive.util.NALTaskEvaluation;
-import nars.task.NALTask;
+import nars.deriver.reaction.TaskReaction;
+import nars.deriver.util.NALTaskEvaluation;
 
 /** evaluates functor-containing tasks
  * TODO add pure evaluation memoization

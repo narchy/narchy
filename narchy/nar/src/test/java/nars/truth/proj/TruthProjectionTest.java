@@ -1,10 +1,6 @@
 package nars.truth.proj;
 
-import nars.$;
-import nars.NAL;
-import nars.Term;
-import nars.task.NALTask;
-import nars.truth.Truth;
+import nars.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;

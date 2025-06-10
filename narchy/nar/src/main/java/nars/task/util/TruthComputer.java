@@ -1,6 +1,6 @@
 package nars.task.util;
 
-import nars.truth.Truth;
+import nars.Truth;
 
 public interface TruthComputer {
     Truth computeTruth();

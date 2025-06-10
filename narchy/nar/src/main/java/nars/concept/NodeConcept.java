@@ -1,11 +1,12 @@
 package nars.concept;
 
 import jcog.data.map.CompactArrayMap;
+import nars.BeliefTable;
+import nars.Concept;
+import nars.NALTask;
 import nars.Term;
-import nars.table.BeliefTable;
 import nars.table.EmptyBeliefTable;
 import nars.table.question.QuestionTable;
-import nars.task.NALTask;
 import nars.term.Termed;
 
 import java.util.function.Function;

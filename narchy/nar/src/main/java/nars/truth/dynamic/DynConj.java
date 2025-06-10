@@ -3,8 +3,9 @@ package nars.truth.dynamic;
 import jcog.Util;
 import jcog.data.bit.MetalBitSet;
 import jcog.util.ObjectLongLongPredicate;
+import nars.NALTask;
 import nars.Term;
-import nars.task.NALTask;
+import nars.TruthFunctions;
 import nars.term.Compound;
 import nars.term.atom.Bool;
 import nars.term.util.conj.ConjList;
@@ -12,7 +13,6 @@ import nars.term.util.conj.ConjTree;
 import nars.term.var.Variable;
 import nars.time.Tense;
 import nars.truth.DynTaskify;
-import nars.truth.func.NALTruth;
 import org.eclipse.collections.api.block.predicate.primitive.LongObjectPredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,8 +31,8 @@ public class DynConj extends DynSect {
     public static final DynConj Conj = new DynConj();
 
     public static final DynConj Disj = new DynConj() {
-        @Override protected NALTruth truthFn() {
-            return NALTruth.Union;
+        @Override protected TruthFunctions truthFn() {
+            return TruthFunctions.Union;
         }
     };
 

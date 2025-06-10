@@ -1,17 +1,11 @@
 package nars.table.dynamic;
 
 import jcog.data.list.Lst;
-import nars.Answer;
-import nars.NAL;
-import nars.Term;
-import nars.table.BeliefTable;
-import nars.table.TaskTable;
+import nars.*;
 import nars.table.temporal.TemporalBeliefTable;
-import nars.task.NALTask;
 import nars.task.SerialTask;
 import nars.truth.Mean;
 import nars.truth.PreciseTruth;
-import nars.truth.Truth;
 import nars.truth.evi.EviInterval;
 import org.jetbrains.annotations.Nullable;
 

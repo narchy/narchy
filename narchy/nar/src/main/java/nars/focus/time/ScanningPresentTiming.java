@@ -1,7 +1,7 @@
 //package nars.focus.time;
 //
 //import jcog.signal.FloatRange;
-//import nars.derive.Deriver;
+//import nars.Deriver;
 //import nars.time.Tense;
 //
 //public class ScanningPresentTiming extends PresentTiming {

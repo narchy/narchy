@@ -2,8 +2,8 @@ package nars.task.util;
 
 import jcog.decide.Roulette;
 import jcog.signal.FloatRange;
+import nars.NALTask;
 import nars.Task;
-import nars.task.NALTask;
 import org.eclipse.collections.api.block.function.primitive.FloatFunction;
 
 import java.util.random.RandomGenerator;

@@ -3,7 +3,7 @@ package nars.nal.nal7;
 import nars.$;
 import nars.NAR;
 import nars.NARS;
-import nars.truth.Truth;
+import nars.Truth;
 import org.apache.commons.math3.exception.NotStrictlyPositiveException;
 import org.apache.commons.math3.exception.NumberIsTooSmallException;
 import org.eclipse.collections.api.block.function.primitive.DoubleToDoubleFunction;

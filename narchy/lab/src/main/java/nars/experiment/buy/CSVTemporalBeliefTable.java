@@ -8,7 +8,7 @@
 //import nars.table.dynamic.SeriesBeliefTable;
 //import nars.table.dynamic.TaskSeriesSeriesBeliefTable;
 //import nars.util.RingIntervalSeries;
-//import nars.truth.Truth;
+//import nars.Truth;
 //import tech.tablesaw.api.Row;
 //import tech.tablesaw.api.Table;
 //

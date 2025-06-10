@@ -3,7 +3,7 @@ package nars.gui;
 import jcog.pri.PriReference;
 import jcog.pri.bag.util.Bagregate;
 import jcog.pri.op.PriMerge;
-import nars.focus.Focus;
+import nars.Focus;
 import spacegraph.space2d.container.ContainerSurface;
 import spacegraph.space2d.container.ScrollXY;
 import spacegraph.space2d.container.grid.GridRenderer;

@@ -1,7 +1,6 @@
 package nars.term;
 
 import nars.*;
-import nars.task.NALTask;
 import nars.util.Timed;
 import org.junit.jupiter.api.Test;
 

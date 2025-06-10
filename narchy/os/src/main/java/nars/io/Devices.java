@@ -2,9 +2,13 @@ package nars.io;
 
 import com.github.sarxos.webcam.Webcam;
 import jcog.data.map.ConcurrentFastIteratingHashMap;
-import nars.*;
+import nars.GUI;
+import nars.NAR;
+import nars.NARS;
+import nars.Term;
 import nars.gui.NARPartEnabler;
 import nars.gui.sensor.VectorSensorChart;
+import nars.util.NARPart;
 import spacegraph.SpaceGraph;
 import spacegraph.audio.AudioSource;
 import spacegraph.space2d.Surface;

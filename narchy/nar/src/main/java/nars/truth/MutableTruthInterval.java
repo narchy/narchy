@@ -4,7 +4,8 @@ import jcog.math.ImmLongInterval;
 import jcog.math.Intervals;
 import jcog.math.LongInterval;
 import nars.NAL;
-import nars.task.NALTask;
+import nars.NALTask;
+import nars.Truth;
 import nars.time.Tense;
 import org.jetbrains.annotations.Nullable;
 

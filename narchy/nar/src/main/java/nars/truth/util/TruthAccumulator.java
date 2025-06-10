@@ -1,7 +1,7 @@
 package nars.truth.util;
 
+import nars.Truth;
 import nars.truth.PreciseTruth;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicReference;

@@ -1,7 +1,6 @@
 package nars.func.language;
 
 import nars.*;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.term.util.transform.Retemporalize;
 import nars.term.var.Variable;

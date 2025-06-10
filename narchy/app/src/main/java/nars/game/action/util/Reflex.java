@@ -14,12 +14,8 @@ import jcog.signal.FloatRange;
 import jcog.signal.IntRange;
 import jcog.tensor.rl.pg.PPO;
 import jcog.thing.SubPart;
-import nars.NAL;
-import nars.NAR;
-import nars.Term;
-import nars.concept.Concept;
+import nars.*;
 import nars.control.Cause;
-import nars.focus.Focus;
 import nars.game.FocusLoop;
 import nars.game.Game;
 import nars.game.action.AbstractAction;
@@ -31,7 +27,6 @@ import nars.table.BeliefTables;
 import nars.table.dynamic.MutableTasksBeliefTable;
 import nars.term.Termed;
 import nars.truth.MutableTruth;
-import nars.truth.Truth;
 import org.eclipse.collections.api.block.function.primitive.IntIntToObjectFunction;
 import org.eclipse.collections.impl.list.mutable.primitive.DoubleArrayList;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +46,7 @@ import static java.lang.Math.round;
 import static jcog.Util.lerpSafe;
 import static jcog.Util.unitizeSafe;
 import static nars.Op.GOAL;
-import static nars.truth.func.TruthFunctions.c2e;
+import static nars.TruthFunctions.c2e;
 
 /**
  * Low-level/instinct sensorimotor reflexes.
@@ -158,7 +153,7 @@ import static nars.truth.func.TruthFunctions.c2e;
         }
 
         public void startIn(Game g) {
-            this.cause = g.nar.control.newCause(this);
+            this.cause = g.nar.causes.newCause(this);
             this.onFrame = g.onFrame(this);
         }
 

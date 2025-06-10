@@ -1,6 +1,7 @@
 package nars.focus;
 
 import jcog.signal.FloatRange;
+import nars.Focus;
 
 public class BasicTimeFocus extends TimeFocus {
 

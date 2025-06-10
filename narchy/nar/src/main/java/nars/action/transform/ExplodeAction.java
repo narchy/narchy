@@ -1,8 +1,8 @@
 package nars.action.transform;
 
+import nars.Deriver;
 import nars.NAL;
 import nars.Term;
-import nars.derive.Deriver;
 import nars.term.Compound;
 import nars.term.util.Explode;
 import nars.unify.constraint.TermMatch;

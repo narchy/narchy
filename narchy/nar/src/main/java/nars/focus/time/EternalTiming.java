@@ -1,7 +1,7 @@
 package nars.focus.time;
 
-import nars.derive.Deriver;
-import nars.task.NALTask;
+import nars.Deriver;
+import nars.NALTask;
 
 import static nars.Op.ETERNAL;
 

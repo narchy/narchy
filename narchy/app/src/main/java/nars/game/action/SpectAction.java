@@ -3,7 +3,7 @@
 //import jcog.TODO;
 //import nars.Term;
 //import nars.game.Game;
-//import nars.truth.Truth;
+//import nars.Truth;
 //import org.jetbrains.annotations.Nullable;
 //
 ///** TODO freq-domain spectrum set of actions */

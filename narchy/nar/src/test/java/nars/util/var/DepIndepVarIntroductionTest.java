@@ -1,12 +1,8 @@
 package nars.util.var;
 
 import jcog.random.XoRoShiRo128PlusRandom;
-import nars.$;
-import nars.NAR;
-import nars.NARS;
-import nars.Term;
+import nars.*;
 import nars.action.transform.VariableIntroduction0;
-import nars.task.NALTask;
 import nars.term.util.Terms;
 import nars.term.util.var.DepIndepVarIntroduction;
 import org.junit.jupiter.api.Disabled;

@@ -1,5 +1,7 @@
 package nars.table;
 
+import nars.BeliefTable;
+
 import java.util.function.Supplier;
 
 public class LazyBeliefTable extends EmptyBeliefTable {

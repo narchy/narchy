@@ -1,7 +1,7 @@
 package nars.action.decompose;
 
+import nars.Deriver;
 import nars.Term;
-import nars.derive.Deriver;
 import nars.term.Compound;
 import org.jetbrains.annotations.Nullable;
 

@@ -2,7 +2,6 @@ package nars.nar;
 
 import com.google.common.primitives.Longs;
 import nars.*;
-import nars.concept.Concept;
 import nars.term.Termed;
 import nars.term.util.Testing;
 import nars.test.TestNAR;

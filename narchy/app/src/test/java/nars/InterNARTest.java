@@ -1,7 +1,6 @@
 package nars;
 
 import jcog.Util;
-import nars.focus.Focus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;

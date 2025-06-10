@@ -1,8 +1,8 @@
 package nars.memory;
 
+import nars.Concept;
 import nars.NAR;
 import nars.Term;
-import nars.concept.Concept;
 import nars.concept.NodeConcept;
 import nars.concept.PermanentConcept;
 import nars.term.Functor;

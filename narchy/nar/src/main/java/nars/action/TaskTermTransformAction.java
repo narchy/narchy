@@ -1,13 +1,9 @@
 package nars.action;
 
-import nars.Term;
-import nars.derive.Deriver;
-import nars.task.NALTask;
+import nars.*;
 import nars.task.proxy.SpecialTermTask;
 import nars.task.proxy.SpecialTruthTask;
 import nars.term.util.TermCodec;
-import nars.truth.Truth;
-import nars.truth.func.TruthFunctions;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Supplier;

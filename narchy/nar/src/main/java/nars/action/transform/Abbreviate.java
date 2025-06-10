@@ -2,10 +2,10 @@ package nars.action.transform;
 
 
 import jcog.WTF;
+import nars.Deriver;
 import nars.Op;
 import nars.Term;
 import nars.action.TaskTermTransformAction;
-import nars.derive.Deriver;
 import nars.io.IO;
 import nars.term.Compound;
 import nars.term.Neg;

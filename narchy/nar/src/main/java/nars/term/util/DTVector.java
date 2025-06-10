@@ -1,8 +1,8 @@
 package nars.term.util;
 
 import jcog.TODO;
+import nars.NALTask;
 import nars.Term;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.util.SoftException;
 

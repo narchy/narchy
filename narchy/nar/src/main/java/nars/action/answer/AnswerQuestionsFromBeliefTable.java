@@ -1,13 +1,13 @@
 package nars.action.answer;
 
+import nars.Deriver;
+import nars.NALTask;
 import nars.Op;
 import nars.Term;
 import nars.action.resolve.TaskResolver;
-import nars.derive.Deriver;
 import nars.focus.time.TaskWhen;
-import nars.task.NALTask;
 
-import static nars.task.NALTask.TASKS;
+import static nars.NALTask.TASKS;
 
 public class AnswerQuestionsFromBeliefTable extends AnswerQuestions {
 

@@ -11,7 +11,7 @@
 //import jcog.random.XoRoShiRo128PlusRandom;
 //import nars.NAR;
 //import nars.Task;
-//import nars.concept.Concept;
+//import nars.Concept;
 //import nars.concept.PermanentConcept;
 //import nars.exe.Causable;
 //import nars.link.TaskLink;

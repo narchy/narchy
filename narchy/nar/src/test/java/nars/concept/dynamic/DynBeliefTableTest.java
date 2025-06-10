@@ -1,11 +1,7 @@
 package nars.concept.dynamic;
 
-import nars.NAR;
-import nars.NARS;
-import nars.Narsese;
-import nars.Op;
+import nars.*;
 import nars.link.MutableTaskLink;
-import nars.premise.Premise;
 import org.junit.jupiter.api.Test;
 
 import static nars.$.$$;

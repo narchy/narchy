@@ -1,11 +1,7 @@
 package nars.nal.nal6;
 
-import nars.NAR;
-import nars.NARS;
-import nars.Narsese;
-import nars.Op;
+import nars.*;
 import nars.concept.TaskConcept;
-import nars.truth.Truth;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

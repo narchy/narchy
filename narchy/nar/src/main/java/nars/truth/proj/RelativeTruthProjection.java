@@ -1,6 +1,6 @@
 //package nars.truth.proj;
 //
-//import nars.task.NALTask;
+//import nars.NALTask;
 //import nars.truth.evi.EviInterval;
 //
 ///** experimental */

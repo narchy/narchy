@@ -1,5 +1,7 @@
 package nars.truth;
 
+import nars.Truth;
+
 public non-sealed class PlainMutableTruth extends AbstractMutableTruth {
     private float freq;
     private double evi;

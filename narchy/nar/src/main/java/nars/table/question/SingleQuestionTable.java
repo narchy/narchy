@@ -1,8 +1,8 @@
 package nars.table.question;
 
 import nars.Answer;
+import nars.NALTask;
 import nars.action.memory.Remember;
-import nars.task.NALTask;
 
 import java.util.stream.Stream;
 

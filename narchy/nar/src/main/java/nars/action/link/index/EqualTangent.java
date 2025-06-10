@@ -2,9 +2,9 @@ package nars.action.link.index;
 
 import jcog.TODO;
 import jcog.pri.PriReference;
+import nars.Deriver;
+import nars.Premise;
 import nars.Term;
-import nars.derive.Deriver;
-import nars.premise.Premise;
 
 import java.util.Iterator;
 import java.util.function.Function;

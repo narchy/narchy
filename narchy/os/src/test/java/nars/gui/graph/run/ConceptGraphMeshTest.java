@@ -2,7 +2,7 @@
 //
 //import nars.NAR;
 //import nars.NARS;
-//import nars.concept.Concept;
+//import nars.Concept;
 //import nars.target.Term;
 //import nars.test.impl.DeductiveMeshTest;
 //import org.jetbrains.annotations.NotNull;

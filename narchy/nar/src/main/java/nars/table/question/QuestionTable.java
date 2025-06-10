@@ -1,6 +1,6 @@
 package nars.table.question;
 
-import nars.table.TaskTable;
+import nars.TaskTable;
 
 /**
  * task table used for storing Questions and Quests.

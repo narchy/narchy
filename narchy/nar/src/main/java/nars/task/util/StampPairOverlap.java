@@ -1,8 +1,8 @@
 package nars.task.util;
 
 import jcog.math.Intervals;
+import nars.NALTask;
 import nars.Term;
-import nars.task.NALTask;
 import nars.truth.Stamp;
 
 import static nars.Op.ETERNAL;

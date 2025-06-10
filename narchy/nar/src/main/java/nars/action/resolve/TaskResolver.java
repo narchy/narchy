@@ -1,9 +1,9 @@
 package nars.action.resolve;
 
+import nars.Deriver;
+import nars.NALTask;
 import nars.Term;
-import nars.derive.Deriver;
 import nars.focus.time.TaskWhen;
-import nars.task.NALTask;
 import nars.task.proxy.SpecialNegTask;
 import nars.term.Neg;
 import org.jetbrains.annotations.Nullable;

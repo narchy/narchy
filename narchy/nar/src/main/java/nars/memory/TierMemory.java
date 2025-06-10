@@ -2,9 +2,9 @@ package nars.memory;
 
 import jcog.Util;
 import jcog.data.iterator.ArrayIterator;
+import nars.Concept;
 import nars.NAR;
 import nars.Term;
-import nars.concept.Concept;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.ToIntFunction;

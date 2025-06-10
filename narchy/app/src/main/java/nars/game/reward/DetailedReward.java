@@ -8,7 +8,7 @@
 //import jcog.math.FloatSupplier;
 //import nars.$;
 //import nars.NAR;
-//import nars.concept.Concept;
+//import nars.Concept;
 //import nars.concept.sensor.FilteredScalar;
 //import CauseChannel;
 //import nars.task.ITask;

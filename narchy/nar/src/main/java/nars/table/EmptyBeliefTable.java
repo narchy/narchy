@@ -1,8 +1,9 @@
 package nars.table;
 
 import nars.Answer;
+import nars.BeliefTable;
+import nars.NALTask;
 import nars.action.memory.Remember;
-import nars.task.NALTask;
 
 import java.io.PrintStream;
 import java.util.function.Consumer;

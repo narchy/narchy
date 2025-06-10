@@ -1,12 +1,7 @@
 package nars.truth;
 
 import jcog.Fuzzy;
-import nars.Answer;
-import nars.NAR;
-import nars.Op;
-import nars.Term;
-import nars.table.TaskTable;
-import nars.task.NALTask;
+import nars.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;

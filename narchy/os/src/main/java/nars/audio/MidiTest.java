@@ -2,11 +2,9 @@ package nars.audio;
 
 import jcog.Util;
 import nars.*;
-import nars.derive.Deriver;
-import nars.derive.impl.SerialDeriver;
+import nars.deriver.impl.SerialDeriver;
 import nars.game.Game;
 import nars.gui.graph.TasksView;
-import nars.task.NALTask;
 import nars.time.Tense;
 import nars.time.clock.RealTime;
 import org.eclipse.collections.api.block.procedure.primitive.BooleanProcedure;
@@ -78,7 +76,7 @@ public class MidiTest extends Game {
 
 //        Util.sleepMS(2500);
 
-        Deriver d = new SerialDeriver(Derivers.nal(6, 8).core().stm().temporalInduction().compile(n), n);
+        Deriver d = new SerialDeriver(NARS.Rules.nal(6, 8).core().stm().temporalInduction().compile(n), n);
         //d.iter = 1;
         d.next(g.focus());
         new Thread(()->{

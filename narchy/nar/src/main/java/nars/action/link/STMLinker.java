@@ -2,14 +2,14 @@ package nars.action.link;
 
 import jcog.TODO;
 import jcog.Util;
+import nars.Deriver;
+import nars.NALTask;
 import nars.Task;
 import nars.Term;
 import nars.action.transform.TemporalComposer;
-import nars.derive.Deriver;
-import nars.derive.reaction.NativeReaction;
+import nars.deriver.reaction.NativeReaction;
 import nars.link.AtomicTaskLink;
 import nars.premise.NALPremise;
-import nars.task.NALTask;
 import nars.term.Termed;
 import nars.unify.constraint.TermMatch;
 import org.jctools.queues.MpmcArrayQueue;

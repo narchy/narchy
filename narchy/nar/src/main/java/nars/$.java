@@ -26,7 +26,6 @@ import nars.term.var.NormalizedVariable;
 import nars.term.var.UnnormalizedVariable;
 import nars.term.var.Variable;
 import nars.truth.PreciseTruth;
-import nars.truth.Truth;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.block.function.primitive.CharToObjectFunction;
 import org.hipparchus.fraction.Fraction;

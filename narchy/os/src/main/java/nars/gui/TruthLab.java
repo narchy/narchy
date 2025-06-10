@@ -3,10 +3,10 @@
 //import com.google.common.collect.Lists;
 //import com.jogamp.opengl.GL2;
 //import nars.*;
-//import nars.concept.Concept;
-//import nars.table.BeliefTable;
+//import nars.Concept;
+//import nars.BeliefTable;
 //import nars.term.Compound;
-//import nars.truth.Truth;
+//import nars.Truth;
 //import spacegraph.SpaceGraph;
 //import spacegraph.space2d.ReSurface;
 //import spacegraph.space2d.Surface;

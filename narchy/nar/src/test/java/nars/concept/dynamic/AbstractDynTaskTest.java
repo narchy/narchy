@@ -1,11 +1,7 @@
 package nars.concept.dynamic;
 
-import nars.NAR;
-import nars.NARS;
-import nars.Term;
-import nars.concept.Concept;
+import nars.*;
 import nars.table.BeliefTables;
-import nars.table.TaskTable;
 import nars.table.dynamic.DynBeliefTable;
 
 import static nars.$.$$;

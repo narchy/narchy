@@ -1,8 +1,8 @@
 package nars.truth.util;
 
-import nars.task.NALTask;
+import nars.NALTask;
+import nars.Truth;
 import nars.truth.PreciseTruth;
-import nars.truth.Truth;
 import nars.truth.Truthed;
 import nars.truth.proj.IntegralTruthProjection;
 import org.jetbrains.annotations.Nullable;

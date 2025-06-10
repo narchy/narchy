@@ -2,10 +2,11 @@ package nars.truth;
 
 import jcog.Util;
 import nars.NAL;
-import nars.truth.func.TruthFunctions;
+import nars.Truth;
+import nars.TruthFunctions;
 import org.jetbrains.annotations.Nullable;
 
-import static nars.truth.func.TruthFunctions.c2e;
+import static nars.TruthFunctions.c2e;
 
 public abstract sealed class AbstractMutableTruth extends Truth permits MutableTruth, PlainMutableTruth {
 

@@ -32,10 +32,10 @@ import static spacegraph.space2d.container.grid.Containers.grid;
 public class ExeUI {
     private static Surface metaGoalPlot2(NAR nar) {
 
-        var s = nar.control.why.size();
+        var s = nar.causes.why.size();
 
         List<WhyIconButton> controls = new Lst(s);
-        for (var w : nar.control.why)
+        for (var w : nar.causes.why)
 			controls.add(new WhyIconButton(w));
 
         Surface g = new Gridding(controls);
@@ -89,13 +89,13 @@ public class ExeUI {
 
 	private static Surface metaGoalPlot(NAR nar) {
 
-        var s = nar.control.why.size();
+        var s = nar.causes.why.size();
 
         var gain = new FloatRange(1f, 0f, 100f);
 
         var bmp = new BitmapMatrixView(i ->
                 //Util.tanhFast(
-                    gain.floatValue() * nar.control.why.get(i).pri()
+                    gain.floatValue() * nar.causes.why.get(i).pri()
                 //)
                 , s, Draw::colorBipolar);
 

@@ -1,8 +1,8 @@
 package nars.experiment;
 
+import nars.NALTask;
 import nars.Player;
 import nars.game.Game;
-import nars.task.NALTask;
 
 import java.util.concurrent.ThreadLocalRandom;
 

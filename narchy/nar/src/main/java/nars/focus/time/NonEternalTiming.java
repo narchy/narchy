@@ -2,8 +2,8 @@ package nars.focus.time;
 
 import jcog.math.Intervals;
 import jcog.signal.FloatRange;
-import nars.derive.Deriver;
-import nars.task.NALTask;
+import nars.Deriver;
+import nars.NALTask;
 
 public class NonEternalTiming extends PresentTiming {
 

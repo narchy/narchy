@@ -1,7 +1,7 @@
 package nars.concept.dynamic;
 
+import nars.NALTask;
 import nars.Narsese;
-import nars.task.NALTask;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

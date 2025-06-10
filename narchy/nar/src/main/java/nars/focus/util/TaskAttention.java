@@ -8,9 +8,9 @@ import jcog.decide.Roulette;
 import jcog.pri.PLink;
 import jcog.pri.op.PriMerge;
 import jcog.random.RandomBits;
+import nars.Focus;
 import nars.NAL;
-import nars.focus.Focus;
-import nars.task.NALTask;
+import nars.NALTask;
 import nars.task.util.PuncBag;
 import nars.task.util.TaskBag;
 

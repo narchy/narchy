@@ -1,14 +1,9 @@
 package nars.action.resolve;
 
 import jcog.signal.FloatRange;
-import nars.NAL;
-import nars.Op;
-import nars.Term;
-import nars.derive.Deriver;
+import nars.*;
 import nars.focus.time.TaskWhen;
 import nars.premise.NALPremise;
-import nars.premise.Premise;
-import nars.task.NALTask;
 import nars.task.proxy.SpecialTermTask;
 import nars.term.Neg;
 import nars.term.Termed;

@@ -1,7 +1,6 @@
 package nars.term;
 
 import nars.*;
-import nars.task.NALTask;
 import nars.term.atom.Bool;
 import nars.term.util.Testing;
 import org.junit.jupiter.api.Disabled;

@@ -2,14 +2,11 @@ package nars.task;
 
 import jcog.data.array.LongArrays;
 import jcog.pri.UnitPri;
-import nars.NAL;
-import nars.Task;
-import nars.Term;
+import nars.*;
 import nars.task.util.TaskException;
 import nars.term.Compound;
 import nars.term.Neg;
 import nars.term.Termed;
-import nars.truth.Truth;
 import nars.truth.Truthed;
 import nars.util.Timed;
 import org.jetbrains.annotations.Nullable;

@@ -1,9 +1,9 @@
 package nars.nal.nal7;
 
+import nars.NALTask;
 import nars.NAR;
 import nars.NARS;
 import nars.Term;
-import nars.task.NALTask;
 import nars.term.atom.Atom;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

@@ -7,8 +7,6 @@ import jcog.pri.bag.util.Bagregate;
 import jcog.pri.op.PriMerge;
 import nars.*;
 import nars.action.transform.Inperience;
-import nars.focus.Focus;
-import nars.task.NALTask;
 import nars.time.clock.RealTime;
 import org.jetbrains.annotations.Nullable;
 import org.jline.reader.*;

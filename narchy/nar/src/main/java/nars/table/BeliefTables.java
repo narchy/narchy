@@ -2,10 +2,8 @@ package nars.table;
 
 import jcog.data.list.Lst;
 import jcog.util.ArrayUtil;
-import nars.Answer;
-import nars.NAR;
+import nars.*;
 import nars.action.memory.Remember;
-import nars.task.NALTask;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;

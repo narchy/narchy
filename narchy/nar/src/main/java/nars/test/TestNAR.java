@@ -6,14 +6,13 @@ import jcog.Log;
 import jcog.data.list.Lst;
 import jcog.event.ByteTopic;
 import nars.*;
-import nars.focus.Focus;
-import nars.task.NALTask;
 import nars.term.util.TermException;
 import nars.test.condition.DerivedTaskCondition;
 import nars.test.condition.LambdaTaskCondition;
 import nars.test.condition.NARCondition;
 import nars.test.condition.TaskCondition;
 import nars.time.Tense;
+import nars.util.NARPart;
 import org.eclipse.collections.api.block.predicate.primitive.LongLongPredicate;
 import org.slf4j.Logger;
 

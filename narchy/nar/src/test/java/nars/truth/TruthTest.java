@@ -4,7 +4,8 @@ import jcog.Fuzzy;
 import jcog.Util;
 import jcog.random.XoRoShiRo128PlusRandom;
 import nars.NAL;
-import nars.truth.func.TruthFunctions;
+import nars.Truth;
+import nars.TruthFunctions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;

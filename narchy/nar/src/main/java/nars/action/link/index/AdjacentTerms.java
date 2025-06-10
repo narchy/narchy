@@ -1,8 +1,8 @@
 package nars.action.link.index;
 
 import jcog.pri.PriReference;
+import nars.Deriver;
 import nars.Term;
-import nars.derive.Deriver;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;

@@ -2,13 +2,10 @@ package nars.task;
 
 import nars.*;
 import nars.concept.TaskConcept;
-import nars.table.BeliefTable;
 import nars.table.BeliefTables;
-import nars.table.TaskTable;
 import nars.table.dynamic.DynTruthBeliefTable;
 import nars.test.TestNAR;
 import nars.test.analyze.BeliefAnalysis;
-import nars.truth.Truth;
 import org.junit.jupiter.api.Test;
 
 import static nars.$.$$;

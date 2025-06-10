@@ -2,11 +2,11 @@ package nars.truth.dynamic;
 
 import jcog.Util;
 import jcog.util.ObjectLongLongPredicate;
+import nars.NALTask;
 import nars.Op;
 import nars.Term;
 import nars.subterm.Subterms;
 import nars.table.util.DynTables;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.term.Neg;
 import nars.term.util.TermException;

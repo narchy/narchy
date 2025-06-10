@@ -1,6 +1,6 @@
 package nars.test.condition;
 
-import nars.task.NALTask;
+import nars.NALTask;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Predicate;

@@ -4,8 +4,8 @@
 //import nars.NAR;
 //import nars.Task;
 //import nars.Term;
-//import nars.concept.Concept;
-//import nars.focus.Focus;
+//import nars.Concept;
+//import nars.Focus;
 //
 //import java.util.stream.Stream;
 //

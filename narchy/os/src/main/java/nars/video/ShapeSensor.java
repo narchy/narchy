@@ -13,11 +13,11 @@ import com.jogamp.opengl.GL2;
 import georegression.struct.point.Point2D_I32;
 import jcog.signal.wave2d.Bitmap2D;
 import nars.*;
-import nars.control.channel.TaskChannel;
-import nars.focus.Focus;
 import nars.game.Game;
 import nars.task.SerialTask;
 import nars.term.atom.Int;
+import nars.util.NARPart;
+import nars.util.TaskChannel;
 import spacegraph.SpaceGraph;
 import spacegraph.space2d.ReSurface;
 import spacegraph.space2d.container.PaintSurface;
@@ -62,7 +62,7 @@ public class ShapeSensor extends NARPart {
         this.input = input;
         this.what = a.focus();
 
-        in = new TaskChannel(a.nar().control.newCause(this));
+        in = new TaskChannel(a.nar().causes.newCause(this));
 
         a.afterFrame(this::update);
 

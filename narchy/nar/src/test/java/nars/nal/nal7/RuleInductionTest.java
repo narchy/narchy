@@ -4,10 +4,8 @@ import com.google.common.math.PairedStatsAccumulator;
 import nars.*;
 import nars.action.link.STMLinker;
 import nars.action.transform.TemporalInduction;
-import nars.derive.reaction.ReactionModel;
-import nars.task.NALTask;
+import nars.deriver.reaction.ReactionModel;
 import nars.time.Tense;
-import nars.truth.Truth;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +28,7 @@ class RuleInductionTest {
         NAR n = NARS.shell();
         n.complexMax.set(8);
 
-        ReactionModel d = new Derivers().core().stm().temporalInduction()
+        ReactionModel d = new NARS.Rules().core().stm().temporalInduction()
             .addAll(
                 new TemporalInduction.ConjInduction(0, 0),
                 new STMLinker(1, true, false, false, false)

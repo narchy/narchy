@@ -8,14 +8,9 @@ import jcog.pri.bag.impl.ArrayBag;
 import jcog.pri.bag.impl.PriReferenceArrayBag;
 import jcog.pri.op.PriMerge;
 import jcog.signal.FloatRange;
-import nars.NAR;
-import nars.Op;
-import nars.Task;
-import nars.Term;
-import nars.concept.Concept;
+import nars.*;
 import nars.term.Functor;
 import nars.time.part.DurLoop;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 

@@ -1,7 +1,7 @@
 package nars.gui;
 
 import nars.NAR;
-import nars.premise.Premise;
+import nars.Premise;
 import spacegraph.space2d.container.Bordering;
 import spacegraph.space2d.widget.text.BitmapLabel;
 

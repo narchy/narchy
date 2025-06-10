@@ -5,13 +5,13 @@ import jcog.Util;
 import jcog.signal.wave2d.Bitmap2D;
 import nars.$;
 import nars.Term;
+import nars.Truth;
 import nars.game.Game;
 import nars.game.action.AbstractAction;
 import nars.game.action.AbstractGoalAction;
 import nars.game.action.BiPolarAction;
 import nars.sensor.BitmapSensor;
 import nars.term.Termed;
-import nars.truth.Truth;
 
 import java.util.List;
 

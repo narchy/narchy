@@ -1,8 +1,9 @@
 package nars.task;
 
+import nars.NALTask;
 import nars.Term;
+import nars.Truth;
 import nars.truth.AbstractMutableTruth;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 /** implementations are immutable but will usually have a different hash and

@@ -4,10 +4,10 @@ import jcog.data.iterator.Array2DIterable;
 import jcog.signal.wave2d.Bitmap2D;
 import nars.NAR;
 import nars.Term;
+import nars.Truth;
 import nars.game.sensor.SignalComponent;
 import nars.game.sensor.SignalConcept;
 import nars.table.eternal.EternalDefaultTable;
-import nars.truth.Truth;
 import org.eclipse.collections.api.block.function.primitive.IntIntToObjectFunction;
 import org.jetbrains.annotations.Nullable;
 

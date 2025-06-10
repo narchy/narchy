@@ -1,11 +1,7 @@
 package nars.audio;
 
 import jcog.exe.Loop;
-import nars.NAR;
-import nars.NARS;
-import nars.Narsese;
-import nars.concept.Concept;
-import nars.truth.Truth;
+import nars.*;
 import spacegraph.audio.JSoundAudio;
 import spacegraph.audio.Sound;
 import spacegraph.audio.SoundProducer;

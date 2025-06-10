@@ -1,6 +1,5 @@
 package nars.nal.nal4;
 
-import nars.Derivers;
 import nars.NAR;
 import nars.NARS;
 import nars.action.transform.ImageAlign;
@@ -32,8 +31,8 @@ class NAL4Test extends NALTest {
 
 	@Override
 	protected NAR nar() {
-		NARS.DefaultNAR nn = new NARS.DefaultNAR(0, 0, false);
-		nn.then("deriver", N-> nn.deriver(Derivers.nal(1, 6)
+		NARS nn = new NARS.DefaultNAR(0, 0, false);
+		nn.then("deriver", N-> nn.deriver(NARS.Rules.nal(1, 6)
 						.core().stm().temporalInduction()
 						.addAll(new ImageUnfold(true),
 								new ImageAlign.ImageAlignBidi())

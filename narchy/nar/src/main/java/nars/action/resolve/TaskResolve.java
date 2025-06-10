@@ -1,11 +1,11 @@
 package nars.action.resolve;
 
-import nars.derive.Deriver;
+import nars.Deriver;
+import nars.NALTask;
+import nars.Premise;
 import nars.focus.time.TaskWhen;
 import nars.link.TaskLink;
 import nars.premise.NALPremise;
-import nars.premise.Premise;
-import nars.task.NALTask;
 
 /**
  * resolves a tasklink to a single-premise

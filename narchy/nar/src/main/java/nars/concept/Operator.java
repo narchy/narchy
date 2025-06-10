@@ -1,14 +1,10 @@
 package nars.concept;
 
 import jcog.util.ArrayUtil;
-import nars.$;
-import nars.NAR;
-import nars.Task;
-import nars.Term;
+import nars.*;
 import nars.eval.Evaluation;
 import nars.eval.TaskEvaluation;
 import nars.subterm.Subterms;
-import nars.task.NALTask;
 import nars.term.Functor;
 import nars.term.atom.Atom;
 import nars.term.atom.Atomic;

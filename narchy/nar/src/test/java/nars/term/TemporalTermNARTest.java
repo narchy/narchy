@@ -1,7 +1,6 @@
 package nars.term;
 
 import nars.*;
-import nars.concept.Concept;
 import nars.concept.TaskConcept;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Disabled;

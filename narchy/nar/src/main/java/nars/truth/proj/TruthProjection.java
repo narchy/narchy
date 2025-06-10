@@ -1,8 +1,8 @@
 package nars.truth.proj;
 
-import nars.task.NALTask;
+import nars.NALTask;
+import nars.Truth;
 import nars.time.Moment;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 public interface TruthProjection extends Iterable<NALTask> {

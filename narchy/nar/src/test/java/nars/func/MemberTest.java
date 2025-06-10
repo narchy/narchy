@@ -1,12 +1,11 @@
 package nars.func;
 
-import nars.Derivers;
 import nars.NAR;
 import nars.NARS;
 import nars.Term;
 import nars.action.link.STMLinker;
-import nars.derive.impl.TaskBagDeriver;
-import nars.derive.reaction.Reactions;
+import nars.deriver.impl.TaskBagDeriver;
+import nars.deriver.reaction.Reactions;
 import nars.term.Compound;
 import nars.test.TestNAR;
 import org.junit.jupiter.api.Disabled;
@@ -26,9 +25,9 @@ class MemberTest {
 
 	private final NAR n = NARS.shell();
 	{
-		Reactions r = Derivers.nal(7, 8, "nal2.member.nal");
+		Reactions r = NARS.Rules.nal(7, 8, "nal2.member.nal");
         new TaskBagDeriver(
-                ((Derivers) r.add(new STMLinker(1, true, false, false, false))).core().stm().temporalInduction().compile(n),
+                ((NARS.Rules) r.add(new STMLinker(1, true, false, false, false))).core().stm().temporalInduction().compile(n),
 				n).everyCycle(n.main());
 	}
 

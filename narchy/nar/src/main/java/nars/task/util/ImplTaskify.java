@@ -1,20 +1,14 @@
 package nars.task.util;
 
-import nars.NAL;
-import nars.Term;
+import nars.*;
 import nars.action.resolve.Answerer;
 import nars.action.resolve.TaskResolver;
-import nars.derive.Deriver;
-import nars.focus.Focus;
-import nars.task.NALTask;
 import nars.task.proxy.SpecialNegTask;
 import nars.term.Compound;
 import nars.term.Neg;
 import nars.time.Tense;
 import nars.truth.Stamp;
-import nars.truth.Truth;
 import nars.truth.evi.EviInterval;
-import nars.truth.func.NALTruth;
 import org.eclipse.collections.api.block.function.primitive.FloatFunction;
 import org.jetbrains.annotations.Nullable;
 
@@ -140,7 +134,7 @@ public final class ImplTaskify {
         var condTruth = truth(condTask, cs, ce, ete, eviMin, dur);
         if (condTruth == null) return null;
 
-        var concTruth = NALTruth.implStrong(fwd, beliefOrGoal).truth(condTruth, implTruth, eviMin);
+        var concTruth = TruthFunctions.implStrong(fwd, beliefOrGoal).truth(condTruth, implTruth, eviMin);
         if (concTruth == null) return null;
 
         long concStart, concEnd;

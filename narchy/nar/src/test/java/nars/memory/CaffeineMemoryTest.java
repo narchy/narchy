@@ -1,10 +1,6 @@
 package nars.memory;
 
-import nars.NAR;
-import nars.NARS;
-import nars.Narsese;
-import nars.Term;
-import nars.concept.Concept;
+import nars.*;
 import org.junit.jupiter.api.Test;
 
 class CaffeineMemoryTest {

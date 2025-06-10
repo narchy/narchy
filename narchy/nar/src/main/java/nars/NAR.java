@@ -20,21 +20,21 @@ import jcog.signal.FloatRange;
 import jcog.signal.meter.Metered;
 import jcog.thing.Part;
 import nars.Narsese.NarseseException;
-import nars.concept.*;
+import nars.concept.NodeConcept;
+import nars.concept.Operator;
+import nars.concept.PermanentConcept;
+import nars.concept.TaskConcept;
 import nars.concept.util.ConceptBuilder;
-import nars.control.Control;
+import nars.control.Causes;
+import nars.control.Emotion;
+import nars.control.Pausing;
 import nars.eval.Evaluator;
-import nars.exe.Pausing;
-import nars.focus.Focus;
 import nars.focus.util.FocusBag;
 import nars.focus.util.PriTree;
 import nars.io.IO;
 import nars.memory.Memory;
-import nars.table.BeliefTable;
-import nars.table.TaskTable;
 import nars.table.question.QuestionTable;
 import nars.table.util.DynTables;
-import nars.task.NALTask;
 import nars.task.proxy.SpecialNegTask;
 import nars.task.util.TaskException;
 import nars.term.Compound;
@@ -51,8 +51,8 @@ import nars.time.Time;
 import nars.time.event.WhenTimeIs;
 import nars.time.part.DurLoop;
 import nars.time.part.DurNARConsumer;
-import nars.truth.Truth;
 import nars.truth.proj.TruthProjection;
+import nars.util.NARPart;
 import org.HdrHistogram.Histogram;
 import org.eclipse.collections.impl.map.mutable.primitive.ByteIntHashMap;
 import org.jetbrains.annotations.Nullable;
@@ -80,7 +80,7 @@ import static nars.Op.*;
  * * step mode - controlled by an outside system, such as during debugging or testing
  * * thread mode - runs in a pausable closed-loop at a specific maximum framerate.
  */
-public final class NAR extends NAL<NAR> implements Consumer<Task>, NAROut, Cycled {
+public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	/**
 	 * id of this NAR's self; ie. its name
 	 */
@@ -97,7 +97,7 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, NAROut, Cycle
 
 	public final Emotion emotion = new Emotion();
 
-	public final Control control;
+	public final Causes causes;
 	public final PriTree pri;
 
 	public final FocusBag focus;
@@ -120,14 +120,14 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, NAROut, Cycle
 
 		m.start(this);
 
-		this.control = new Control();
+		this.causes = new Causes();
 		this.pri = new PriTree();
 		this.focus = new FocusBag(128, this);
 
 		onDur/*Cycle*/(emotion);
 		onDur(pri::commit);
 
-		Builtin.init(this);
+		NARS.Functors.init(this);
 
 		this.loop = new NARLoop();
 

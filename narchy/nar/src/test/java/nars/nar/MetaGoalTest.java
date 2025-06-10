@@ -2,11 +2,7 @@ package nars.nar;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
-import nars.NAR;
-import nars.NARS;
-import nars.Narsese;
-import nars.Term;
-import nars.task.NALTask;
+import nars.*;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +30,7 @@ class MetaGoalTest {
         n.run(cycles);
 
 
-        n.control.why.forEach(w -> System.out.println(w.id + " " + w));
+        n.causes.why.forEach(w -> System.out.println(w.id + " " + w));
         tasks.forEach((c,t)-> System.out.println(c + "\t" + t));
 
         assertTrue(tasks.size() > 2);

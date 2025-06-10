@@ -1,8 +1,11 @@
 package nars.game.util;
 
 import jcog.agent.Agent;
-import nars.*;
-import nars.derive.impl.SerialDeriver;
+import nars.$;
+import nars.NAR;
+import nars.NARS;
+import nars.Term;
+import nars.deriver.impl.SerialDeriver;
 import nars.game.Game;
 import nars.term.atom.Atom;
 import nars.term.atom.Atomic;
@@ -56,7 +59,7 @@ public class EmbeddedNAgent extends Agent {
 
         n.add(this.game = new AgentGame(numIn, numAct));
 
-        SerialDeriver d = new SerialDeriver(Derivers.nal(1, 8).core().stm().temporalInduction().compile(n), n);
+        SerialDeriver d = new SerialDeriver(NARS.Rules.nal(1, 8).core().stm().temporalInduction().compile(n), n);
         d.everyCycle(game.focus());
         d.iter.set(iterationsPerCycle);
 

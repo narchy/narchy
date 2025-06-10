@@ -1,5 +1,7 @@
 package nars.focus;
 
+import nars.Focus;
+
 /**
  * temporal sampling envelope, relative to present
  */

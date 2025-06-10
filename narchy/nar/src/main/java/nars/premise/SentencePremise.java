@@ -2,8 +2,8 @@
 //
 //import jcog.Util;
 //import nars.Op;
-//import nars.derive.Deriver;
-//import nars.task.NALTask;
+//import nars.Deriver;
+//import nars.NALTask;
 //import nars.term.Term;
 //import nars.term.Termed;
 //import org.jetbrains.annotations.Nullable;

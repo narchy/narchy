@@ -1,7 +1,7 @@
 //package nars.game.sensor.attn;
 //
 //import nars.Term;
-//import nars.focus.Focus;
+//import nars.Focus;
 //import nars.game.Game;
 //import nars.game.sensor.SignalConcept;
 //import nars.game.sensor.SignalComponent;

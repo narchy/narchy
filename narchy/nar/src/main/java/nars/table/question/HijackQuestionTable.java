@@ -4,12 +4,8 @@ import jcog.Util;
 import jcog.pri.bag.impl.hijack.PriPriHijackBag;
 import jcog.pri.op.PriMerge;
 import jcog.signal.NumberX;
-import nars.Answer;
-import nars.NAL;
-import nars.Task;
-import nars.Term;
+import nars.*;
 import nars.action.memory.Remember;
-import nars.task.NALTask;
 import nars.truth.Stamp;
 import org.jetbrains.annotations.Nullable;
 

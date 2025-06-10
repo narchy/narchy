@@ -1,8 +1,8 @@
 package nars.task;
 
 import nars.Term;
+import nars.Truth;
 import nars.task.util.TaskException;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 
@@ -11,7 +11,7 @@ public final class TemporalTask extends AbstractNALTask {
 
 	private final long start, end;
 
-    TemporalTask(Term term, byte punc, @Nullable Truth truth, long start, long end, long[] stamp) throws TaskException {
+    public TemporalTask(Term term, byte punc, @Nullable Truth truth, long start, long end, long[] stamp) throws TaskException {
 		super(term, punc, truth, start, end, stamp);
 		this.start = start;
         this.end = end;

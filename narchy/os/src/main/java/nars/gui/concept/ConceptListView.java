@@ -2,8 +2,8 @@ package nars.gui.concept;
 
 import jcog.pri.PLink;
 import jcog.pri.PriReference;
+import nars.Focus;
 import nars.Term;
-import nars.focus.Focus;
 import nars.gui.AbstractTermView;
 import nars.term.Termed;
 import spacegraph.space2d.Surface;

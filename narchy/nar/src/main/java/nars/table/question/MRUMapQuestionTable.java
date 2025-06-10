@@ -4,9 +4,9 @@ import jcog.TODO;
 import jcog.data.iterator.ArrayIterator;
 import jcog.data.map.MRUMap;
 import nars.Answer;
+import nars.NALTask;
 import nars.Task;
 import nars.action.memory.Remember;
-import nars.task.NALTask;
 
 import java.util.function.Consumer;
 import java.util.stream.Stream;

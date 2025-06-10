@@ -1,7 +1,10 @@
 package nars.util;
 
 import jcog.Util;
-import nars.*;
+import nars.NAR;
+import nars.Op;
+import nars.Task;
+import nars.Term;
 
 import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -9,8 +12,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static jcog.Str.n2;
-import static nars.task.NALTask.i;
-import static nars.task.NALTask.p;
+import static nars.NALTask.i;
+import static nars.NALTask.p;
 
 /** fast summarization of certain Task features used for control feedback.  gathers statistics concurrently
  *  and produces a snapshot on request */

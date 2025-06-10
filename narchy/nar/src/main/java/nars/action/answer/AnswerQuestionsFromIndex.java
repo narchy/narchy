@@ -1,9 +1,9 @@
 package nars.action.answer;
 
 import com.google.common.collect.Iterables;
+import nars.Deriver;
 import nars.Task;
 import nars.Term;
-import nars.derive.Deriver;
 import nars.focus.time.ActionTiming;
 import nars.term.Termed;
 import nars.term.util.map.IndexedTermedList;

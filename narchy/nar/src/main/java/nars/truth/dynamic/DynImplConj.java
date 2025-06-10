@@ -2,13 +2,13 @@ package nars.truth.dynamic;
 
 import jcog.util.ObjectLongLongPredicate;
 import nars.Term;
+import nars.TruthFunctions;
 import nars.subterm.Subterms;
 import nars.term.Compound;
 import nars.term.Neg;
 import nars.term.util.TermException;
 import nars.time.Tense;
 import nars.truth.DynTaskify;
-import nars.truth.func.NALTruth;
 
 import static nars.Op.*;
 
@@ -18,8 +18,8 @@ public enum DynImplConj {
 	/** subj && == union (disjunction) */
 	public static final DynTruth DynImplConjSubj = new DynImplSect(true) {
 		@Override
-		protected NALTruth truthFn() {
-			return NALTruth.Union;
+		protected TruthFunctions truthFn() {
+			return TruthFunctions.Union;
 		}
 
 		@Override
@@ -48,8 +48,8 @@ public enum DynImplConj {
 	/** TODO may need to canonically sort order for applying binary truth function to n-ary (n > 2) disj's */
 	public static final DynTruth DynImplDisjMixSubj = new DynImplDisjSubj() {
 		@Override
-		protected NALTruth truthFn() {
-			return NALTruth.Mix;
+		protected TruthFunctions truthFn() {
+			return TruthFunctions.Mix;
 		}
 	};
 

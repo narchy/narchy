@@ -1,9 +1,9 @@
 package nars.game.sensor;
 
 import nars.Term;
+import nars.Truth;
 import nars.game.Game;
 import nars.term.Termed;
-import nars.truth.Truth;
 import nars.truth.evi.EviInterval;
 import org.jetbrains.annotations.Nullable;
 

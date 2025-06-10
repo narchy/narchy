@@ -1,10 +1,8 @@
 package nars.task;
 
 import nars.*;
-import nars.concept.Concept;
 import nars.concept.TaskConcept;
 import nars.term.Compound;
-import nars.truth.Truth;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

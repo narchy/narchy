@@ -3,9 +3,9 @@ package nars.term.util;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import jcog.sort.FloatRank;
 import nars.NAL;
+import nars.NALTask;
 import nars.Term;
 import nars.subterm.Subterms;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.term.Neg;
 

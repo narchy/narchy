@@ -1,10 +1,10 @@
 package nars.task.util;
 
 import jcog.pri.UnitPri;
+import nars.NALTask;
 import nars.Task;
 import nars.Term;
-import nars.task.NALTask;
-import nars.truth.Truth;
+import nars.Truth;
 
 /** primitive partial task definition: without term, punctuation */
 public class ProtoTask implements TaskRegion {

@@ -10,7 +10,6 @@ import nars.table.dynamic.MutableTasksBeliefTable;
 import nars.table.dynamic.SerialBeliefTable;
 import nars.table.temporal.NavigableMapBeliefTable;
 import nars.table.temporal.TemporalBeliefTable;
-import nars.task.NALTask;
 import nars.term.Termed;
 import nars.test.TestNAR;
 import org.junit.jupiter.api.Disabled;
@@ -22,8 +21,8 @@ import java.util.function.Predicate;
 
 import static nars.$.$$;
 import static nars.Op.BELIEF;
+import static nars.TruthFunctions.c2e;
 import static nars.task.TaskTest.task;
-import static nars.truth.func.TruthFunctions.c2e;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TemporalBeliefTableTest {

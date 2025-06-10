@@ -1,8 +1,8 @@
 package nars.game.action;
 
 import nars.Term;
+import nars.Truth;
 import nars.game.Game;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 

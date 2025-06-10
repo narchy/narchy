@@ -1,7 +1,7 @@
 package nars.memory;
 
+import nars.Concept;
 import nars.Term;
-import nars.concept.Concept;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;

@@ -4,13 +4,13 @@ import jcog.Is;
 import jcog.WTF;
 import jcog.util.ObjectLongLongPredicate;
 import nars.Term;
+import nars.Truth;
+import nars.TruthFunctions;
 import nars.subterm.Subterms;
 import nars.term.Compound;
 import nars.term.Neg;
 import nars.time.Tense;
 import nars.truth.DynTaskify;
-import nars.truth.Truth;
-import nars.truth.func.NALTruth;
 
 import static nars.NAL.dyn.DYN_IMPL_LIMITING;
 import static nars.Op.*;
@@ -64,8 +64,8 @@ public class DynImplContra extends DynTruth {
         //return neg(NALTruth.Contraposition.apply(null, truth.neg(), (float) NAL.truth.CONF_MIN));
     }
 
-    private NALTruth truth() {
-        return conOrContra ? NALTruth.Conversion : NALTruth.Contraposition;
+    private TruthFunctions truth() {
+        return conOrContra ? TruthFunctions.Conversion : TruthFunctions.Contraposition;
     }
 
     @Override

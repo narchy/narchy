@@ -2,9 +2,9 @@ package nars.action.decompose;
 
 import jcog.random.RandomBits;
 import jcog.random.XoRoShiRo128PlusRandom;
+import nars.Deriver;
 import nars.Op;
 import nars.Term;
-import nars.derive.Deriver;
 import nars.term.Compound;
 import nars.unify.constraint.StructMatcher;
 import org.jetbrains.annotations.Nullable;

@@ -1,8 +1,8 @@
 package nars.focus.time;
 
 import jcog.signal.FloatRange;
-import nars.derive.Deriver;
-import nars.task.NALTask;
+import nars.Deriver;
+import nars.NALTask;
 import nars.time.Tense;
 
 import java.util.random.RandomGenerator;

@@ -1,16 +1,11 @@
 package nars.game.sensor;
 
 import jcog.math.FloatSupplier;
-import nars.$;
-import nars.NAL;
-import nars.NAR;
-import nars.Term;
+import nars.*;
 import nars.concept.PermanentConcept;
 import nars.concept.TaskConcept;
 import nars.concept.util.ConceptBuilder;
-import nars.focus.Focus;
 import nars.game.util.Perception;
-import nars.table.BeliefTable;
 import nars.table.dynamic.SensorBeliefTables;
 import nars.table.dynamic.SerialBeliefTable;
 import nars.table.dynamic.TaskSeriesSeriesBeliefTable;
@@ -18,7 +13,6 @@ import nars.table.dynamic.TruthCurveBeliefTable;
 import nars.table.question.QuestionTable;
 import nars.task.SerialTask;
 import nars.truth.MutableTruth;
-import nars.truth.Truth;
 import nars.truth.evi.EviInterval;
 import org.eclipse.collections.api.block.function.primitive.FloatFloatToObjectFunction;
 import org.jetbrains.annotations.Nullable;

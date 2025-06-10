@@ -4,7 +4,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import nars.*;
 import nars.game.util.Impiler.ImpilerDeduction;
-import nars.task.NALTask;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

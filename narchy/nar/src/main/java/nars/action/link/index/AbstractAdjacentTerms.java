@@ -1,7 +1,7 @@
 package nars.action.link.index;
 
+import nars.Premise;
 import nars.Term;
-import nars.premise.Premise;
 
 import java.util.function.Function;
 

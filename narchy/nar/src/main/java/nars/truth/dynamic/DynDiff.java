@@ -2,11 +2,11 @@ package nars.truth.dynamic;
 
 import jcog.util.ObjectLongLongPredicate;
 import nars.Term;
+import nars.Truth;
+import nars.TruthFunctions;
 import nars.subterm.Subterms;
 import nars.term.Compound;
 import nars.truth.DynTaskify;
-import nars.truth.Truth;
-import nars.truth.func.TruthFunctions2;
 
 import static nars.Op.DIFF;
 
@@ -26,7 +26,7 @@ public class DynDiff extends DynTruth {
     }
 
     public static float _diffCommutative(float a, float b) {
-        return (float)TruthFunctions2.diffCommutative(a, b);
+        return (float) TruthFunctions.diffCommutative(a, b);
     }
 
     @Override

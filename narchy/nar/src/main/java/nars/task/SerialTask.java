@@ -2,10 +2,11 @@ package nars.task;
 
 import jcog.Util;
 import jcog.pri.Prioritizable;
+import nars.NALTask;
 import nars.Term;
+import nars.Truth;
 import nars.task.proxy.SpecialOccurrenceTask;
 import nars.truth.AbstractMutableTruth;
-import nars.truth.Truth;
 
 /**
  * overrides equality and hashcode impl because these are generated with (mostly-)unique serial stamp by a sensor or other internal process #

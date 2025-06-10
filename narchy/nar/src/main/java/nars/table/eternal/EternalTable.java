@@ -4,15 +4,10 @@ import jcog.Util;
 import jcog.data.list.Lst;
 import jcog.sort.LockedFloatSortedArray;
 import jcog.util.ArrayUtil;
-import nars.Answer;
-import nars.NAR;
-import nars.Task;
+import nars.*;
 import nars.action.memory.Remember;
-import nars.table.BeliefTable;
-import nars.task.NALTask;
 import nars.task.SerialTask;
 import nars.truth.Stamp;
-import nars.truth.Truth;
 import nars.truth.proj.IntegralTruthProjection;
 import nars.truth.proj.MutableTruthProjection;
 import org.jetbrains.annotations.Nullable;
@@ -22,7 +17,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static nars.table.BeliefTable.eternalOriginality;
+import static nars.BeliefTable.eternalOriginality;
 
 
 /**

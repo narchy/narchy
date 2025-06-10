@@ -1,11 +1,9 @@
 package nars;
 
 import jcog.pri.UnitPri;
-import nars.task.NALTask;
 import nars.task.SerialTask;
 import nars.term.Termed;
 import nars.term.atom.Atom;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 import static jcog.Util.hashCombine;

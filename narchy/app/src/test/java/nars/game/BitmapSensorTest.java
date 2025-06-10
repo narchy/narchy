@@ -1,13 +1,9 @@
 package nars.game;
 
 import jcog.signal.wave2d.ArrayBitmap2D;
-import nars.$;
-import nars.NAR;
-import nars.NARS;
-import nars.Term;
+import nars.*;
 import nars.concept.TaskConcept;
 import nars.sensor.BitmapSensor;
-import nars.truth.Truth;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

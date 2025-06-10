@@ -2,14 +2,9 @@ package nars.concept;
 
 import jcog.Research;
 import jcog.data.list.Lst;
-import nars.NAR;
-import nars.Task;
-import nars.Term;
-import nars.table.BeliefTable;
+import nars.*;
 import nars.table.LazyQuestionTable;
-import nars.table.TaskTable;
 import nars.table.question.QuestionTable;
-import nars.task.NALTask;
 
 import java.io.IOException;
 import java.util.List;

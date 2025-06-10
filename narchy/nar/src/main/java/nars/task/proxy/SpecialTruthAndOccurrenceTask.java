@@ -1,9 +1,9 @@
 package nars.task.proxy;
 
 import nars.NAL;
-import nars.task.NALTask;
+import nars.NALTask;
+import nars.Truth;
 import nars.task.util.TaskException;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 /**

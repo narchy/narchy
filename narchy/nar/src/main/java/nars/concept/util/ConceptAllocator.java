@@ -1,10 +1,10 @@
 package nars.concept.util;
 
-import nars.concept.Concept;
+import nars.Concept;
+import nars.TaskTable;
 import nars.concept.TaskConcept;
 import nars.table.BeliefTables;
 import nars.table.LazyBeliefTable;
-import nars.table.TaskTable;
 import nars.table.eternal.EternalTable;
 import nars.term.Termed;
 

@@ -2,15 +2,11 @@ package nars.audio;
 
 import jcog.data.list.Lst;
 import jcog.exe.Loop;
-import nars.$;
-import nars.NAR;
-import nars.NARS;
-import nars.Term;
+import nars.*;
 import nars.game.Game;
 import nars.game.action.AbstractAction;
 import nars.game.action.GoalAction;
 import nars.gui.NARui;
-import nars.task.NALTask;
 import nars.time.Tense;
 import spacegraph.SpaceGraph;
 import spacegraph.audio.synth.SineWave;

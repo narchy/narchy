@@ -3,7 +3,7 @@ package nars.truth;
 import jcog.TODO;
 import jcog.Util;
 import nars.NAL;
-import nars.task.NALTask;
+import nars.NALTask;
 import nars.task.SerialTask;
 import nars.truth.evi.EviInterval;
 import org.jetbrains.annotations.Nullable;

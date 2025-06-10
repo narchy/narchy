@@ -3,9 +3,9 @@ package nars.util;
 import jcog.signal.meter.Metered;
 import jcog.table.ARFF;
 import jcog.table.DataTable;
+import nars.Concept;
 import nars.Task;
 import nars.Term;
-import nars.concept.Concept;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
 

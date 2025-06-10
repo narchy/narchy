@@ -1,11 +1,7 @@
 package nars.func.rdfowl;
 
 import com.google.common.collect.Streams;
-import nars.$;
-import nars.NAR;
-import nars.Task;
-import nars.Term;
-import nars.task.NALTask;
+import nars.*;
 import nars.task.TaskBuilder;
 import nars.term.Compound;
 import nars.term.atom.Atom;

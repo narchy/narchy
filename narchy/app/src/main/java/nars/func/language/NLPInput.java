@@ -13,9 +13,9 @@
 //import nars.Op;
 //import nars.Term;
 //import nars.subterm.TmpTermList;
-//import nars.task.NALTask;
+//import nars.NALTask;
 //import nars.term.atom.Atomic;
-//import nars.truth.Truth;
+//import nars.Truth;
 //import org.eclipse.collections.api.list.primitive.ByteList;
 //import org.eclipse.collections.api.list.primitive.ImmutableByteList;
 //import org.eclipse.collections.api.tuple.Pair;

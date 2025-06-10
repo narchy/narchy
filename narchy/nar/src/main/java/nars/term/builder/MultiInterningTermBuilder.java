@@ -6,6 +6,7 @@ import jcog.data.map.LazyMap;
 import jcog.memoize.ByteKey;
 import jcog.memoize.ByteKeyExternal;
 import jcog.signal.meter.SafeAutoCloseable;
+import nars.NAL;
 import nars.Op;
 import nars.Term;
 import nars.subterm.ByteCachedSubterms;
@@ -22,7 +23,7 @@ public class MultiInterningTermBuilder extends InterningTermBuilder {
     private final Function<ByteKeyExternal, InternedArraySubterms> memo;
 
     @Deprecated public MultiInterningTermBuilder(TermBuilder _builder) {
-        this(_builder, volMaxDefault);
+        this(_builder, NAL.term.interningComplexityMax);
     }
 
     public MultiInterningTermBuilder(TermBuilder _builder, int volMax) {

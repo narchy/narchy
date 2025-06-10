@@ -3,8 +3,8 @@ package nars.action;
 import jcog.Is;
 import nars.Term;
 import nars.control.Cause;
-import nars.derive.reaction.PatternReaction;
-import nars.derive.reaction.Reaction;
+import nars.deriver.reaction.PatternReaction;
+import nars.deriver.reaction.Reaction;
 import nars.term.control.PREDICATE;
 
 

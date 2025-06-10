@@ -1,9 +1,9 @@
 package nars.nal.nal1;
 
+import nars.NALTask;
 import nars.NAR;
 import nars.NARS;
 import nars.Narsese;
-import nars.task.NALTask;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

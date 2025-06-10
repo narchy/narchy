@@ -1,13 +1,9 @@
 package nars.test;
 
 import jcog.Util;
-import nars.NAL;
-import nars.NAR;
-import nars.NARS;
-import nars.Term;
+import nars.*;
 import nars.table.BeliefTables;
 import nars.table.temporal.TemporalBeliefTable;
-import nars.task.NALTask;
 import org.eclipse.collections.api.block.function.primitive.IntToFloatFunction;
 import org.eclipse.collections.impl.block.factory.Comparators;
 

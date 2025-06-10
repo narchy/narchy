@@ -1,10 +1,10 @@
 package nars.gui.graph;
 
 import com.jogamp.opengl.GL2;
+import nars.NALTask;
 import nars.NAR;
 import nars.NARS;
 import nars.Task;
-import nars.task.NALTask;
 import spacegraph.SpaceGraph;
 import spacegraph.space2d.ReSurface;
 import spacegraph.space2d.Surface;

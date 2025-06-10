@@ -4,13 +4,9 @@ import jcog.Str;
 import jcog.data.list.Lst;
 import jcog.table.ARFF;
 import jcog.table.DataTable;
-import nars.$;
-import nars.NAR;
-import nars.Term;
-import nars.task.NALTask;
+import nars.*;
 import nars.term.var.NormalizedVariable;
 import nars.term.var.UnnormalizedVariable;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 import tech.tablesaw.api.Table;
 

@@ -1,7 +1,7 @@
 package nars.game.util;
 
+import nars.Truth;
 import nars.game.action.AbstractGoalAction;
-import nars.truth.Truth;
 import org.eclipse.collections.api.block.function.primitive.FloatToFloatFunction;
 import org.jetbrains.annotations.Nullable;
 

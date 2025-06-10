@@ -4,10 +4,10 @@
 //import jcog.pri.op.PriMerge;
 //import jcog.signal.IntRange;
 //import nars.Term;
-//import nars.derive.Deriver;
+//import nars.Deriver;
 //import nars.derive.reaction.NativeReaction;
 //import nars.link.flow.LinkFlows;
-//import nars.premise.Premise;
+//import nars.Premise;
 //
 //import java.util.function.BiPredicate;
 //import java.util.function.Function;

@@ -2,10 +2,10 @@ package nars.action.link.index;
 
 import jcog.pri.PriReference;
 import jcog.pri.bag.Sampler;
+import nars.Deriver;
+import nars.Focus;
 import nars.NAL;
 import nars.Term;
-import nars.derive.Deriver;
-import nars.focus.Focus;
 import nars.link.TermLinkBag;
 import org.jetbrains.annotations.Nullable;
 

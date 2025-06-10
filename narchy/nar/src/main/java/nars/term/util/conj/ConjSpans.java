@@ -1,7 +1,7 @@
 //package nars.term.util.conj;
 //
 //import jcog.data.bit.MetalBitSet;
-//import nars.task.NALTask;
+//import nars.NALTask;
 //import org.eclipse.collections.api.list.MutableList;
 //import org.eclipse.collections.api.tuple.primitive.LongObjectPair;
 //import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;

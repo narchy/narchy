@@ -1,9 +1,9 @@
 package nars.term.util.transform;
 
+import nars.NALTask;
 import nars.Op;
 import nars.Term;
 import nars.subterm.Subterms;
-import nars.task.NALTask;
 import nars.task.proxy.SpecialTermTask;
 import nars.term.Compound;
 import nars.term.Termed;

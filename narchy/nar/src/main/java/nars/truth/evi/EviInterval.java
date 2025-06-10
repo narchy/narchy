@@ -3,7 +3,7 @@ package nars.truth.evi;
 import jcog.math.LongInterval;
 import jcog.sort.FloatRank;
 import nars.NAL;
-import nars.task.NALTask;
+import nars.NALTask;
 import nars.time.Moment;
 import nars.truth.TruthSpan;
 

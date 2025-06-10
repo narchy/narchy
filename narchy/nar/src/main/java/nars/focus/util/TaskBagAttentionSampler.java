@@ -4,11 +4,11 @@ import jcog.data.list.Lst;
 import jcog.pri.PLink;
 import jcog.pri.bag.Sampler;
 import jcog.random.RandomBits;
-import nars.derive.Deriver;
-import nars.focus.Focus;
-import nars.pri.DefaultBudget;
+import nars.Deriver;
+import nars.Focus;
+import nars.NALTask;
+import nars.control.DefaultBudget;
 import nars.table.dynamic.TruthCurveBeliefTable;
-import nars.task.NALTask;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;

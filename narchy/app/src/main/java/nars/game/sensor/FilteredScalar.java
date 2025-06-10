@@ -4,7 +4,7 @@
 //import jcog.math.FloatSupplier;
 //import nars.NAR;
 //import nars.term.Term;
-//import nars.truth.Truth;
+//import nars.Truth;
 //import org.eclipse.collections.api.block.function.primitive.FloatFloatToObjectFunction;
 //import org.eclipse.collections.api.block.function.primitive.FloatToFloatFunction;
 //import org.eclipse.collections.api.tuple.Pair;

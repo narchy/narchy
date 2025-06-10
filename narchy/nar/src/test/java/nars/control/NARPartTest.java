@@ -3,9 +3,9 @@ package nars.control;
 import jcog.Util;
 import jcog.thing.Part;
 import nars.NAR;
-import nars.NARPart;
 import nars.NARS;
 import nars.time.part.DurLoop;
+import nars.util.NARPart;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;

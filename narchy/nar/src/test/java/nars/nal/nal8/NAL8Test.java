@@ -1,11 +1,7 @@
 package nars.nal.nal8;
 
-import nars.$;
-import nars.Narsese;
-import nars.Task;
-import nars.Term;
+import nars.*;
 import nars.nal.nal7.NAL7Test;
-import nars.task.NALTask;
 import nars.term.util.conj.CondMatch;
 import nars.test.NALTest;
 import nars.time.Tense;

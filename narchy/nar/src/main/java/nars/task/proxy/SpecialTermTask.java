@@ -1,7 +1,7 @@
 package nars.task.proxy;
 
+import nars.NALTask;
 import nars.Term;
-import nars.task.NALTask;
 import nars.task.ProxyTask;
 import nars.term.Neg;
 import org.jetbrains.annotations.Nullable;

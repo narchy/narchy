@@ -1,12 +1,12 @@
 package nars.table.dynamic;
 
+import nars.BeliefTable;
 import nars.NAL;
+import nars.NALTask;
+import nars.Truth;
 import nars.action.memory.Remember;
-import nars.table.BeliefTable;
 import nars.table.BeliefTables;
-import nars.task.NALTask;
 import nars.task.SerialTask;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 /**

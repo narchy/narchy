@@ -1,9 +1,9 @@
 package nars.action.transform;
 
 import jcog.signal.FloatRange;
+import nars.Deriver;
+import nars.NALTask;
 import nars.action.TaskTransformAction;
-import nars.derive.Deriver;
-import nars.task.NALTask;
 import org.jetbrains.annotations.Nullable;
 
 /**

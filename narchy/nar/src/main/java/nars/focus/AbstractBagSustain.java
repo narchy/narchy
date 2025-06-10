@@ -5,7 +5,7 @@
 //import jcog.pri.bag.Bag;
 //import jcog.pri.op.PriAdd;
 //import jcog.signal.FloatRange;
-//import nars.premise.Premise;
+//import nars.Premise;
 //
 //import java.util.function.Consumer;
 //

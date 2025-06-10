@@ -4,8 +4,8 @@ import jcog.Util;
 import jcog.math.LongInterval;
 import jcog.tree.rtree.HyperRegion;
 import nars.NAL;
+import nars.NALTask;
 import nars.Task;
-import nars.task.NALTask;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;

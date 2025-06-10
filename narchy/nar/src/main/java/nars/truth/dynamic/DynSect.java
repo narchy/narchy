@@ -1,9 +1,9 @@
 package nars.truth.dynamic;
 
+import nars.Truth;
+import nars.TruthFunctions;
 import nars.truth.DynTaskify;
 import nars.truth.PlainMutableTruth;
-import nars.truth.Truth;
-import nars.truth.func.NALTruth;
 
 public abstract class DynSect extends DynTruth {
 
@@ -30,8 +30,8 @@ public abstract class DynSect extends DynTruth {
         return y;
     }
 
-    protected NALTruth truthFn() {
-        return NALTruth.Intersection;
+    protected TruthFunctions truthFn() {
+        return TruthFunctions.Intersection;
     }
 
     @Override

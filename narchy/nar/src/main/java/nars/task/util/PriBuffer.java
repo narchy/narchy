@@ -14,8 +14,8 @@ import jcog.signal.IntRange;
 import jcog.util.ConsumerX;
 import jcog.util.PriReturn;
 import nars.NAL;
+import nars.NALTask;
 import nars.NAR;
-import nars.task.NALTask;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;

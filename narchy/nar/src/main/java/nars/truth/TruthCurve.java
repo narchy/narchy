@@ -3,6 +3,7 @@ package nars.truth;
 
 import jcog.data.list.Lst;
 import nars.NAL;
+import nars.Truth;
 import nars.util.ArrayIntervalContainer;
 import nars.util.IntervalContainer;
 import nars.util.RingIntervalSeries;

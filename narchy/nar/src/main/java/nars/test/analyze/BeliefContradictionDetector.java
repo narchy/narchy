@@ -1,11 +1,11 @@
 package nars.test.analyze;
 
+import nars.NALTask;
 import nars.NAR;
-import nars.NARPart;
 import nars.Task;
+import nars.TaskTable;
 import nars.concept.TaskConcept;
-import nars.table.TaskTable;
-import nars.task.NALTask;
+import nars.util.NARPart;
 import org.eclipse.collections.impl.list.mutable.primitive.FloatArrayList;
 
 import java.util.function.Consumer;

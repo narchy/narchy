@@ -16,12 +16,10 @@ import jcog.Util;
 import jcog.data.list.Lst;
 import nars.io.NarseseParser;
 import nars.task.AbstractCommandTask;
-import nars.task.NALTask;
 import nars.term.atom.Atomic;
 import nars.term.obj.QuantityTerm;
 import nars.time.Tense;
 import nars.time.Time;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;

@@ -1,11 +1,7 @@
 package nars.concept.dynamic;
 
 import nars.*;
-import nars.concept.Concept;
-import nars.table.BeliefTable;
-import nars.task.NALTask;
 import nars.truth.PreciseTruth;
-import nars.truth.Truth;
 import org.junit.jupiter.api.Test;
 
 import static nars.$.$$;

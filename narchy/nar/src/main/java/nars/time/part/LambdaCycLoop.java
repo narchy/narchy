@@ -3,9 +3,9 @@ package nars.time.part;
 import jcog.event.Off;
 import nars.$;
 import nars.NAR;
-import nars.NARPart;
 import nars.term.atom.Atom;
 import nars.term.atom.Atomic;
+import nars.util.NARPart;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicBoolean;

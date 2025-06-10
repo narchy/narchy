@@ -3,13 +3,10 @@ package nars.func.kif;
 import jcog.Util;
 import nars.*;
 import nars.action.answer.AnswerQuestionsFromIndex;
-import nars.derive.Deriver;
-import nars.derive.impl.SerialDeriver;
-import nars.focus.Focus;
+import nars.deriver.impl.SerialDeriver;
 import nars.focus.time.ActionTiming;
 import nars.memory.HijackMemory;
 import nars.memory.RadixTreeMemory;
-import nars.task.NALTask;
 import nars.term.Neg;
 import nars.term.Termed;
 import nars.term.util.map.IndexedTermedList;
@@ -94,7 +91,7 @@ class KIFTest {
 //        w.updater = new WhatThe.BagSustain(0.99f);
         Deriver d =
                 //new BagDeriver(Derivers.core(Derivers.nal(1, 8)), n);
-                new SerialDeriver(Derivers.nal(1, 8).core().temporalInduction().compile(n), n);
+                new SerialDeriver(NARS.Rules.nal(1, 8).core().temporalInduction().compile(n), n);
 		d.everyCycle(f);
 
         f.log();
@@ -132,7 +129,7 @@ class KIFTest {
         //				} else {
         //					y = (Term)x;
         //				}
-        new SerialDeriver(((Derivers) Derivers.nal(0, 0, "motivation.nal")
+        new SerialDeriver(((NARS.Rules) NARS.Rules.nal(0, 0, "motivation.nal")
 
 //                .add(new AnswerQuestionsFromConcepts.AnswerQuestionsFromTaskLinks(timing))
                 .add(new AnswerQuestionsFromIndex<>(new IndexedTermedList<>(kif, y -> {

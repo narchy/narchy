@@ -1,14 +1,9 @@
 package nars.action.transform;
 
 import jcog.util.ArrayUtil;
-import nars.$;
-import nars.Op;
-import nars.Term;
-import nars.derive.Deriver;
-import nars.derive.reaction.NativeReaction;
+import nars.*;
+import nars.deriver.reaction.NativeReaction;
 import nars.premise.NALPremise;
-import nars.premise.Premise;
-import nars.task.NALTask;
 import nars.task.proxy.SpecialTermTask;
 import nars.term.Compound;
 import nars.term.Termed;

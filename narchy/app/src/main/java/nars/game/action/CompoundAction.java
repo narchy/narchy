@@ -2,12 +2,12 @@ package nars.game.action;
 
 import jcog.Util;
 import nars.Term;
+import nars.Truth;
 import nars.game.Game;
 import nars.game.sensor.AbstractSensor;
 import nars.term.Termed;
 import nars.truth.AbstractMutableTruth;
 import nars.truth.MutableTruth;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.EMPTY_LIST;
@@ -45,7 +45,7 @@ public abstract class CompoundAction extends AbstractSensor {
     public final void start(Game g) {
         super.start(g);
 
-        g.nar.control.newCause(term());
+        g.nar.causes.newCause(term());
 
 //        for (CompoundActionComponent a : concepts) {
 //            //a.sensing = sensing;

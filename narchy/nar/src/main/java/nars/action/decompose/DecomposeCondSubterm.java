@@ -1,15 +1,11 @@
 package nars.action.decompose;
 
-import nars.Op;
-import nars.Term;
-import nars.derive.Deriver;
-import nars.premise.Premise;
-import nars.task.NALTask;
+import nars.*;
 import nars.term.Compound;
 import nars.term.var.Variable;
 import org.jetbrains.annotations.Nullable;
 
-import static nars.derive.reaction.PatternReaction.ImageAlignable;
+import static nars.deriver.reaction.PatternReaction.ImageAlignable;
 import static nars.unify.constraint.TermMatch.Conds;
 
 /** in-place decompose of a compound subterm that is a cond */

@@ -1,18 +1,14 @@
 package nars.concept.util;
 
-import nars.Emotion;
-import nars.Op;
-import nars.Term;
-import nars.concept.Concept;
+import nars.*;
 import nars.concept.NodeConcept;
 import nars.concept.TaskConcept;
-import nars.table.BeliefTable;
+import nars.control.Emotion;
 import nars.table.BeliefTables;
 import nars.table.EmptyBeliefTable;
 import nars.table.dynamic.ImageBeliefTable;
 import nars.table.question.QuestionTable;
 import nars.table.util.DynTables;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.time.Time;
 import org.eclipse.collections.api.block.function.primitive.ObjectBooleanToObjectFunction;

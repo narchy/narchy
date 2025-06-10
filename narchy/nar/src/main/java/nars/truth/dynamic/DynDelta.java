@@ -1,18 +1,14 @@
 package nars.truth.dynamic;
 
 import jcog.util.ObjectLongLongPredicate;
-import nars.$;
-import nars.NAL;
-import nars.Term;
-import nars.task.NALTask;
+import nars.*;
 import nars.term.Compound;
 import nars.truth.DynTaskify;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Predicate;
 
-import static nars.truth.func.TruthFunctions2.delta;
+import static nars.TruthFunctions.delta;
 
 /** TODO 2-ary delta between two concepts at different times
  *      canonically sort the pair's order since the reverse

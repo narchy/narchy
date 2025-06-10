@@ -5,7 +5,7 @@
 //import jcog.pri.bag.Bag;
 //import nars.NAR;
 //import nars.Param;
-//import nars.concept.Concept;
+//import nars.Concept;
 //import nars.control.NARService;
 //import nars.target.Term;
 //import nars.target.Termed;

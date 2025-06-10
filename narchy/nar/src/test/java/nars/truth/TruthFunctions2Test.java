@@ -3,7 +3,8 @@ package nars.truth;
 import jcog.Fuzzy;
 import nars.$;
 import nars.NAL;
-import nars.truth.func.TruthFunctions2;
+import nars.Truth;
+import nars.TruthFunctions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -11,7 +12,7 @@ import static java.lang.Float.MIN_NORMAL;
 import static java.util.Arrays.asList;
 import static jcog.Util.sqr;
 import static nars.NAL.truth.CONF_MIN;
-import static nars.truth.func.TruthFunctions2.mix2;
+import static nars.TruthFunctions.mix2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,7 +36,7 @@ class TruthFunctions2Test {
 	}
 
 	private static void assertDivide(float xy, float x, float y, float yc) {
-		Truth z = TruthFunctions2.divide($.t(xy, 0.9f), $.t(x, 0.9f), MIN_NORMAL);
+		Truth z = TruthFunctions.divide($.t(xy, 0.9f), $.t(x, 0.9f), MIN_NORMAL);
 		assertTrue($.t(y, yc).equals(z, 0.02f), ()->z!=null ? z.toString() : "null");
 	}
 
@@ -43,10 +44,10 @@ class TruthFunctions2Test {
 	void divide_unsure() {
 		PreciseTruth u = $.t(1, 0.81);
 		for (var t : asList(
-				TruthFunctions2.divide($.t(0.9f, 0.9f), $.t(0.9f, 0.9f), CONF_MIN),
-				TruthFunctions2.divide($.t(0.5f, 0.9f), $.t(0.5f, 0.9f), false, false, CONF_MIN),
-				TruthFunctions2.divide($.t(0.3f, 0.9f), $.t(0.3f, 0.9f), false, false, CONF_MIN),
-				TruthFunctions2.divide($.t(0.1f, 0.9f), $.t(0.1f, 0.9f), false, false, CONF_MIN))) {
+				TruthFunctions.divide($.t(0.9f, 0.9f), $.t(0.9f, 0.9f), CONF_MIN),
+				TruthFunctions.divide($.t(0.5f, 0.9f), $.t(0.5f, 0.9f), false, false, CONF_MIN),
+				TruthFunctions.divide($.t(0.3f, 0.9f), $.t(0.3f, 0.9f), false, false, CONF_MIN),
+				TruthFunctions.divide($.t(0.1f, 0.9f), $.t(0.1f, 0.9f), false, false, CONF_MIN))) {
 			assertEquals(u, t/*.immutable()*/);
 		}
 	}
@@ -69,7 +70,7 @@ class TruthFunctions2Test {
 
 	private static void assertDivide(float xy, double xyc, float y, double yc, float x, double xc) {
 		assertEquals($.t(x, xc),
-				TruthFunctions2.divide($.t(xy, xyc), $.t(y, yc), true, true, CONF_MIN)/*.immutable()*/);
+				TruthFunctions.divide($.t(xy, xyc), $.t(y, yc), true, true, CONF_MIN)/*.immutable()*/);
 	}
 
 
@@ -107,15 +108,15 @@ class TruthFunctions2Test {
 
 	@Disabled
 	@Test void demandMaybeMaybe() {
-		assertEquals("%.50;.46%", TruthFunctions2.post($.t(0.5f, 0.9f), $.t(0.5f, 0.9f), true, true, 0).toString());
+		assertEquals("%.50;.46%", TruthFunctions.post($.t(0.5f, 0.9f), $.t(0.5f, 0.9f), true, true, 0).toString());
 	}
 
 	@Disabled @Test void demandMaybeMaybe2() {
 
-		assertEquals("%.50;.40%", TruthFunctions2.post($.t(0f, 0.9f), $.t(0.5f, 0.9f), true, true, 0).toString());
+		assertEquals("%.50;.40%", TruthFunctions.post($.t(0f, 0.9f), $.t(0.5f, 0.9f), true, true, 0).toString());
 
-		assertEquals("%.50;.40%", TruthFunctions2.post($.t(1f, 0.9f), $.t(0.5f, 0.9f), true, true, 0).toString());
-		assertEquals("%.50;.40%", TruthFunctions2.post($.t(0.5f, 0.9f), $.t(1f, 0.9f), true, true, 0).toString());
+		assertEquals("%.50;.40%", TruthFunctions.post($.t(1f, 0.9f), $.t(0.5f, 0.9f), true, true, 0).toString());
+		assertEquals("%.50;.40%", TruthFunctions.post($.t(0.5f, 0.9f), $.t(1f, 0.9f), true, true, 0).toString());
 
 	}
 

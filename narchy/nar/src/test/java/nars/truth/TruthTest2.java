@@ -2,6 +2,7 @@ package nars.truth;
 
 import jcog.Str;
 import nars.NAL;
+import nars.Truth;
 import nars.truth.util.Revision;
 import org.junit.jupiter.api.Test;
 

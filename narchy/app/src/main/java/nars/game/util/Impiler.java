@@ -11,17 +11,11 @@ import jcog.pri.PLink;
 import jcog.pri.bag.Bag;
 import jcog.pri.bag.impl.PriReferenceArrayBag;
 import jcog.pri.op.PriMerge;
-import nars.NAL;
-import nars.NAR;
-import nars.Task;
-import nars.Term;
-import nars.concept.Concept;
-import nars.focus.Focus;
+import nars.*;
 import nars.game.Game;
 import nars.game.action.AbstractAction;
 import nars.game.reward.Reward;
 import nars.subterm.Subterms;
-import nars.task.NALTask;
 import nars.task.util.TaskList;
 import nars.term.Compound;
 import nars.term.Neg;
@@ -30,8 +24,10 @@ import nars.term.atom.Bool;
 import nars.term.util.conj.ConjBuilder;
 import nars.term.util.conj.ConjTree;
 import nars.time.Tense;
-import nars.truth.*;
-import nars.truth.func.NALTruth;
+import nars.truth.AbstractMutableTruth;
+import nars.truth.MutableTruth;
+import nars.truth.PreciseTruth;
+import nars.truth.Stamp;
 import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction;
 import org.eclipse.collections.api.tuple.primitive.BooleanObjectPair;
 import org.jetbrains.annotations.Nullable;
@@ -365,19 +361,19 @@ public enum Impiler {
                             invert = beliefOrGoal && implTruth.NEGATIVE();
                             c = beliefOrGoal ?
                                 //    B, (  X ==> C), --is(X,"--"), --is(B,"==>"), --isVar(C)       |-   unisubst(C,X,B,"$"),  (Belief:DeductionRecursivePP, Time:TaskEvent)
-                                NALTruth.Pre.truth(subjCondTruth, implTruth.negIf(invert))
+                                TruthFunctions.Pre.truth(subjCondTruth, implTruth.negIf(invert))
                                 :
                                 //    B, (  X ==> C), --is(B,"==>"), --isVar(C)   |-  unisubst(C,X,polarizeTask(B),"$"),  (Goal:DesireWeakDPX, Time:TaskEvent)
-                                NALTruth.PreWeak.truth(implTruth, subjCondTruth);
+                                TruthFunctions.PreWeak.truth(implTruth, subjCondTruth);
                         } else {
                             //TODO test
                             invert = false;
                             c = beliefOrGoal ?
                                 //B, (X ==> A), --is(B,"==>"), --isVar(X) |- unisubst(X,A,B,"$"), (Belief:PostWeakPP, Time:TaskEvent)
-                                NALTruth.PostWeak.truth(subjCondTruth, implTruth)
+                                TruthFunctions.PostWeak.truth(subjCondTruth, implTruth)
                                 :
                                 //B, (X ==> A), --is(B,"==>"), --isVar(X) |-   unisubst(X,A,B,"$"), (Goal:PostPP, Time:TaskEvent)
-                                NALTruth.Post.truth(implTruth, subjCondTruth);
+                                TruthFunctions.Post.truth(implTruth, subjCondTruth);
                         }
 
                         if (c != null) {
@@ -518,7 +514,7 @@ public enum Impiler {
                         tCurr = tCurr.neg();
                     }
 
-                    Truth tNext = NALTruth.Deduction.truth(tAccum, tCurr);
+                    Truth tNext = TruthFunctions.Deduction.truth(tAccum, tCurr);
                     if (tNext == null)
                         return false;
 

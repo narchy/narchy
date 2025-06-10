@@ -2,8 +2,8 @@ package nars.focus.time;
 
 import jcog.decide.Roulette;
 import jcog.signal.FloatRange;
-import nars.derive.Deriver;
-import nars.task.NALTask;
+import nars.Deriver;
+import nars.NALTask;
 import org.jetbrains.annotations.Nullable;
 
 public class MultiFocusTiming extends FocusTiming {

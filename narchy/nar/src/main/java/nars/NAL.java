@@ -12,7 +12,6 @@ import jcog.thing.Thing;
 import jcog.util.Range;
 import nars.focus.PriNode;
 import nars.focus.PriSource;
-import nars.task.NALTask;
 import nars.task.util.StampPairOverlap;
 import nars.term.Termed;
 import nars.term.atom.Atom;
@@ -21,7 +20,6 @@ import nars.term.util.transform.Retemporalize;
 import nars.time.Tense;
 import nars.time.Time;
 import nars.truth.evi.EviProjector;
-import nars.truth.func.TruthFunctions;
 import nars.truth.proj.MutableTruthProjection;
 import nars.truth.util.ConfRange;
 import nars.util.Timed;
@@ -1058,6 +1056,11 @@ public abstract class NAL<W extends NAL<?>> extends Thing<W, Term> implements Ti
             true;
 
         public static final boolean NORMALIZE_IMPL_SUBJ_NEG_VAR = true;
+
+        /** 0 disables */
+        public static final int interningComplexityMax =
+            18;
+            //0; //DISABLED
 
 //        public static final boolean CONJ_FILTER_NEG_SEQ = false;
 

@@ -2,7 +2,7 @@ package nars.link;
 
 import jcog.data.list.Lst;
 import jcog.data.list.table.Baglike;
-import nars.premise.Premise;
+import nars.Premise;
 
 import java.util.Arrays;
 import java.util.Iterator;

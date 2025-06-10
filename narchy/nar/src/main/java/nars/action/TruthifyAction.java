@@ -1,10 +1,10 @@
 package nars.action;
 
+import nars.Deriver;
 import nars.NAL;
 import nars.control.Cause;
-import nars.derive.Deriver;
-import nars.derive.reaction.PatternReaction;
-import nars.derive.reaction.Reaction;
+import nars.deriver.reaction.PatternReaction;
+import nars.deriver.reaction.Reaction;
 import nars.premise.NALPremise;
 
 import static nars.Op.BELIEF;

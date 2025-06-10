@@ -5,24 +5,17 @@ import jcog.pri.PLink;
 import jcog.sort.RankedN;
 import jcog.sort.Top;
 import jcog.sort.TopFilter;
-import nars.Derivers;
-import nars.NAL;
-import nars.Task;
-import nars.Term;
-import nars.derive.Deriver;
-import nars.derive.reaction.TaskReaction;
-import nars.focus.Focus;
+import nars.*;
+import nars.deriver.reaction.TaskReaction;
 import nars.link.TermLinkBag;
-import nars.task.NALTask;
 import nars.task.util.TaskBag;
 import nars.term.Compound;
 import nars.term.util.conj.CondDiff;
 import nars.truth.Stamp;
-import nars.truth.func.NALTruth;
 import org.jetbrains.annotations.Nullable;
 
 import static nars.Op.*;
-import static nars.truth.func.TruthFunctions.neg;
+import static nars.TruthFunctions.neg;
 
 /**
  * Batch reverse-indexed conjunction decomposer for OpenNARS, inspired by Implyer
@@ -39,7 +32,7 @@ public enum Conjyer {
     /**
      * Start registering conjunction decomposition
      */
-    public static void start(Derivers d, int maxTasks, int triesPerTask, int nodeCapacity) {
+    public static void start(NARS.Rules d, int maxTasks, int triesPerTask, int nodeCapacity) {
         d.add(new ConjCacheRemember(nodeCapacity));
         d.add(new ConjCacheApplyTask(maxTasks, triesPerTask, nodeCapacity));
     }
@@ -204,7 +197,7 @@ public enum Conjyer {
             if (conjTruth == null || conjTruth.evi() < eviMin) return null;
 
             var truth =
-                neg(NALTruth.Divide.truth(conjTruth.neg(), condTruth, eviMin));
+                neg(TruthFunctions.Divide.truth(conjTruth.neg(), condTruth, eviMin));
                 //NALTruth.Divide.truth(conjTruth, condTruth, eviMin);
             if (truth == null) return null;
 

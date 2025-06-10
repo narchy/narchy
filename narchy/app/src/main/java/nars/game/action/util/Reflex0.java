@@ -15,12 +15,8 @@ import jcog.signal.FloatRange;
 import jcog.signal.IntRange;
 import jcog.tensor.Agents;
 import jcog.thing.SubPart;
-import nars.NAL;
-import nars.NAR;
-import nars.Term;
-import nars.concept.Concept;
+import nars.*;
 import nars.control.Cause;
-import nars.focus.Focus;
 import nars.game.FocusLoop;
 import nars.game.Game;
 import nars.game.action.AbstractAction;
@@ -31,7 +27,6 @@ import nars.table.BeliefTables;
 import nars.table.dynamic.MutableTasksBeliefTable;
 import nars.term.Termed;
 import nars.truth.MutableTruth;
-import nars.truth.Truth;
 import org.eclipse.collections.api.block.function.primitive.IntIntToObjectFunction;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -49,7 +44,7 @@ import static java.lang.Float.NaN;
 import static java.lang.Math.round;
 import static jcog.Util.*;
 import static nars.Op.GOAL;
-import static nars.truth.func.TruthFunctions.c2e;
+import static nars.TruthFunctions.c2e;
 
 /**
  * Use Reflex.java
@@ -300,7 +295,7 @@ import static nars.truth.func.TruthFunctions.c2e;
     @Override
     public void startIn(Game g) {
 
-        this.cause = g.nar.control.newCause(this);
+        this.cause = g.nar.causes.newCause(this);
 
         builder.add(g, this);
 

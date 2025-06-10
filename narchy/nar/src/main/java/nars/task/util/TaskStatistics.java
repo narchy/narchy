@@ -2,11 +2,11 @@ package nars.task.util;
 
 import jcog.Util;
 import jcog.event.Off;
+import nars.Concept;
+import nars.NALTask;
 import nars.NAR;
-import nars.NARPart;
 import nars.Task;
-import nars.concept.Concept;
-import nars.task.NALTask;
+import nars.util.NARPart;
 import org.hipparchus.stat.Frequency;
 
 import java.io.PrintStream;

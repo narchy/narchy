@@ -1,7 +1,7 @@
 package nars.task.util;
 
 import jcog.signal.meter.SafeAutoCloseable;
-import nars.task.NALTask;
+import nars.NALTask;
 import nars.truth.Stamp;
 
 import java.util.function.Predicate;

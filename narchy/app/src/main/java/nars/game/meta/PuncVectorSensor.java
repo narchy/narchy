@@ -3,22 +3,17 @@ package nars.game.meta;
 import jcog.Util;
 import jcog.data.iterator.ArrayIterator;
 import jcog.pri.PriReference;
-import nars.$;
-import nars.NAR;
-import nars.Op;
-import nars.Term;
-import nars.focus.Focus;
+import nars.*;
 import nars.game.Game;
 import nars.game.sensor.SignalComponent;
 import nars.game.sensor.VectorSensor;
-import nars.task.NALTask;
 import nars.term.Termed;
 import nars.term.atom.Atomic;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
-import static nars.task.NALTask.i;
+import static nars.NALTask.i;
 
 abstract class PuncVectorSensor<X> extends VectorSensor {
 

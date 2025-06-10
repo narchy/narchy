@@ -1,18 +1,11 @@
 package nars.action.link;
 
-import nars.$;
-import nars.NAR;
-import nars.NARS;
-import nars.Narsese;
+import nars.*;
 import nars.action.resolve.Answerer;
 import nars.action.resolve.TaskResolve;
-import nars.concept.Concept;
-import nars.derive.Deriver;
-import nars.derive.impl.TaskBagDeriver;
-import nars.derive.reaction.Reactions;
+import nars.deriver.impl.TaskBagDeriver;
+import nars.deriver.reaction.Reactions;
 import nars.focus.time.NonEternalTiming;
-import nars.table.TaskTable;
-import nars.task.NALTask;
 import nars.test.TestNAR;
 import nars.time.Tense;
 import org.junit.jupiter.api.Test;

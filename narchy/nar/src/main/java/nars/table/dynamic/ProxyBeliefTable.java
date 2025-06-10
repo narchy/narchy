@@ -1,9 +1,9 @@
 package nars.table.dynamic;
 
 import nars.Answer;
+import nars.NALTask;
 import nars.Term;
 import nars.action.memory.Remember;
-import nars.task.NALTask;
 import nars.task.SerialTask;
 import nars.task.proxy.SpecialTermTask;
 import nars.term.util.TermTransformException;

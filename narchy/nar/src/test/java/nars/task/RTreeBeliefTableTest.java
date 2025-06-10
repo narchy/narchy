@@ -16,7 +16,7 @@
 //import nars.task.util.TaskRegion;
 //import nars.term.Term;
 //import nars.term.atom.Atomic;
-//import nars.truth.Truth;
+//import nars.Truth;
 //import nars.truth.func.TruthFunctions;
 //import org.eclipse.collections.api.block.function.primitive.FloatFunction;
 //import org.eclipse.collections.api.block.function.primitive.LongToFloatFunction;

@@ -6,8 +6,8 @@ import jcog.lab.Lab;
 import jcog.lab.Optimize;
 import nars.$;
 import nars.Player;
+import nars.control.DefaultBudget;
 import nars.game.Game;
-import nars.pri.DefaultBudget;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;

@@ -1,8 +1,9 @@
 package nars.task;
 
+import nars.NALTask;
 import nars.Op;
 import nars.Term;
-import nars.truth.Truth;
+import nars.Truth;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -11,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract sealed class AbstractNALTask extends NALTask permits EternalTask, SerialTask, TemporalTask {
 
-    /*@Stable*/  /*final*/ protected long[] stamp;
+    /*@Stable*/  /*final*/  public long[] stamp;
 
     private final Term term;
     private final Truth truth;

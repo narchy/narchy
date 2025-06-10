@@ -1,6 +1,6 @@
 package nars.task.proxy;
 
-import nars.task.NALTask;
+import nars.NALTask;
 import nars.task.ProxyTask;
 
 public class SpecialOccurrenceTask extends ProxyTask {

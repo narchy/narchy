@@ -5,7 +5,7 @@ import jcog.Research;
 import jcog.pri.Prioritizable;
 import nars.$;
 import nars.Term;
-import nars.derive.reaction.PatternReaction;
+import nars.deriver.reaction.PatternReaction;
 import nars.term.Termed;
 import nars.term.atom.Int;
 

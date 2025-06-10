@@ -8,11 +8,11 @@
 //import nars.*;
 //import nars.action.transform.ExplodeAction;
 //import nars.exe.impl.WorkerExec;
-//import nars.focus.Focus;
+//import nars.Focus;
 //import nars.focus.util.Questioning;
 //import nars.func.Factorize;
 //import nars.func.language.util.IRC;
-//import nars.task.NALTask;
+//import nars.NALTask;
 //import nars.time.clock.RealTime;
 //import org.pircbotx.exception.IrcException;
 //import org.pircbotx.hooks.events.MessageEvent;

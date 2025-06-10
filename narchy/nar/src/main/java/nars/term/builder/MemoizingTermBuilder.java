@@ -4,6 +4,7 @@ import jcog.Util;
 import jcog.data.bit.IntBitSet;
 import jcog.data.bit.MetalBitSet;
 import jcog.memoize.Memoizers;
+import nars.NAL;
 import nars.Op;
 import nars.Term;
 import nars.subterm.Subterms;
@@ -54,7 +55,7 @@ public class MemoizingTermBuilder extends InterningTermBuilder {
     }
 
     public MemoizingTermBuilder(TermBuilder builder) {
-        this(atomCapacityDefault, compoundCapacityDefault, volMaxDefault, builder);
+        this(atomCapacityDefault, compoundCapacityDefault, NAL.term.interningComplexityMax, builder);
     }
 
     private MemoizingTermBuilder(int atomCap, int compoundCapacity, int volInternedMax, TermBuilder builder) {

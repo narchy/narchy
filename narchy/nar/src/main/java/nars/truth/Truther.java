@@ -5,6 +5,7 @@ import jcog.Util;
 import jcog.math.FloatSupplier;
 import nars.$;
 import nars.NAL;
+import nars.Truth;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Supplier;

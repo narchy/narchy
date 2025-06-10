@@ -7,14 +7,12 @@ import jcog.signal.MutableFloat;
 import jcog.util.Range;
 import nars.*;
 import nars.Term;
-import nars.control.channel.TaskChannel;
-import nars.focus.Focus;
 import nars.memory.Memory;
 import nars.subterm.Subterms;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.term.atom.Atomic;
 import nars.term.var.NormalizedVariable;
+import nars.util.TaskChannel;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,7 +101,7 @@ public class PrologCore extends Prolog implements Consumer<NALTask> {
         if (NAL.DEBUG)
             setSpy(true);
 
-        this.in = new TaskChannel(n.control.newCause(this));
+        this.in = new TaskChannel(n.causes.newCause(this));
         this.nar = n;
         this.what = nar.main(); //TODO be parameter
 

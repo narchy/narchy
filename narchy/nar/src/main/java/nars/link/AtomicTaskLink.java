@@ -5,7 +5,7 @@ import jcog.pri.bag.util.AtomicFixedPoint4x16bitVector;
 import jcog.pri.op.PriMerge;
 import jcog.util.PriReturn;
 import nars.Term;
-import nars.derive.reaction.Reaction;
+import nars.deriver.reaction.Reaction;
 import org.eclipse.collections.api.block.function.primitive.FloatFloatToFloatFunction;
 import org.jetbrains.annotations.Nullable;
 

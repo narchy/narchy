@@ -1,6 +1,5 @@
 package nars;
 
-import jcog.Config;
 import jcog.Log;
 import jcog.TODO;
 import jcog.Util;
@@ -15,12 +14,11 @@ import nars.action.link.ClusterInduct;
 import nars.action.link.STMLinker;
 import nars.action.link.TermLinking;
 import nars.action.transform.*;
-import nars.derive.Deriver;
-import nars.derive.impl.TaskBagDeriver;
-import nars.derive.reaction.Reactions;
-import nars.exe.DeriverExec;
+import nars.control.DefaultBudget;
+import nars.control.DeriverExec;
+import nars.deriver.impl.TaskBagDeriver;
+import nars.deriver.reaction.Reactions;
 import nars.focus.BasicTimeFocus;
-import nars.focus.Focus;
 import nars.focus.time.ActionTiming;
 import nars.func.Factorize;
 import nars.game.Game;
@@ -39,14 +37,12 @@ import nars.game.util.Conjyer;
 import nars.game.util.Implyer;
 import nars.gui.NARui;
 import nars.gui.ReflexUI;
-import nars.input.ConfFilter;
+import nars.io.ConfFilter;
 import nars.memory.CaffeineMemory;
 import nars.memory.HijackMemory;
 import nars.memory.Memory;
 import nars.memory.TierMemory;
 import nars.premise.NALPremise;
-import nars.premise.Premise;
-import nars.pri.DefaultBudget;
 import nars.task.util.Eternalization;
 import nars.term.Termed;
 import nars.term.atom.Atomic;
@@ -75,7 +71,7 @@ import static java.util.Collections.EMPTY_LIST;
 import static nars.$.inh;
 import static nars.NAL.truth.FREQ_RES_DEFAULT;
 import static nars.Op.*;
-import static nars.derive.reaction.MutableReaction.PremiseTask;
+import static nars.deriver.reaction.MutableReaction.PremiseTask;
 import static spacegraph.SpaceGraph.window;
 
 /**
@@ -115,7 +111,7 @@ public class Player implements AutoCloseable {
     public double ramGB =
             Runtime.getRuntime().maxMemory() / (1024 * 1024 * 1024.0);
 
-    public int threads = Config.INT("THREADS", Util.concurrencyExcept(1));
+    public int threads = jcog.Config.INT("THREADS", Util.concurrencyExcept(1));
 
     /**
      * fundamental system framerate
@@ -140,7 +136,7 @@ public class Player implements AutoCloseable {
     public Consumer<NAR> ready = n -> {
     };
 
-    public boolean meta = Config.IS("meta", true);
+    public boolean meta = jcog.Config.IS("meta", true);
 
     public boolean inperienceGoals = true;
     public boolean inperienceBeliefs;
@@ -183,7 +179,7 @@ public class Player implements AutoCloseable {
     /**
      * clustering output ratio, proportional to temporal 'connectedness'
      */
-    public float clusterRate = Config.FLOAT("cluster_rate",
+    public float clusterRate = jcog.Config.FLOAT("cluster_rate",
         0.5f //restricted
         //1 //BALANCED
         //1.5f
@@ -225,7 +221,7 @@ public class Player implements AutoCloseable {
     /**
      * temporal perceptual bandwidth/horizon, in multiples of base dur
      */
-    public float durMax = Config.FLOAT("durMax",
+    public float durMax = jcog.Config.FLOAT("durMax",
             32
             //16
             //48
@@ -265,7 +261,7 @@ public class Player implements AutoCloseable {
     /**
      * temporal horizon period through which focus can scan. >=0, 0 disables
      */
-    public float durShift = Config.FLOAT("durShift",
+    public float durShift = jcog.Config.FLOAT("durShift",
             16 * durMax
             //32 * durMax
             //8 * durMax
@@ -305,7 +301,7 @@ public class Player implements AutoCloseable {
      */
     public double conceptsMax = -1;
 
-    public float beliefConf = Config.FLOAT("beliefconf",
+    public float beliefConf = jcog.Config.FLOAT("beliefconf",
             0.9f
             //0.98f
             //0.95f
@@ -313,7 +309,7 @@ public class Player implements AutoCloseable {
             //Util.PHI_min_1f
             //0.5f
     );
-    public float goalConf = Config.FLOAT("goalconf", beliefConf);
+    public float goalConf = jcog.Config.FLOAT("goalconf", beliefConf);
 
     public boolean eternalizationControl =
         selfMetaReflex;
@@ -322,7 +318,7 @@ public class Player implements AutoCloseable {
     public boolean answerDepthBeliefGoalControl =
         selfMetaReflex;
 
-    public float eternalization = Config.FLOAT("eternalization",
+    public float eternalization = jcog.Config.FLOAT("eternalization",
             //1/100f
             //1/40f
             1/20f
@@ -335,7 +331,7 @@ public class Player implements AutoCloseable {
 
     int complexMin = 12;
 
-    public int complexMax = Config.INT("complexity",
+    public int complexMax = jcog.Config.INT("complexity",
             32
             //22
             //26
@@ -353,7 +349,7 @@ public class Player implements AutoCloseable {
     /**
      * in milliseconds
      */
-    public int timeRes = Config.INT("dt",
+    public int timeRes = jcog.Config.INT("dt",
             4      //250hz
             //5    //200hz
             //10   //100hz
@@ -362,7 +358,7 @@ public class Player implements AutoCloseable {
             //40   //25hz
     );
 
-    public float freqRes = Config.FLOAT("df",
+    public float freqRes = jcog.Config.FLOAT("df",
             FREQ_RES_DEFAULT
             //0.02f
             //0.005f
@@ -391,7 +387,7 @@ public class Player implements AutoCloseable {
         //2E-5;
         //NAL.truth.CONF_MIN; //minimum
 
-    public double confRes = Config.DOUBLE("dc",
+    public double confRes = jcog.Config.DOUBLE("dc",
         confMin
         //1E-3
         //1E-4
@@ -412,18 +408,18 @@ public class Player implements AutoCloseable {
     public boolean varIntro = true;
 
 
-    public boolean nalProcedural = Config.IS("PROCEDURAL", true);
+    public boolean nalProcedural = jcog.Config.IS("PROCEDURAL", true);
 
-    public boolean nalStructural = Config.IS("STRUCTURAL", true);
+    public boolean nalStructural = jcog.Config.IS("STRUCTURAL", true);
 
     /** untested, prolly not entirely working */
-    public boolean nalDiff = Config.IS("DIFF", false);
+    public boolean nalDiff = jcog.Config.IS("DIFF", false);
 
-    public boolean nalAnalogy = Config.IS("ANALOGY", nalStructural /*HOL*/);
+    public boolean nalAnalogy = jcog.Config.IS("ANALOGY", nalStructural /*HOL*/);
 
     public boolean nalSets;
 
-    public boolean nalDelta = Config.IS("DELTA", true);
+    public boolean nalDelta = jcog.Config.IS("DELTA", true);
     public boolean deltaGoal; //nalDelta;
 
 
@@ -602,7 +598,7 @@ public class Player implements AutoCloseable {
 
         //nar.time.dur(loop.periodMS()*sysDurFactor);
 
-        var tracePath = Config.get("traceGames", null);
+        var tracePath = jcog.Config.get("traceGames", null);
         if (tracePath != null)
             traceGames(tracePath, true, true, true, 1);
 
@@ -803,12 +799,12 @@ public class Player implements AutoCloseable {
 //            });
 //        }
 
-        var timeLimitCyc = Config.INT("TIMELIMIT", -1);
+        var timeLimitCyc = jcog.Config.INT("TIMELIMIT", -1);
         if (timeLimitCyc >= 0) {
             nar.runAt(timeLimitCyc, this::exit);
         }
 
-        if (Config.IS("rewardTrace", false)) {
+        if (jcog.Config.IS("rewardTrace", false)) {
             float rewardTraceDurs = 400;
             nar.onDur(new RewardTrace(), rewardTraceDurs);
         }
@@ -1489,7 +1485,7 @@ public class Player implements AutoCloseable {
 //	}
 
     public Reactions rules() {
-        var d = new Derivers();
+        var d = new NARS.Rules();
 
         d.core(varIntro);
 
@@ -1871,7 +1867,7 @@ public class Player implements AutoCloseable {
         PrintStream out;
 
         {
-            var file = Config.get("rewardtracefile", null);
+            var file = jcog.Config.get("rewardtracefile", null);
             if (file == null)
                 out = System.out;
             else {
@@ -1886,7 +1882,7 @@ public class Player implements AutoCloseable {
                 //if (file!=null)  result.put("file", file);
                 result.put("rewardMean", rewards.getAverage());
 
-                Config.forEach(result::put);
+                jcog.Config.forEach(result::put);
                 result.put("games", games().map(z -> z.id.toString()).toList());
 
                 //result.put("clocktime",...)

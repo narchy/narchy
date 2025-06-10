@@ -2,12 +2,12 @@ package nars.action.transform;
 
 import jcog.Is;
 import jcog.random.RandomBits;
+import nars.Deriver;
 import nars.NAL;
-import nars.derive.Deriver;
-import nars.derive.reaction.NativeReaction;
-import nars.derive.util.DeriverTaskify;
-import nars.premise.Premise;
-import nars.task.NALTask;
+import nars.NALTask;
+import nars.Premise;
+import nars.deriver.reaction.NativeReaction;
+import nars.deriver.util.DeriverTaskify;
 import nars.task.proxy.SpecialNegTask;
 import nars.term.util.transform.VariableShift;
 import nars.truth.dynamic.DynConj;

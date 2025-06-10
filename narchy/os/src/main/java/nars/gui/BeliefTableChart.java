@@ -7,7 +7,7 @@ import jcog.Util;
 import jcog.pri.op.PriMerge;
 import jcog.signal.FloatRange;
 import nars.NAR;
-import nars.table.TaskTable;
+import nars.TaskTable;
 import nars.term.Termed;
 import nars.truth.TruthWave;
 import org.eclipse.collections.api.block.function.primitive.FloatFloatToFloatFunction;
@@ -27,8 +27,8 @@ import spacegraph.video.Draw;
 
 import java.util.Arrays;
 
-import static nars.truth.func.TruthFunctions.c2e;
-import static nars.truth.func.TruthFunctions.e2c;
+import static nars.TruthFunctions.c2e;
+import static nars.TruthFunctions.e2c;
 
 
 public class BeliefTableChart extends Stacking implements Labeled, MenuSupplier {

@@ -2,7 +2,7 @@ package nars.truth.util;
 
 import jcog.signal.DoubleRange;
 import nars.NAL;
-import nars.truth.func.TruthFunctions;
+import nars.TruthFunctions;
 
 public final class ConfRange extends DoubleRange {
 

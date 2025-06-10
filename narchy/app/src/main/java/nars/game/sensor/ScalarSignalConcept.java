@@ -1,9 +1,9 @@
 package nars.game.sensor;
 
+import nars.BeliefTable;
 import nars.NAR;
 import nars.Term;
 import nars.focus.PriAmp;
-import nars.table.BeliefTable;
 
 /** an independent scalar (1-dimensional) signal
  * TODO impl that takes a lambda Supplier<Truth> for the signal and base ScalarSignal off that to remove its truth() method

@@ -1,6 +1,6 @@
 package nars.gui;
 
-import nars.NARPart;
+import nars.util.NARPart;
 import org.eclipse.collections.api.block.procedure.primitive.BooleanProcedure;
 
 /** for use with ToggleButton, etc */

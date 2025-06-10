@@ -1,8 +1,8 @@
 package nars.table.eternal;
 
 import nars.Answer;
+import nars.NALTask;
 import nars.table.dynamic.DynBeliefTable;
-import nars.task.NALTask;
 
 public class ShuffledBeliefTable extends DynBeliefTable {
 	public final NALTask[] tasks;

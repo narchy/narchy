@@ -12,9 +12,10 @@ import jcog.math.normalize.FloatNormalized;
 import jcog.pri.bag.impl.ArrayBag;
 import jcog.signal.FloatRange;
 import nars.*;
+import nars.control.DefaultBudget;
+import nars.control.Emotion;
 import nars.focus.BagForget;
 import nars.focus.BasicTimeFocus;
-import nars.focus.Focus;
 import nars.game.FocusLoop;
 import nars.game.Game;
 import nars.game.GameTime;
@@ -29,8 +30,6 @@ import nars.game.sensor.AbstractSensor;
 import nars.game.sensor.SignalComponent;
 import nars.game.sensor.VectorSensor;
 import nars.memory.HijackMemory;
-import nars.pri.DefaultBudget;
-import nars.task.NALTask;
 import nars.task.util.Eternalization;
 import nars.term.Termed;
 import nars.term.atom.Atomic;
@@ -60,8 +59,8 @@ import static jcog.math.LongInterval.TIMELESS;
 import static nars.$.inh;
 import static nars.$.p;
 import static nars.Op.*;
-import static nars.truth.func.TruthFunctions.c2e;
-import static nars.truth.func.TruthFunctions.e2c;
+import static nars.TruthFunctions.c2e;
+import static nars.TruthFunctions.e2c;
 
 /**
  * core metavisor

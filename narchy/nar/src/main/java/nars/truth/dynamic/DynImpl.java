@@ -1,16 +1,12 @@
 package nars.truth.dynamic;
 
 import jcog.util.ObjectLongLongPredicate;
-import nars.NAL;
-import nars.Term;
-import nars.task.NALTask;
+import nars.*;
 import nars.term.Compound;
 import nars.term.Neg;
 import nars.time.Tense;
 import nars.truth.DynTaskify;
-import nars.truth.Truth;
 import nars.truth.TruthCurve;
-import nars.truth.func.NALTruth;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Predicate;
@@ -72,7 +68,7 @@ public final class DynImpl extends DynTruth {
         if (subj!=null) {
             var pred = d.taskTruth(1);
             if (pred!=null) {
-                return NALTruth.Abduction.truth(
+                return TruthFunctions.Abduction.truth(
                         subj,
                         pred,
                         d.eviMin()

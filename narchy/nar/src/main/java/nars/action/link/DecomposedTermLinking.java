@@ -1,9 +1,9 @@
 package nars.action.link;
 
+import nars.Deriver;
+import nars.Premise;
 import nars.Term;
 import nars.action.link.index.AdjacentTerms;
-import nars.derive.Deriver;
-import nars.premise.Premise;
 import nars.term.control.PREDICATE;
 
 /**

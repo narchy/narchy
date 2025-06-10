@@ -1,11 +1,11 @@
 package nars.nal.nal6;
 
+import nars.Deriver;
 import nars.NAR;
 import nars.NARS;
-import nars.derive.Deriver;
-import nars.derive.impl.SerialDeriver;
-import nars.derive.reaction.Reactions;
-import nars.truth.func.TruthFunctions;
+import nars.TruthFunctions;
+import nars.deriver.impl.SerialDeriver;
+import nars.deriver.reaction.Reactions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

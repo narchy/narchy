@@ -3,9 +3,7 @@ package nars.concept.dynamic;
 import nars.*;
 import nars.table.BeliefTables;
 import nars.table.dynamic.DynTruthBeliefTable;
-import nars.task.NALTask;
 import nars.truth.PreciseTruth;
-import nars.truth.Truth;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

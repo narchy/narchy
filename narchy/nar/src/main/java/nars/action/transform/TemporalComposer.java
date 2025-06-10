@@ -1,7 +1,7 @@
 package nars.action.transform;
 
 import nars.NAL;
-import nars.task.NALTask;
+import nars.NALTask;
 import nars.task.proxy.SpecialNegTask;
 
 /** marker interface for temporally-inductive reactions */

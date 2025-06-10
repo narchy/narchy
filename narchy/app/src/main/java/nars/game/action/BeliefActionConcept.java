@@ -3,7 +3,7 @@
 //import jcog.TODO;
 //import nars.NAR;
 //import nars.target.Term;
-//import nars.truth.Truth;
+//import nars.Truth;
 //import org.jetbrains.annotations.NotNull;
 //
 //import java.util.function.Consumer;

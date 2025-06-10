@@ -2,11 +2,8 @@ package nars.nal.nal5;
 
 import com.google.common.base.Joiner;
 import nars.*;
-import nars.concept.Concept;
 import nars.concept.TaskConcept;
-import nars.task.NALTask;
 import nars.time.Tense;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

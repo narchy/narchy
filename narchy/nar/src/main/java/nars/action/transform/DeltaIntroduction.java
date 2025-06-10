@@ -2,11 +2,11 @@
 //
 //import nars.Term;
 //import nars.control.Cause;
-//import nars.derive.Deriver;
+//import nars.Deriver;
 //import nars.derive.reaction.NativeReaction;
 //import nars.derive.reaction.Reaction;
 //import nars.link.AtomicTaskLink;
-//import nars.task.NALTask;
+//import nars.NALTask;
 //import nars.term.util.Image;
 //import nars.time.Tense;
 //

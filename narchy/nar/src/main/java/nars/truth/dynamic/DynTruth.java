@@ -2,21 +2,16 @@ package nars.truth.dynamic;
 
 import jcog.math.Intervals;
 import jcog.util.ObjectLongLongPredicate;
-import nars.$;
-import nars.NAL;
-import nars.Term;
-import nars.task.NALTask;
+import nars.*;
 import nars.term.Compound;
 import nars.truth.DynTaskify;
-import nars.truth.Truth;
-import nars.truth.func.TruthFunctions;
 import org.eclipse.collections.api.block.function.primitive.FloatFloatToFloatFunction;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Predicate;
 
 import static nars.Op.ETERNAL;
-import static nars.truth.func.TruthFunctions.e2c;
+import static nars.TruthFunctions.e2c;
 
 
 /** dynamic task calculation model */

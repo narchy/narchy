@@ -4,17 +4,17 @@ import jcog.Fuzzy;
 import jcog.Util;
 import jcog.data.set.MetalLongSet;
 import nars.NAL;
-import nars.task.NALTask;
+import nars.NALTask;
+import nars.Truth;
 import nars.truth.PreciseTruth;
-import nars.truth.Truth;
 import nars.truth.TruthCurve;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
 import static jcog.Util.fma;
-import static nars.truth.func.TruthFunctions.c2e;
-import static nars.truth.func.TruthFunctions.e2c;
+import static nars.TruthFunctions.c2e;
+import static nars.TruthFunctions.e2c;
 
 public abstract class LinearTruthProjection extends MutableTruthProjection {
 

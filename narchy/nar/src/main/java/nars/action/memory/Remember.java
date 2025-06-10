@@ -1,14 +1,9 @@
 package nars.action.memory;
 
 import jcog.signal.meter.SafeAutoCloseable;
-import nars.NAL;
-import nars.NAR;
-import nars.Term;
+import nars.*;
 import nars.concept.TaskConcept;
-import nars.focus.Focus;
-import nars.task.NALTask;
 import nars.time.Tense;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 /**

@@ -1,9 +1,7 @@
 package nars.memory;
 
 import nars.*;
-import nars.concept.Concept;
 import nars.subterm.Subterms;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.term.Termed;
 import nars.term.atom.Atomic;

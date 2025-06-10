@@ -9,9 +9,9 @@ import jcog.math.Intervals;
 import jcog.random.SplitMix64Random;
 import jcog.util.ArrayUtil;
 import nars.NAL;
-import nars.task.NALTask;
+import nars.NALTask;
+import nars.TruthFunctions;
 import nars.task.util.StampOverlapping;
-import nars.truth.func.TruthFunctions;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
 import java.util.Arrays;

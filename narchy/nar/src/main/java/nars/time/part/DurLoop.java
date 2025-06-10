@@ -4,9 +4,9 @@ import jcog.Util;
 import jcog.signal.FloatRange;
 import nars.$;
 import nars.NAR;
-import nars.NARPart;
 import nars.Term;
 import nars.time.ScheduledTask;
+import nars.util.NARPart;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;

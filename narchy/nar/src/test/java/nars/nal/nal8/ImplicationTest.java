@@ -1,10 +1,6 @@
 package nars.nal.nal8;
 
-import nars.$;
-import nars.NAR;
-import nars.NARS;
-import nars.Term;
-import nars.truth.Truth;
+import nars.*;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 

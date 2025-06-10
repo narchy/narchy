@@ -2,6 +2,7 @@ package nars.truth.func;
 
 import jcog.data.map.UnifriedMap;
 import nars.Term;
+import nars.TruthFunctions;
 import nars.term.atom.Atomic;
 import nars.truth.func.TruthFunction.RepolarizedTruth;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +27,7 @@ public class TruthModel {
 	/** used during construction */
 	private final transient UnifriedMap<Term, TruthFunction> table = new UnifriedMap<>(256);
 
-	public TruthModel(NALTruth[] values) {
+	public TruthModel(TruthFunctions[] values) {
 		add(values);
 		table.trimToSize();
 	}
@@ -36,7 +37,7 @@ public class TruthModel {
 	}
 
 	protected void add(TruthFunction... values) {
-		for (TruthFunction t : values)
+		for (var t : values)
 			add(t);
 	}
 
@@ -70,7 +71,7 @@ public class TruthModel {
 
 	/** adds it and the swapped */
 	protected void _add(TruthFunction t, String postfix) {
-		String name = t + postfix;
+        var name = t + postfix;
 		__add(name, t);
 		if (!t.single())
 			__add(name + "X",

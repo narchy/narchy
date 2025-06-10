@@ -3,7 +3,7 @@
 //import com.google.common.collect.Iterators;
 //import jcog.signal.FloatRange;
 //import nars.Term;
-//import nars.focus.Focus;
+//import nars.Focus;
 //import nars.game.Game;
 //import nars.game.sensor.SignalConcept;
 //import nars.game.sensor.SignalComponent;

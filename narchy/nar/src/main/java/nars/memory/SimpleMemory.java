@@ -1,8 +1,8 @@
 package nars.memory;
 
 import jcog.data.map.MRUMap;
+import nars.Concept;
 import nars.Term;
-import nars.concept.Concept;
 import nars.concept.PermanentConcept;
 
 import java.util.Collections;

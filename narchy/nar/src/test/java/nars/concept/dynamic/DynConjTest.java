@@ -1,18 +1,11 @@
 package nars.concept.dynamic;
 
 import jcog.data.list.Lst;
-import nars.NAL;
-import nars.Narsese;
-import nars.Task;
-import nars.Term;
-import nars.concept.Concept;
+import nars.*;
 import nars.concept.TaskConcept;
 import nars.table.BeliefTables;
-import nars.table.TaskTable;
 import nars.table.dynamic.DynTruthBeliefTable;
-import nars.task.NALTask;
 import nars.term.Compound;
-import nars.truth.Truth;
 import nars.truth.dynamic.DynConj;
 import nars.truth.dynamic.DynTruth;
 import nars.truth.proj.IntegralTruthProjection;

@@ -1,11 +1,11 @@
 package nars.action.transform;
 
+import nars.Deriver;
+import nars.NALTask;
 import nars.Term;
 import nars.action.TaskTransformAction;
 import nars.action.decompose.DynamicDecomposer;
-import nars.derive.Deriver;
 import nars.link.AtomicTaskLink;
-import nars.task.NALTask;
 import nars.task.proxy.SpecialTermTask;
 import nars.term.Compound;
 import nars.term.util.Image;

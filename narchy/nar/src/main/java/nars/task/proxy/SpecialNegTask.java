@@ -1,9 +1,9 @@
 package nars.task.proxy;
 
+import nars.NALTask;
 import nars.Term;
-import nars.task.NALTask;
+import nars.Truth;
 import nars.task.ProxyTask;
-import nars.truth.Truth;
 import org.jetbrains.annotations.Nullable;
 
 /** term and truth value are inverted, so the semantics remain the same */

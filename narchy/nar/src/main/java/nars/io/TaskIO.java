@@ -1,12 +1,8 @@
 package nars.io;
 
 import com.google.common.io.ByteArrayDataOutput;
-import nars.Op;
-import nars.Task;
-import nars.Term;
+import nars.*;
 import nars.task.AbstractCommandTask;
-import nars.task.NALTask;
-import nars.truth.Truth;
 
 import java.io.DataInput;
 import java.io.IOException;

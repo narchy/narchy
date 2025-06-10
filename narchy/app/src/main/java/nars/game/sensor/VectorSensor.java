@@ -38,7 +38,7 @@ public abstract class VectorSensor extends AbstractSensor implements Iterable<Si
     @Override
     public void start(Game game) {
         super.start(game);
-        game.nar.control.newCause(term()).term();
+        game.nar.causes.newCause(term()).term();
     }
 
     public final int size() {

@@ -2,7 +2,7 @@
 //
 //import jcog.signal.FloatRange;
 //import nars.Term;
-//import nars.focus.Focus;
+//import nars.Focus;
 //import nars.game.sensor.SignalConcept;
 //import nars.game.sensor.VectorSensor;
 //import nars.time.When;

@@ -26,8 +26,6 @@ import jcog.event.Off;
 import jcog.pri.PriReference;
 import jcog.pri.bag.util.Bagregate;
 import jcog.pri.op.PriMerge;
-import nars.focus.Focus;
-import nars.task.NALTask;
 
 import java.awt.*;
 import java.io.IOException;

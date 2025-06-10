@@ -12,7 +12,10 @@ import nars.term.Compound;
 import nars.term.Neg;
 import nars.term.Termlike;
 import nars.term.atom.*;
-import nars.term.builder.*;
+import nars.term.builder.MultiInterningTermBuilder;
+import nars.term.builder.SimpleTermBuilder;
+import nars.term.builder.SmartTermBuilder;
+import nars.term.builder.TermBuilder;
 import nars.term.compound.CachedCompound;
 import nars.term.util.TermException;
 import nars.term.var.UnnormalizedVariable;
@@ -291,10 +294,8 @@ public enum Op {
     public static final TermBuilder terms__ =
         SimpleTermBuilder.the;
 
-    private static final int termInterningVol = Config.INT("terminterning",
-        InterningTermBuilder.volMaxDefault
-        //0 //DISABLED
-    );
+    private static final int termInterningVol = Config.INT("terminterning", NAL.term.interningComplexityMax);
+
     /**
      * global builder for durable instantiation
      */

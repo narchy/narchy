@@ -3,10 +3,10 @@ package nars.truth.dynamic;
 import jcog.Fuzzy;
 import jcog.util.ObjectLongLongPredicate;
 import nars.Term;
+import nars.Truth;
 import nars.subterm.Subterms;
 import nars.term.Compound;
 import nars.truth.DynTaskify;
-import nars.truth.Truth;
 
 import static nars.Op.INH;
 import static nars.Op.SIM;

@@ -1,5 +1,7 @@
 package nars.premise;
 
+import nars.Premise;
+
 public abstract class AbstractPremise extends Premise {
 
     public final int hash;

@@ -1,10 +1,7 @@
 package nars.truth;
 
 import jcog.util.ObjectLongLongPredicate;
-import nars.NAL;
-import nars.NAR;
-import nars.Term;
-import nars.task.NALTask;
+import nars.*;
 import nars.task.util.StampOverlapping;
 import nars.task.util.TaskList;
 import nars.task.util.TruthComputer;

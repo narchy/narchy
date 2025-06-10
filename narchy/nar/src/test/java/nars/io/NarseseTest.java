@@ -1,12 +1,8 @@
 package nars.io;
 
 import jcog.data.list.Lst;
-import nars.Narsese;
-import nars.Task;
-import nars.Term;
-import nars.task.NALTask;
+import nars.*;
 import nars.term.Compound;
-import nars.truth.Truth;
 
 import java.util.List;
 

@@ -6,7 +6,7 @@
 //import nars.NAR;
 //import nars.Task;
 //import nars.bag.leak.TaskLeakTransform;
-//import nars.concept.Concept;
+//import nars.Concept;
 //import nars.concept.NodeConcept;
 //import nars.link.CauseLink;
 //import nars.target.Term;

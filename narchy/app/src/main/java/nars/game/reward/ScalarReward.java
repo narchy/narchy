@@ -3,14 +3,10 @@ package nars.game.reward;
 import jcog.Util;
 import jcog.math.Intervals;
 import jcog.signal.FloatRange;
-import nars.$;
-import nars.NAL;
-import nars.NAR;
-import nars.Term;
+import nars.*;
 import nars.action.memory.Remember;
 import nars.game.Game;
 import nars.game.sensor.ScalarSensor;
-import nars.table.BeliefTable;
 import nars.table.BeliefTables;
 import nars.table.dynamic.MutableTasksBeliefTable;
 import nars.table.eternal.EternalDefaultTable;
@@ -19,7 +15,6 @@ import nars.term.Termed;
 import nars.time.Tense;
 import nars.truth.AbstractMutableTruth;
 import nars.truth.MutableTruth;
-import nars.truth.Truth;
 import nars.truth.evi.EviInterval;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,8 +22,8 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static java.lang.Float.NaN;
+import static nars.NALTask.taskTerm;
 import static nars.Op.*;
-import static nars.task.NALTask.taskTerm;
 
 /**
  * base class for reward which represents current belief truth as the reward value

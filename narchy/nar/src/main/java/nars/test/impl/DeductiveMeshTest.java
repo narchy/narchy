@@ -1,9 +1,9 @@
 package nars.test.impl;
 
 import nars.$;
+import nars.NALTask;
 import nars.NAR;
 import nars.Term;
-import nars.task.NALTask;
 import nars.test.TestNAR;
 
 import java.util.HashSet;

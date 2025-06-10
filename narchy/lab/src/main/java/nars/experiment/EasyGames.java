@@ -5,7 +5,6 @@ import jcog.random.XoRoShiRo128PlusRandom;
 import nars.*;
 import nars.game.Game;
 import nars.game.adapter.AIGymGame;
-import nars.task.NALTask;
 import nars.term.Termed;
 
 import java.io.IOException;

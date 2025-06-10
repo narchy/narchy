@@ -3,11 +3,11 @@ package nars.task.util;
 import jcog.TODO;
 import jcog.data.list.Lst;
 import jcog.math.LongInterval;
+import nars.NALTask;
 import nars.Term;
-import nars.task.NALTask;
+import nars.Truth;
 import nars.task.proxy.SpecialNegTask;
 import nars.truth.Stamp;
-import nars.truth.Truth;
 import nars.truth.util.TaskEviList;
 import org.eclipse.collections.api.block.function.primitive.IntToFloatFunction;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +17,7 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 import static nars.NAL.STAMP_CAPACITY;
-import static nars.task.NALTask.*;
+import static nars.NALTask.*;
 
 /**
  * A List of Task's which can be used for various purposes, including dynamic truth and evidence calculations (as utility methods)

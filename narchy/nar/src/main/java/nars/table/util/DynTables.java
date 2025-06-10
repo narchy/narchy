@@ -2,11 +2,11 @@ package nars.table.util;
 
 import jcog.WTF;
 import jcog.data.list.Lst;
+import nars.BeliefTable;
 import nars.NAL;
 import nars.Op;
 import nars.Term;
 import nars.subterm.Subterms;
-import nars.table.BeliefTable;
 import nars.table.dynamic.AbbreviationBeliefTable;
 import nars.table.dynamic.DynTruthBeliefTable;
 import nars.table.dynamic.ImageBeliefTable;

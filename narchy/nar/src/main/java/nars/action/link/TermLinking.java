@@ -3,14 +3,14 @@ package nars.action.link;
 import jcog.TODO;
 import jcog.pri.PriReference;
 import jcog.signal.FloatRange;
+import nars.Deriver;
+import nars.NALTask;
 import nars.Op;
 import nars.Term;
 import nars.action.link.index.AdjacentTerms;
-import nars.derive.Deriver;
-import nars.derive.reaction.NativeReaction;
+import nars.deriver.reaction.NativeReaction;
 import nars.link.MutableTaskLink;
 import nars.premise.NALPremise;
-import nars.task.NALTask;
 
 import java.util.Iterator;
 

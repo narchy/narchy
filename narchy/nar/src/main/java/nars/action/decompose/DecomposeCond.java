@@ -1,14 +1,14 @@
 package nars.action.decompose;
 
+import nars.Deriver;
 import nars.Term;
-import nars.derive.Deriver;
 import nars.term.Compound;
 import nars.term.util.conj.ConjList;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.random.RandomGenerator;
 
-import static nars.derive.reaction.PatternReaction.ImageAlignable;
+import static nars.deriver.reaction.PatternReaction.ImageAlignable;
 import static nars.unify.constraint.TermMatch.Conds;
 
 public class DecomposeCond extends DecomposeTerm {

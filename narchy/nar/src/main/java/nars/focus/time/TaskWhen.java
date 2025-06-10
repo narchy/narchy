@@ -1,7 +1,7 @@
 package nars.focus.time;
 
-import nars.derive.Deriver;
-import nars.task.NALTask;
+import nars.Deriver;
+import nars.NALTask;
 
 /** the deriver uses TimeFocus implementations to determine TWO specific time intervals,
  * the second depending indirectly on the first:

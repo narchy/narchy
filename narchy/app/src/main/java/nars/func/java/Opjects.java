@@ -12,10 +12,7 @@ import jcog.memoize.Memoize;
 import jcog.signal.FloatRange;
 import jcog.util.ArrayUtil;
 import nars.*;
-import nars.control.channel.TaskChannel;
-import nars.focus.Focus;
 import nars.subterm.Subterms;
-import nars.task.NALTask;
 import nars.term.Compound;
 import nars.term.Functor;
 import nars.term.Neg;
@@ -25,8 +22,9 @@ import nars.term.atom.Atomic;
 import nars.term.var.Variable;
 import nars.time.part.DurLoop;
 import nars.truth.PreciseTruth;
-import nars.truth.func.TruthFunctions;
+import nars.util.NARPart;
 import nars.util.OpExec;
+import nars.util.TaskChannel;
 import nars.util.Timed;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
@@ -228,7 +226,7 @@ public class Opjects extends NARPart {
 
     @Override
     protected void starting(NAR nar) {
-        in = new TaskChannel(nar.control.newCause(this));
+        in = new TaskChannel(nar.causes.newCause(this));
         next(nar);
         DurLoop on = nar.onDur(Opjects.this::next);
     }

@@ -1,9 +1,9 @@
 package nars.gui;
 
 import jcog.pri.PriReference;
+import nars.Focus;
 import nars.Op;
 import nars.Task;
-import nars.focus.Focus;
 import nars.focus.util.TaskAttention;
 import spacegraph.space2d.Surface;
 import spacegraph.space2d.container.unit.AspectAlign;

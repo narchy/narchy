@@ -1,7 +1,7 @@
 package nars.table.temporal;
 
 import jcog.math.LongInterval;
-import nars.task.NALTask;
+import nars.NALTask;
 import nars.task.util.TaskOccurrence;
 
 import java.util.Comparator;

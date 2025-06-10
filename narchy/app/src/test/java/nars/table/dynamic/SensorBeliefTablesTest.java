@@ -1,13 +1,9 @@
 package nars.table.dynamic;
 
 import jcog.signal.MutableFloat;
-import nars.$;
-import nars.NAR;
-import nars.NARS;
-import nars.Task;
+import nars.*;
 import nars.game.Game;
 import nars.game.sensor.LambdaScalarSensor;
-import nars.task.NALTask;
 import nars.util.RingIntervalSeries;
 import org.junit.jupiter.api.Test;
 

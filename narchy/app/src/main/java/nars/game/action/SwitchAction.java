@@ -5,10 +5,10 @@ import jcog.decide.DecideSoftmax;
 import jcog.math.Digitize;
 import nars.NAR;
 import nars.Term;
+import nars.Truth;
 import nars.game.Game;
 import nars.game.sensor.DigitizedScalar;
 import nars.game.sensor.SignalConcept;
-import nars.truth.Truth;
 
 import java.util.function.IntPredicate;
 

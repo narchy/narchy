@@ -1,10 +1,6 @@
 package nars.time;
 
-import nars.NAR;
-import nars.NARS;
-import nars.Narsese;
-import nars.Task;
-import nars.task.NALTask;
+import nars.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

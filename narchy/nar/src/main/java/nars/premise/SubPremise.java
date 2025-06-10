@@ -3,8 +3,9 @@ package nars.premise;
 import com.google.common.base.Objects;
 import jcog.Util;
 import nars.$;
+import nars.NALTask;
+import nars.Premise;
 import nars.Term;
-import nars.task.NALTask;
 import nars.term.Termed;
 import org.jetbrains.annotations.Nullable;
 

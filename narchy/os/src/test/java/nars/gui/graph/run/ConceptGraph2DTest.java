@@ -3,8 +3,6 @@ package nars.gui.graph.run;
 import com.google.common.base.Joiner;
 import jcog.exe.Loop;
 import nars.*;
-import nars.derive.Deriver;
-import nars.focus.Focus;
 import nars.func.kif.KIF;
 import nars.gui.AttentionUI;
 import nars.gui.NARui;
@@ -22,7 +20,7 @@ class ConceptGraph2DTest {
         public static void main(String[] args) {
             NAR n = NARS.shell();
 
-            PREDICATE<Deriver> g = Derivers.nal(1, 8).compile(n).what;
+            PREDICATE<Deriver> g = NARS.Rules.nal(1, 8).compile(n).what;
             SpaceGraph.window(AttentionUI.objectGraphs(g, n), 500, 500);
 
             n.startFPS(10f);

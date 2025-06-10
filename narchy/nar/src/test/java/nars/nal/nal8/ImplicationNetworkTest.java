@@ -1,13 +1,7 @@
 package nars.nal.nal8;
 
-import nars.$;
-import nars.NAR;
-import nars.NARS;
-import nars.Term;
-import nars.table.BeliefTable;
-import nars.task.NALTask;
+import nars.*;
 import nars.test.analyze.BeliefContradictionDetector;
-import nars.truth.Truth;
 import org.junit.jupiter.api.Test;
 
 import static nars.Op.ETERNAL;

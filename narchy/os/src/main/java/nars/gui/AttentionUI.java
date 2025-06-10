@@ -1,7 +1,7 @@
 package nars.gui;
 
+import nars.Concept;
 import nars.NAR;
-import nars.concept.Concept;
 import nars.focus.PriNode;
 import nars.game.sensor.VectorSensor;
 import nars.gui.concept.ConceptSurface;

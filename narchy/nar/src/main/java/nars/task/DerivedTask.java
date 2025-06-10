@@ -1,5 +1,6 @@
 package nars.task;
 
+import nars.NALTask;
 import nars.Task;
 import org.jetbrains.annotations.Nullable;
 

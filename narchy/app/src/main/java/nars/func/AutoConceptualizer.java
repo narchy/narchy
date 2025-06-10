@@ -3,17 +3,12 @@ package nars.func;
 import jcog.random.XoRoShiRo128PlusRandom;
 import jcog.sort.QuickSort;
 import jcog.tensor.ClassicAutoencoder;
-import nars.$;
-import nars.NAR;
-import nars.Term;
-import nars.focus.Focus;
+import nars.*;
 import nars.game.Game;
 import nars.game.sensor.SignalComponent;
 import nars.game.sensor.VectorSensor;
-import nars.table.BeliefTable;
 import nars.task.SerialTask;
 import nars.term.Neg;
-import nars.truth.Truth;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 
 import java.util.Iterator;

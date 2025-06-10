@@ -1,7 +1,7 @@
 package nars.io;
 
-import nars.NARPart;
 import nars.Term;
+import nars.util.NARPart;
 
 public abstract class Device extends NARPart {
 

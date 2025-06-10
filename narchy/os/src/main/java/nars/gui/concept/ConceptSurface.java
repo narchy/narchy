@@ -1,8 +1,8 @@
 package nars.gui.concept;
 
+import nars.Concept;
 import nars.NAR;
 import nars.Term;
-import nars.concept.Concept;
 import nars.concept.PermanentConcept;
 import nars.gui.NARui;
 import nars.term.Termed;

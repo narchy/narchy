@@ -2,10 +2,10 @@ package nars.table.dynamic;
 
 import jcog.TODO;
 import nars.Answer;
+import nars.NALTask;
 import nars.Term;
-import nars.task.NALTask;
+import nars.Truth;
 import nars.task.SerialTask;
-import nars.truth.Truth;
 import nars.util.IntervalSeries;
 import nars.util.RingIntervalSeries;
 import org.jetbrains.annotations.Nullable;

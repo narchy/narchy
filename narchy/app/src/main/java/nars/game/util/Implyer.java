@@ -10,17 +10,12 @@ import jcog.pri.op.PriMerge;
 import jcog.sort.RankedN;
 import jcog.sort.Top;
 import jcog.sort.TopFilter;
-import nars.Derivers;
-import nars.Term;
-import nars.concept.Concept;
+import nars.*;
 import nars.concept.PermanentConcept;
-import nars.derive.Deriver;
-import nars.derive.reaction.NativeReaction;
-import nars.derive.reaction.TaskReaction;
-import nars.focus.Focus;
+import nars.deriver.reaction.NativeReaction;
+import nars.deriver.reaction.TaskReaction;
 import nars.link.TaskLink;
 import nars.link.TermLinkBag;
-import nars.task.NALTask;
 import nars.task.util.ImplTaskify;
 import nars.task.util.TaskBag;
 import nars.term.Compound;
@@ -35,7 +30,7 @@ import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
 import static nars.Op.*;
-import static nars.derive.reaction.NativeReaction.PremiseTask;
+import static nars.deriver.reaction.NativeReaction.PremiseTask;
 
 /** batch implication applyer */
 public enum Implyer { ;
@@ -47,7 +42,7 @@ public enum Implyer { ;
         /** true is more expensive */
         consumeTryOnlyIfTaskCreated = true;
 
-    public static void start(Derivers d, boolean onLink, boolean onBelief, boolean onGoal, int maxTasks, int triesPerTask, int nodeCapacity) {
+    public static void start(NARS.Rules d, boolean onLink, boolean onBelief, boolean onGoal, int maxTasks, int triesPerTask, int nodeCapacity) {
         d.add(new ImplCacheRemember(nodeCapacity));
 
         if (onLink)

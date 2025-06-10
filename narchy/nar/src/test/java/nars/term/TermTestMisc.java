@@ -1,7 +1,6 @@
 package nars.term;
 
 import nars.*;
-import nars.concept.Concept;
 import nars.subterm.ArraySubterms;
 import nars.subterm.Subterms;
 import nars.subterm.UnitSubterm;

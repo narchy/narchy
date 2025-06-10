@@ -1,7 +1,6 @@
 package nars.func;
 
 import nars.*;
-import nars.concept.Concept;
 import nars.subterm.Subterms;
 import nars.term.Functor;
 import nars.term.atom.Atomic;

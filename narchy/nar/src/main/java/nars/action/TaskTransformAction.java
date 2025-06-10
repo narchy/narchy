@@ -1,8 +1,8 @@
 package nars.action;
 
-import nars.derive.Deriver;
-import nars.derive.reaction.TaskReaction;
-import nars.task.NALTask;
+import nars.Deriver;
+import nars.NALTask;
+import nars.deriver.reaction.TaskReaction;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class TaskTransformAction extends TaskReaction {

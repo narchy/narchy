@@ -1,8 +1,8 @@
 package nars.game.sensor;
 
+import nars.Truth;
 import nars.game.FocusLoop;
 import nars.game.Game;
-import nars.truth.Truth;
 import nars.truth.Truther;
 import org.jetbrains.annotations.Nullable;
 

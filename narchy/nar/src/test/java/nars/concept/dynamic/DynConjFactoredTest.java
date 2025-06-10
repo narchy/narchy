@@ -1,11 +1,7 @@
 package nars.concept.dynamic;
 
-import nars.NAL;
-import nars.Narsese;
-import nars.Term;
+import nars.*;
 import nars.concept.TaskConcept;
-import nars.table.TaskTable;
-import nars.task.NALTask;
 import nars.term.Compound;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;

@@ -1,13 +1,13 @@
 package nars.action.answer;
 
+import nars.Deriver;
 import nars.NAL;
+import nars.NALTask;
 import nars.Term;
 import nars.action.resolve.TaskResolver;
-import nars.derive.Deriver;
-import nars.derive.op.Taskify;
-import nars.derive.reaction.TaskReaction;
+import nars.deriver.op.Taskify;
+import nars.deriver.reaction.TaskReaction;
 import nars.focus.time.TaskWhen;
-import nars.task.NALTask;
 import nars.task.proxy.SpecialTermTask;
 import org.jetbrains.annotations.Nullable;
 

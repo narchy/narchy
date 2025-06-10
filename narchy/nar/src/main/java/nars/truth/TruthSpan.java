@@ -1,6 +1,7 @@
 package nars.truth;
 
 import jcog.math.LongInterval;
+import nars.Truth;
 
 public final class TruthSpan implements LongInterval {
     public /*volatile*/ long start, end;

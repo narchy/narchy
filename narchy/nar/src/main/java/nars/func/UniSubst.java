@@ -1,9 +1,9 @@
 package nars.func;
 
 import nars.$;
+import nars.Deriver;
 import nars.NAL;
 import nars.Term;
-import nars.derive.Deriver;
 import nars.eval.Evaluation;
 import nars.subterm.Subterms;
 import nars.term.Compound;

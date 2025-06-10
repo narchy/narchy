@@ -2,8 +2,7 @@ package nars.game;
 
 import jcog.signal.meter.TemporalMetrics;
 import nars.*;
-import nars.derive.impl.TaskBagDeriver;
-import nars.task.NALTask;
+import nars.deriver.impl.TaskBagDeriver;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -70,7 +69,7 @@ class GameTest {
 		OneBitGame g = new OneBitGame("g");
 		n.add(g);
 
-		var d = new TaskBagDeriver /*SerialDeriver*/(Derivers.nal(1,8).core().stm().temporalInduction()
+		var d = new TaskBagDeriver /*SerialDeriver*/(NARS.Rules.nal(1,8).core().stm().temporalInduction()
 				.compile(n), n);
 		d.everyCycle(g.focus());
 
