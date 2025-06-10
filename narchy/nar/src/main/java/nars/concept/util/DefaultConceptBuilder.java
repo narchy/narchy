@@ -11,6 +11,7 @@ import nars.table.eternal.EternalTable;
 import nars.table.question.HijackQuestionTable;
 import nars.table.question.QuestionTable;
 import nars.table.temporal.NBTemporalBeliefTable;
+import nars.utils.Profiler;
 
 import java.util.function.Consumer;
 
@@ -62,8 +63,14 @@ public class DefaultConceptBuilder extends ConceptBuilder {
 
     @Override
     public void start(Concept c) {
-        super.start(c);
-        alloc.accept(c);
+        long profilerStartTime = Profiler.startTime();
+        try {
+            super.start(c);
+            alloc.accept(c);
+        } finally {
+            Profiler.recordTime("DefaultConceptBuilder.start", profilerStartTime);
+            Profiler.incrementCounter("DefaultConceptBuilder.start.calls");
+        }
     }
 
 

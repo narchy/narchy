@@ -330,31 +330,44 @@ public abstract class Unify extends Versioning<Term> implements TermTransform {
      * call after having tested for equality
      */
     @Is({"Prolog", "Unification_(computer_science)", "Negation", "Möbius_strip", "Total_order", "Recursion"})
-    private boolean uniVar(Variable x, Term y) {
-        if (y instanceof Img)
-            return false; //TODO other types?
+    private boolean uniVar(Variable xVar, Term yTerm) {
+        // Optimization: Avoid operations if yTerm is an Img, as it's unlikely to unify with a variable in a meaningful way here.
+        if (yTerm instanceof Img) return false;
 
-        y = y instanceof Variable Y ? resolveVar(Y) : y;
+        // Resolve both x and y to their canonical forms before proceeding.
+        Term resolvedX = resolveVar(xVar);
+        Term resolvedY = (yTerm instanceof Variable yVarCast) ? resolveVar(yVarCast) : yTerm;
 
-        var xx = resolveVar(x);
-        if (xx == y)
-            return true;
+        // If, after resolution, they are the same term, they unify.
+        if (resolvedX == resolvedY) return true;
 
-        if (!var(xx))
-            return uni(xx, y);
-
-        x = (Variable) xx;
-
-
-
-        if (x.opID() == y.opID())
-            return uniVarCommon(x, (Variable) y);
-        else {
-            if (assignable(x, y))
-                return uniVarDirect(x, y);
-            else if (y instanceof Variable Y && assignable(Y, x))
-                return uniVarDirect(Y, x);
+        // If resolvedX is no longer a variable (it resolved to a constant),
+        // then we must attempt to unify this constant with resolvedY.
+        // The 'uni' method handles constant-constant and constant-variable unification.
+        if (!(resolvedX instanceof Variable rxVar)) {
+            return uni(resolvedX, resolvedY);
         }
+        // From here, resolvedX is definitely a variable (rxVar).
+
+        // Case 1: resolvedY is also a variable and shares the same variable type (opID) as rxVar.
+        // This typically means they are of the same kind (e.g., both independent vars).
+        if (resolvedY instanceof Variable ryVar && rxVar.opID() == ryVar.opID()) {
+            return uniVarCommon(rxVar, ryVar); // Handle unification of common-type variables.
+        }
+        // Case 2: Other scenarios (rxVar to a constant, or rxVar to a different type of variable).
+        else {
+            // Attempt to assign rxVar to resolvedY if it's a valid assignment.
+            // 'assignable' checks if variable rxVar can be mapped to term resolvedY
+            // (e.g., respecting variable type hierarchies, avoiding occurs-check violations implicitly).
+            if (assignable(rxVar, resolvedY)) {
+                return uniVarDirect(rxVar, resolvedY); // Perform direct assignment rxVar -> resolvedY.
+            }
+            // Else, if resolvedY is a variable, attempt the reverse assignment: ryVar to rxVar.
+            else if (resolvedY instanceof Variable ryVar && assignable(ryVar, rxVar)) {
+                return uniVarDirect(ryVar, rxVar); // Perform direct assignment ryVar -> rxVar.
+            }
+        }
+        // If none of the above conditions are met, unification fails.
         return false;
     }
 //
@@ -391,24 +404,55 @@ public abstract class Unify extends Versioning<Term> implements TermTransform {
      * completely dereferences a target (usually a variable)
      */
     public Term resolveVar(Variable x) {
-        var s = this.assignments;
-        if (s == 0) return x; //nothing assigned
+        if (this.assignments == 0) return x;
 
-        var y = x;
-//        int hops = 0;
-        do {
-            var z = xy.get(y);
-            if (z instanceof Variable v) {
-//                //TEMPORARY
-//                if (z == x || ++hops > NAL.unify.UNIFY_VAR_RECURSION_DEPTH_LIMIT)
-//                    throw new WTF("var cycle detected");
+        Variable currentVar = x;
+        Term resolvedTerm = xy.get(currentVar);
 
-                y = v; //loop
-            } else {
-                return z == null ? y : z;
+        if (resolvedTerm == null) { // x is not in the map, so it resolves to itself
+            return x;
+        }
+
+        // Path traversal to find the ultimate resolved term
+        Lst<Variable> path = null;
+
+        while (resolvedTerm instanceof Variable nextVar) {
+            // Optimization: If nextVar is the same as currentVar, it's a direct self-loop (should ideally not happen if null means resolve to self)
+            // or if nextVar is not in the map (xy.get(nextVar) would be null), it means nextVar is the final resolved variable.
+            Term nextResolvedTerm = xy.get(nextVar);
+            if (nextResolvedTerm == null) {
+                resolvedTerm = nextVar; // nextVar is the end of the chain
+                break;
             }
-        } while (true);
-//		}
+
+            // If we are about to step to the same variable, break (e.g. V1 -> V1)
+            // This case should ideally be covered by nextResolvedTerm == null for variables that resolve to themselves.
+            // Or if nextVar is already the resolvedTerm from a previous step (e.g. V1 -> V2, V2 -> V2)
+            if (nextVar == resolvedTerm && resolvedTerm instanceof Variable) {
+                 break;
+            }
+
+
+            if (path == null) {
+                path = new Lst<>(4); // Initialize list lazily only if path is longer than 1 step
+            }
+            path.add(currentVar);
+
+            currentVar = nextVar;
+            resolvedTerm = nextResolvedTerm;
+        }
+
+        // Path compression: update all variables in the path to point directly to the final resolved term
+        if (path != null) {
+            for (Variable vInPath : path) {
+                // Ensure not creating a direct cycle if resolvedTerm is a variable that was part of the path
+                // and also not mapping a variable to itself if it's already the resolved term.
+                if (vInPath != resolvedTerm) {
+                    xy.set(vInPath, resolvedTerm); // VersionMap handles versioning
+                }
+            }
+        }
+        return resolvedTerm;
     }
 
     /**

@@ -8,6 +8,7 @@ import nars.NAL;
 import nars.NAR;
 import nars.Term;
 import nars.concept.PermanentConcept;
+import nars.utils.Profiler;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
@@ -115,7 +116,10 @@ public class CaffeineMemory extends Memory implements Executor, /*CacheLoader<Te
 
 	@Override
 	public void set(Term src, Concept target) {
+        long profilerStartTime = Profiler.startTime();
 		map().merge(src, target, setOrReplaceNonPermanent);
+        Profiler.recordTime("CaffeineMemory.set", profilerStartTime);
+        Profiler.incrementCounter("CaffeineMemory.set.calls");
 	}
 
 
@@ -142,14 +146,27 @@ public class CaffeineMemory extends Memory implements Executor, /*CacheLoader<Te
 
 	@Override
 	public Concept get(Term x, boolean createIfMissing) {
-		Concept y = createIfMissing ?
-			concepts.get(x, conceptConstructor) :
-			concepts.getIfPresent(x);
+        long profilerStartTime = Profiler.startTime();
+        Concept y = null;
+        try {
+            y = createIfMissing ?
+                concepts.get(x, conceptConstructor) : // conceptConstructor is where ConceptBuilder.apply is called
+                concepts.getIfPresent(x);
 
-		if (createIfMissing && weightDynamic /*&& y != null*/)
-			concepts.put(x, y);
-
-		return y;
+            if (createIfMissing && weightDynamic && y != null) {
+                // This put might re-trigger profiling if not careful, but it's part of the get logic here
+                concepts.put(x, y);
+            }
+            return y;
+        } finally {
+            if (createIfMissing) {
+                Profiler.recordTime("CaffeineMemory.get.createIfMissing", profilerStartTime);
+                Profiler.incrementCounter("CaffeineMemory.get.createIfMissing.calls");
+            } else {
+                Profiler.recordTime("CaffeineMemory.get.presentOnly", profilerStartTime);
+                Profiler.incrementCounter("CaffeineMemory.get.presentOnly.calls");
+            }
+        }
 	}
 
 

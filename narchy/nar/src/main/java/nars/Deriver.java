@@ -34,6 +34,7 @@ import nars.unify.Unify;
 import nars.unify.UnifyConstraint;
 import nars.unify.UnifyTransform;
 import nars.util.NARPart;
+import nars.utils.Profiler;
 import org.eclipse.collections.api.map.MutableMap;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -135,7 +136,10 @@ public abstract class Deriver extends NARPart {
 		if (NAL.derive.FILTER_PRIORITY_UNDERFLOW && x.priElseZero() < Prioritized.EPSILON)
 			return; //TODO eliminate causes of this waste
 
+        long profilerStartTime = Profiler.startTime();
 		addLater(x);
+        Profiler.recordTime("Deriver.addLater", profilerStartTime);
+        Profiler.incrementCounter("Deriver.derivedTasksAdded");
 		//addLaterDirect(x);
 		//_add(x);
 	}
@@ -310,12 +314,14 @@ public abstract class Deriver extends NARPart {
 
 	/** @param w if null, doesnt switch */
 	public final /*synchronized*/ void next(Focus w) {
+        long profilerStartTime = Profiler.startTime();
 		focus(w);
 		try {
 			next();
 			later.run();
 		} finally {
 			later.clear();
+            Profiler.recordTime("Deriver.nextCycle", profilerStartTime); // Total time for one Deriver cycle call
 		}
 	}
 
@@ -351,7 +357,7 @@ public abstract class Deriver extends NARPart {
 	protected void start(Focus f) {
 	}
 
-	protected abstract void next();
+	protected abstract void next(); // This will be timed by the specific deriver implementation if needed, or by overall next(Focus w)
 
 	protected static int unifyDur(Focus f, NAR n) {
 		return Math.round(
@@ -495,13 +501,24 @@ public abstract class Deriver extends NARPart {
 
 	public final void run(Premise p) {
 		//		boolean f = Feedback.start(this);
+        long profilerStartTime = Profiler.startTime();
 		try {
+            Profiler.incrementCounter("Deriver.runPremise");
+            Term reactionName = p.reaction() != null ? p.reaction().name() : null;
+            if (reactionName != null) {
+                Profiler.incrementCounter("Deriver.reaction." + reactionName);
+            }
+
 			p = model.pre(p, this);
 			this.premise = p;
 			p.run(this);
 		} catch (RuntimeException e) {
 			err(e, p);
 		} finally {
+            Profiler.recordTime("Deriver.runPremise", profilerStartTime);
+            if (reactionName != null) {
+                Profiler.recordTime("Deriver.reaction." + reactionName, profilerStartTime);
+            }
 			//if (f) Feedback.end();
 			this.premise = null;
 		}
@@ -540,23 +557,28 @@ public abstract class Deriver extends NARPart {
 		}
 
 		public void unify(Term Tp, Term Bp, Term T, Term B, boolean f, boolean s, DerivingPremise p) {
+            long profilerStartTime = Profiler.startTime();
 			s = s && T.equals(B);
-			if (unify(f ? Tp : Bp, f ? T : B, s ? p : null)) {
-				if (!s && live())
-					unify(f ? Bp : Tp, f ? B : T, p);
+			if (unify(f ? Tp : Bp, f ? T : B, s ? p : null)) { // Timed internally
+				if (!s && live()) {
+                    unify(f ? Bp : Tp, f ? B : T, p); // Timed internally
+                }
 			}
+            Profiler.recordTime("PremiseUnify.unify.dispatch", profilerStartTime);
 		}
 
 
 		private boolean unify(Term x, Term y, @Nullable DerivingPremise p) {
+            long profilerStartTime = Profiler.startTime();
             var finish = p!=null;
 
 			this.p = finish ? p : null;
 
-            var unified = unify(x, y, finish);
+            var unified = unify(x, y, finish); // This is the recursive call to Unify.unify, which is not directly timed here but its callers are.
 
 			if (finish) this.p = null; //release
 
+            Profiler.recordTime("PremiseUnify.unify.internal", profilerStartTime);
 			return unified;
 		}
 

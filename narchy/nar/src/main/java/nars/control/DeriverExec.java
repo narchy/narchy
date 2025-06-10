@@ -299,7 +299,9 @@ public class DeriverExec extends NARPart {
         }
 
         @Override protected void update(float[] pri, Focus[] f) {
-            super.update(pri, f);
+            // Removed super.update(pri, f); as it sets a global sampler
+            // which is immediately replaced by per-thread affinity samplers.
+            // The necessary `pri` and `f` are passed as arguments.
 
             var focusCount = f.length;
             if (focusCount == 0)

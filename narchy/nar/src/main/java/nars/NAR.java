@@ -14,6 +14,7 @@ import jcog.event.Off;
 import jcog.exe.Cycled;
 import jcog.exe.InstrumentedLoop;
 import jcog.exe.Loop;
+import nars.utils.Profiler;
 import jcog.exe.SchedExecutor;
 import jcog.func.TriConsumer;
 import jcog.signal.FloatRange;
@@ -397,18 +398,29 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 
 	public final void input(Task t) {
-		// main().accept(t); // Old way
+        long profilerStartTime = Profiler.startTime();
+        try {
+            // main().accept(t); // Old way
 
-        if (t instanceof NALTask X) {
-            if (isNovel(X)) { // Apply novelty filter before activation
-                narAttn.activate(X);
-                taskEventTopic.emit(t, t.punc()); // Emit after successful activation and novelty check
+            if (t instanceof NALTask X) {
+                if (isNovel(X)) { // Apply novelty filter before activation
+                    narAttn.activate(X);
+                    taskEventTopic.emit(t, t.punc()); // Emit after successful activation and novelty check
+                }
+            } else if (t instanceof CommandTask C) {
+                runCommand(C); // New method to handle commands
+                taskEventTopic.emit(t, t.punc()); // Commands are also emitted
+            } else {
+                throw new UnsupportedOperationException("Unknown task type: " + t.getClass());
             }
-        } else if (t instanceof CommandTask C) {
-            runCommand(C); // New method to handle commands
-            taskEventTopic.emit(t, t.punc()); // Commands are also emitted
-        } else {
-            throw new UnsupportedOperationException("Unknown task type: " + t.getClass());
+        } finally {
+            Profiler.recordTime("NAR.inputTask", profilerStartTime);
+            Profiler.incrementCounter("NAR.inputTask.calls");
+            if (t instanceof NALTask) {
+                Profiler.incrementCounter("NAR.inputTask.NALTask");
+            } else if (t instanceof CommandTask) {
+                Profiler.incrementCounter("NAR.inputTask.CommandTask");
+            }
         }
 	}
 
@@ -847,13 +859,38 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	}
 
 	public final @Nullable Concept concept(Termed _x, boolean createIfMissing) {
-        return _x instanceof Concept xConcept && memory.elideConceptGets() && !xConcept.isDeleted() ?
-			xConcept :
-			_conceptualize(conceptTerm(_x, false), createIfMissing);
+        long profilerStartTime = Profiler.startTime();
+        Concept result = null;
+        try {
+            result = _x instanceof Concept xConcept && memory.elideConceptGets() && !xConcept.isDeleted() ?
+                    xConcept :
+                    _conceptualize(conceptTerm(_x, false), createIfMissing); // _conceptualize is timed internally
+            return result;
+        } finally {
+            // This timer captures overhead in NAR.concept itself, in addition to _conceptualize
+            if (createIfMissing) {
+                Profiler.recordTime("NAR.concept.wrapper.createIfMissing", profilerStartTime);
+                Profiler.incrementCounter("NAR.concept.wrapper.createIfMissing.calls");
+            } else {
+                Profiler.recordTime("NAR.concept.wrapper.presentOnly", profilerStartTime);
+                Profiler.incrementCounter("NAR.concept.wrapper.presentOnly.calls");
+            }
+        }
 	}
 
 	private Concept _conceptualize(@Nullable Term x, boolean createIfMissing) {
-		return x!=null ? memory.get(x, createIfMissing) : null;
+        long profilerStartTime = Profiler.startTime();
+        try {
+            return x != null ? memory.get(x, createIfMissing) : null; // memory.get is timed internally
+        } finally {
+            if (createIfMissing) {
+                Profiler.recordTime("NAR._conceptualize.createIfMissing", profilerStartTime);
+                Profiler.incrementCounter("NAR._conceptualize.createIfMissing.calls");
+            } else {
+                Profiler.recordTime("NAR._conceptualize.presentOnly", profilerStartTime);
+                Profiler.incrementCounter("NAR._conceptualize.presentOnly.calls");
+            }
+        }
 	}
 
 	public final Stream<Concept> concepts() {
@@ -1536,6 +1573,8 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 		@Override
 		public final boolean next() {
+            long profilerStartTime = Profiler.startTime();
+
             long now = NAR.this.time.next(); // time is from NAL
             exe.run(now); // run scheduled tasks for this cycle
 
@@ -1560,6 +1599,7 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
             // However, Focus.Attn had a sample() method. If NAR's main loop needs to drive sampling, it's here.
             // FocusBag in NAR (if used for multi-context) has its own commit loop.
 
+            Profiler.recordTime("NARLoop.next", profilerStartTime);
 			return true;
 		}
 
@@ -1579,6 +1619,35 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	}
 
 	public static final String VERSION = "NARchy v?.?";
+
+    /**
+     * Enables profiling for this NAR instance and globally.
+     */
+    public void enableProfiling() {
+        Profiler.enable();
+    }
+
+    /**
+     * Disables profiling globally.
+     */
+    public void disableProfiling() {
+        Profiler.disable();
+    }
+
+    /**
+     * Resets all recorded profiling data.
+     */
+    public void resetProfilingStats() {
+        Profiler.reset();
+    }
+
+    /**
+     * Gets the collected profiling statistics as a string.
+     * @return A string containing the profiling statistics.
+     */
+    public String getProfilingStats() {
+        return Profiler.getStats();
+    }
 
 
     // Copied and adapted from Focus.Attn and Focus.TaskBagAttn

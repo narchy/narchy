@@ -11,6 +11,7 @@ import nars.table.question.QuestionTable;
 import nars.table.util.DynTables;
 import nars.term.Compound;
 import nars.time.Time;
+import nars.utils.Profiler;
 import org.eclipse.collections.api.block.function.primitive.ObjectBooleanToObjectFunction;
 import org.jetbrains.annotations.Nullable;
 
@@ -114,22 +115,45 @@ public abstract class ConceptBuilder implements BiFunction<Term, Concept, Concep
 	 * constructs a concept but does no capacity allocation (result will have zero capacity, except dynamic abilities)
 	 */
 	public final Concept apply(Term t, boolean mutable, boolean dynamic) {
-        var c = concept(t, mutable, dynamic);
+        long profilerStartTime = Profiler.startTime();
+        Concept c = null;
+        boolean newConceptCreated = false;
+        try {
+            c = concept(t, mutable, dynamic); // Actual creation happens here, timed internally by `concept()`
 
-		if (c == null) {
-//			if (NAL.DEBUG)
-//				throw new TermException("unconceptualizable: mutable=" + mutable + ", dynamic=" + dynamic, t);
-		} else {
-			emotion.conceptNew.increment();
-			start(c);
-		}
-		return c;
+            if (c == null) {
+    //			if (NAL.DEBUG)
+    //				throw new TermException("unconceptualizable: mutable=" + mutable + ", dynamic=" + dynamic, t);
+            } else {
+                newConceptCreated = true;
+                emotion.conceptNew.increment();
+                start(c); // start() is profiled in DefaultConceptBuilder
+            }
+            return c;
+        } finally {
+            Profiler.recordTime("ConceptBuilder.apply.wrapper", profilerStartTime);
+            Profiler.incrementCounter("ConceptBuilder.apply.wrapper.calls");
+            if (newConceptCreated) {
+                Profiler.incrementCounter("ConceptBuilder.apply.newConceptCreated");
+            }
+        }
 	}
 
 	private @Nullable Concept concept(Term t, boolean mutable, boolean dynamic) {
-		return NALTask.TASKS(t) ?
-			taskConcept(t, mutable, dynamic ? DynTables.tableDyn(t) : null) :
-			nodeConcept(t);
+        long profilerStartTime = Profiler.startTime();
+        try {
+            return NALTask.TASKS(t) ?
+                    taskConcept(t, mutable, dynamic ? DynTables.tableDyn(t) : null) :
+                    nodeConcept(t);
+        } finally {
+            Profiler.recordTime("ConceptBuilder.concept.internalCreate", profilerStartTime);
+            Profiler.incrementCounter("ConceptBuilder.concept.internalCreate.calls");
+            if (NALTask.TASKS(t)) {
+                Profiler.incrementCounter("ConceptBuilder.concept.taskConceptPath");
+            } else {
+                Profiler.incrementCounter("ConceptBuilder.concept.nodeConceptPath");
+            }
+        }
 	}
 
 	/**

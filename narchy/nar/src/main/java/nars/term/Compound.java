@@ -65,6 +65,8 @@ public abstract class Compound /*IPair,*/ extends Term implements Subterms {
      */
     private transient boolean concept;
 
+    private transient short _complexity = -1; // Cache for complexity
+
     protected Compound(int opID) {
         this.opID = (byte) opID;
     }
@@ -711,6 +713,40 @@ public abstract class Compound /*IPair,*/ extends Term implements Subterms {
     private static boolean condXternal(Compound c, Term x) {
         return c.condsOR(x.equalsOrInCond(), !(x.CONJ() && x.dt()==DTERNAL), true);
         //return c.OR(xx.equalsOrInCond());
+    }
+
+    @Override
+    public int complexity() {
+        if (_complexity == -1) {
+            // Calculate complexity: sum of subterm complexities + 1 for this compound
+            // This logic is from the default implementation in Subterms interface
+            Subterms s = subtermsDirect();
+            int c = 1;
+            int numSubs = s.subs();
+            for (int i = 0; i < numSubs; i++) {
+                c += s.sub(i).complexity();
+            }
+            // NAL.term.COMPOUND_VOLUME_MAX = 4096, so short should be sufficient
+            if (c > Short.MAX_VALUE) {
+                 // If complexity exceeds Short.MAX_VALUE, store a sentinel or handle appropriately.
+                 // For now, let it overflow or cap, though true NARS complexity can exceed this.
+                 // This indicates a very complex term, which might be problematic elsewhere too.
+                 // Using Short.MAX_VALUE as a capped value if it exceeds.
+                 // Alternatively, throw an error or use a different caching strategy if very high complexities are common.
+                _complexity = Short.MAX_VALUE; // Or some other indicator for "too large for short cache"
+            } else {
+                _complexity = (short) c;
+            }
+        }
+        return _complexity == Short.MAX_VALUE ? Integer.MAX_VALUE : _complexity; // Adjust if using sentinel for overflow
+        // If not capping: return _complexity; (assuming it fits in short)
+    }
+
+    // Call this method if the structure of the compound term changes post-creation,
+    // though ideally, terms are immutable after full construction.
+    // For NARS, terms are generally interned and treated as immutable.
+    protected void invalidateComplexityCache() {
+        _complexity = -1;
     }
 
     private static boolean impossibleCond(Compound c, Term x, boolean xConj) {
