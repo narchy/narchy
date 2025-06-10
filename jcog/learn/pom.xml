@@ -39,6 +39,11 @@
             <artifactId>rtree</artifactId>
             <version>1.0</version>
         </dependency>
+        <dependency>
+            <groupId>dumb</groupId>
+            <artifactId>tensor</artifactId>
+            <version>1.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.hipparchus</groupId>

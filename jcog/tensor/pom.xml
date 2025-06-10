@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>dumb</groupId>
+        <artifactId>jcog</artifactId>
+        <version>1.0</version>
+    </parent>
+
+    <artifactId>tensor</artifactId>
+    <version>1.0</version>
+
+    <repositories>
+        <repository>
+            <id>jogamp</id>
+            <url>https://www.jogamp.org/deployment/maven/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>dumb</groupId>
+            <artifactId>util</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>dumb</groupId>
+            <artifactId>io</artifactId>
+            <version>1.0</version>
+            <scope>compile</scope> <!-- Assuming it might be needed for some tensor operations -->
+        </dependency>
+        <dependency>
+            <groupId>org.ejml</groupId>
+            <artifactId>ejml-simple</artifactId>
+            <version>0.44.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ejml</groupId>
+            <artifactId>ejml-ddense</artifactId>
+            <version>0.44.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jogamp.jocl</groupId>
+            <artifactId>jocl-main</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jogamp.gluegen</groupId>
+            <artifactId>gluegen-rt-main</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+        <!-- JUnit 5 for testing -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit-jupiter-params.version}</version> <!-- Assuming version is in parent or project properties -->
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit-jupiter-params.version}</version> <!-- Assuming version is in parent or project properties -->
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>
