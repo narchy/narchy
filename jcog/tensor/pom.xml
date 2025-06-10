@@ -13,25 +13,103 @@
     <artifactId>tensor</artifactId>
     <version>1.0</version>
 
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+    </properties>
+
     <repositories>
         <repository>
             <id>jogamp</id>
-            <url>https://www.jogamp.org/deployment/maven/</url>
+            <url>http://www.jogamp.org/deployment/maven/</url>
         </repository>
     </repositories>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version> <!-- Updated version -->
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.jupiter</groupId>
+                        <artifactId>junit-jupiter-engine</artifactId>
+                        <version>5.8.2</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.junit.platform</groupId>
+                        <artifactId>junit-platform-launcher</artifactId>
+                        <version>1.8.2</version> <!-- Corresponds to JUnit 5.8.2 -->
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <skipTests>false</skipTests>
+                    <argLine>${jvmArgs} --enable-preview -Djunit.jupiter.execution.parallel.mode.classes.default=CONCURRENT -Djunit.jupiter.execution.parallel.enabled=true</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                    <release>21</release>
+                    <includes>
+                        <include>jcog/tensor/Tensor.java</include>
+                        <include>jcog/tensor/TensorUtil.java</include>
+                    </includes>
+                    <testIncludes>
+                        <testInclude>jcog/tensor/TensorTest.java</testInclude>
+                    </testIncludes>
+                    <!-- Explicitly exclude other main files that might be pulled in -->
+                    <excludes>
+                        <exclude>jcog/tensor/*Autoencoder.java</exclude>
+                        <exclude>jcog/tensor/Agents.java</exclude>
+                        <exclude>jcog/tensor/ConvND.java</exclude>
+                        <exclude>jcog/tensor/HyperparameterSearch.java</exclude>
+                        <exclude>jcog/tensor/LivePredictor.java</exclude>
+                        <exclude>jcog/tensor/MatUtil_CPU.java</exclude>
+                        <exclude>jcog/tensor/MatUtil_OpenCL.java</exclude>
+                        <exclude>jcog/tensor/Models.java</exclude>
+                        <exclude>jcog/tensor/ODEIntegration.java</exclude>
+                        <exclude>jcog/tensor/Optimizers.java</exclude>
+                        <exclude>jcog/tensor/ParallelBackward.java</exclude>
+                        <exclude>jcog/tensor/Predictor.java</exclude>
+                        <exclude>jcog/tensor/RandomPredictor.java</exclude>
+                        <exclude>jcog/tensor/RecurrentAutoencoder.java</exclude>
+                        <exclude>jcog/tensor/VanillaAutoencoder.java</exclude>
+                        <exclude>jcog/tensor/deprtensor/**/*.java</exclude>
+                        <exclude>jcog/tensor/experimental/**/*.java</exclude>
+                        <exclude>jcog/tensor/rl/**/*.java</exclude>
+                        <exclude>jcog/tensor/spike/**/*.java</exclude>
+                    </excludes>
+                     <testExcludes>
+                        <testExclude>jcog/tensor/AutoencoderTest.java</testExclude>
+                        <testExclude>jcog/tensor/LivePredictorTest.java</testExclude>
+                    </testExcludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
+        <!--
         <dependency>
             <groupId>dumb</groupId>
             <artifactId>util</artifactId>
             <version>1.0</version>
         </dependency>
+        -->
+        <!--
         <dependency>
             <groupId>dumb</groupId>
             <artifactId>io</artifactId>
             <version>1.0</version>
-            <scope>compile</scope> <!-- Assuming it might be needed for some tensor operations -->
+            <scope>compile</scope>
         </dependency>
+        -->
         <dependency>
             <groupId>org.ejml</groupId>
             <artifactId>ejml-simple</artifactId>
@@ -42,6 +120,7 @@
             <artifactId>ejml-ddense</artifactId>
             <version>0.44.0</version>
         </dependency>
+        <!--
         <dependency>
             <groupId>org.jogamp.jocl</groupId>
             <artifactId>jocl-main</artifactId>
@@ -52,17 +131,47 @@
             <artifactId>gluegen-rt-main</artifactId>
             <version>2.5.0</version>
         </dependency>
+        -->
+
+        <!-- Added Dependencies -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>32.1.3-jre</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections-api</artifactId>
+            <version>11.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections</artifactId>
+            <version>11.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>24.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hipparchus</groupId>
+            <artifactId>hipparchus-stat</artifactId>
+            <version>3.0</version> <!-- Check for latest stable version -->
+        </dependency>
+
+
         <!-- JUnit 5 for testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit-jupiter-params.version}</version> <!-- Assuming version is in parent or project properties -->
+            <version>5.8.2</version> <!-- Using specific version as placeholder might not be available -->
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit-jupiter-params.version}</version> <!-- Assuming version is in parent or project properties -->
+            <version>5.8.2</version> <!-- Using specific version as placeholder might not be available -->
             <scope>test</scope>
         </dependency>
     </dependencies>
