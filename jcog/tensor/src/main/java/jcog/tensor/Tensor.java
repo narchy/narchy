@@ -1,16 +1,22 @@
 package jcog.tensor;
 
 import com.google.common.base.Charsets;
-import jcog.Str;
-import jcog.Util;
-import jcog.data.bit.MetalBitSet;
-import jcog.data.list.Lst;
-import jcog.func.TriConsumer;
-import jcog.random.XoRoShiRo128PlusRandom;
-import jcog.util.Reflect;
+//import jcog.Str;
+//import jcog.Util; // Keep specific static imports if used after replacement
+//import jcog.data.bit.MetalBitSet;
+//import jcog.data.list.Lst;
+//import jcog.func.TriConsumer; // Will be replaced by a local interface or commented out
+import java.util.Random; // For XoRoShiRo128PlusRandom replacement
+//import jcog.random.XoRoShiRo128PlusRandom; // No longer needed
+//import jcog.util.Reflect;
 import org.eclipse.collections.api.block.function.primitive.DoubleDoubleToDoubleFunction;
 import org.ejml.concurrency.EjmlConcurrency;
 import org.ejml.data.DMatrix;
+import java.util.ArrayList; // For Lst replacement
+import java.util.BitSet;    // For MetalBitSet replacement
+import java.util.Arrays;    // For Arrays.fill, Arrays.stream etc.
+import java.util.Objects;   // For Objects.requireNonNullElseGet
+import java.lang.Math;      // For Math.max, Math.min, Math.abs, Math.signum, Math.sqrt, Math.pow, Math.exp, Math.log, Math.log1p, Math.tanh
 import org.ejml.data.DMatrixRMaj;
 import org.ejml.data.MatrixType;
 import org.ejml.dense.row.CommonOps_DDRM;
@@ -28,7 +34,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.*;
 import java.util.stream.Stream;
 
-import static jcog.Util.*;
+//import static jcog.Util.*; // Comment this out
 import static jcog.tensor.TensorUtil.assertClippable;
 
 public class Tensor {
@@ -38,6 +44,12 @@ public class Tensor {
     public static final UnaryOperator<Tensor> RELU_LEAKY = Tensor::reluLeaky;
     public static final UnaryOperator<Tensor> SIGMOID = Tensor::sigmoid;
     private static final Comparator<Tensor> generationComparator = Comparator.comparingInt(t -> -t.generation());
+
+    // Local functional interface to replace jcog.func.TriConsumer
+    @FunctionalInterface
+    interface MyTriConsumer<T, U, V> {
+        void accept(T t, U u, V v);
+    }
 
     static {
         EjmlConcurrency.USE_CONCURRENT = false;
@@ -141,7 +153,7 @@ public class Tensor {
     }
 
     public static Tensor randGaussian(int rows, int cols, double stddev) {
-        var rng = new XoRoShiRo128PlusRandom();
+        var rng = new Random(); // Replaced XoRoShiRo128PlusRandom
         var n = rows * cols;
         var data = new double[n];
         for (var i = 0; i < n; i++)
@@ -279,11 +291,13 @@ public class Tensor {
         return x;
     }
 
+    /*
     public static Stream<Tensor> parameters(Object x) {
         return Reflect.on(x).fieldsRecursive(true, false, false,
             (fieldName, obj, parent)-> obj instanceof Tensor t && t.parameter)
             .stream().map(y -> (Tensor)((Reflect)y).object);
     }
+    */
 
     public static Tensor stack(Tensor[] tensors, int dim) {
         if (dim != 1)
@@ -346,7 +360,7 @@ public class Tensor {
      * @return New tensor with random values
      */
     public static Tensor randUniform(int rows, int cols) {
-        var rng = new XoRoShiRo128PlusRandom();
+        var rng = new Random(); // Replaced XoRoShiRo128PlusRandom
         var data = new double[rows * cols];
         for (var i = 0; i < data.length; i++)
             data[i] = rng.nextDouble();
@@ -366,7 +380,9 @@ public class Tensor {
         while (yy.hasNext()) {
             var y = yy.next();
             yy.remove();
-            addTo(x, y);
+            for (int i = 0; i < x.length; i++) {
+                 x[i] += y[i];
+            }
         }
     }
 
@@ -420,7 +436,7 @@ public class Tensor {
         var data = array();
         var n = data.length;
 
-        var maxIndices = MetalBitSet.bits(volume());
+        var maxIndices = new BitSet(volume());
 
         var maxVal = Double.NEGATIVE_INFINITY;
         for (var i = 0; i<n; i++) {
@@ -443,7 +459,7 @@ public class Tensor {
                     if (gradOut[0] != null) {
                         var gradShare = grad.get(0) / maxIndices.cardinality();
                         var gg = array(gradOut[0]);
-                        for (var i = maxIndices.next(true, 0, n); i >= 0; i = maxIndices.next(true, i+1, n))
+                        for (int i = maxIndices.nextSetBit(0); i >= 0; i = maxIndices.nextSetBit(i + 1))
                             gg[i] = gradShare;
                     }
                 }
@@ -617,7 +633,7 @@ public class Tensor {
     }
 
     private Tensor unaryOp(Function<SimpleMatrix, SimpleMatrix> forward,
-                           TriConsumer<Tensor, SimpleMatrix, double[]> backward) {
+                           MyTriConsumer<Tensor, SimpleMatrix, double[]> backward) { // Replaced TriConsumer with MyTriConsumer
         var g = hasGrad();
         var y = new Tensor(forward.apply(this.data), g);
         if (g) {
@@ -709,7 +725,7 @@ public class Tensor {
         var n = d.length;
         var yy = new double[n];
         for (var i = 0; i < n; i++)
-            yy[i] = fma(xx[i], t, d[i]);
+            yy[i] = xx[i] * t + d[i];
 
         var y = new Tensor(yy, rows(), cols(), this.hasGrad() || x.hasGrad());
 
@@ -779,10 +795,36 @@ public class Tensor {
         if (other.isScalar())
             return addScalar(other.neg());
 
-        return binaryOp(other,
-            (a, b) -> a - b,
-            (grad, _) -> grad
-        );
+        if (other.isScalar())
+            return addScalar(other.neg());
+
+        // Z = A - B
+        // dZ/dA = 1  => gradA = gradZ * 1
+        // dZ/dB = -1 => gradB = gradZ * -1
+        var y = new Tensor(this.data.minus(other.data), this.hasGrad() || other.hasGrad());
+        if (y.hasGrad()) {
+            y.op = new TensorOp(this, other) {
+                @Override
+                public void backward(SimpleMatrix grad, SimpleMatrix[] gradOut) {
+                    if (gradOut[0] != null) { // Gradient for 'this' (A)
+                        // gradOut[0].setTo(grad) would overwrite, ensure accumulation if gradOut[0] can have pre-existing values
+                        double[] g = array(grad);
+                        double[] go = array(gradOut[0]);
+                        for (int i = 0; i < g.length; i++) {
+                            go[i] += g[i]; // Accumulate
+                        }
+                    }
+                    if (gradOut[1] != null) { // Gradient for 'other' (B)
+                        double[] g = array(grad);
+                        double[] go = array(gradOut[1]);
+                        for (int i = 0; i < g.length; i++) {
+                            go[i] += -g[i]; // Accumulate
+                        }
+                    }
+                }
+            };
+        }
+        return y;
     }
 
     public Tensor mul(Tensor other) {
@@ -804,7 +846,13 @@ public class Tensor {
 
         boolean thg = this.hasGrad(), ohg = x.hasGrad();
 
-        var t = new Tensor(Util.abs(array(data.minus(x.data))), rows(), cols(), thg || ohg);
+        SimpleMatrix diffMatrix = data.minus(x.data);
+        double[] diffArray = array(diffMatrix);
+        double[] absArray = new double[diffArray.length];
+        for (int i = 0; i < diffArray.length; i++) {
+            absArray[i] = Math.abs(diffArray[i]);
+        }
+        var t = new Tensor(new SimpleMatrix(rows(), cols(), true, absArray), thg || ohg);
         if (t.hasGrad()) {
             t.op = new TensorOp(this, x) {
                 @Override
@@ -815,7 +863,7 @@ public class Tensor {
                     double[] aa = array(), bb = x.array();
                     for (var i = 0; i < v; i++) {
                         var diff = aa[i] - bb[i];
-                        var g01 = Util.signum(diff) * gg[i];
+                        var g01 = Math.signum(diff) * gg[i];
                         if (g0!=null) g0[i] = +g01;
                         if (g1!=null) g1[i] = -g01;
                     }
@@ -1017,10 +1065,13 @@ public class Tensor {
         return y;
     }
 
+    /*
     public final Tensor maximize() {
         return neg().minimize();
     }
+    */
 
+    /*
     public final Tensor minimize() {
         return minimize(null, null);
     }
@@ -1042,7 +1093,8 @@ public class Tensor {
             throw new IllegalStateException("minimize() can only be called on a tensor that requires gradient");
 
         var g = gradients(value);
-        var tensors = context==null ? backwardSerial(g) : backwardSerialBuffered(g, context);
+        //var tensors = context==null ? backwardSerial(g) : backwardSerialBuffered(g, context);
+        var tensors = backwardSerial(g); // Removed GradQueue dependent path
         //var tensors = backwardParallel();
 
         if (opt != null)
@@ -1056,22 +1108,25 @@ public class Tensor {
         return grads.keySet().stream();
     }
 
-    private Stream<Tensor> backwardSerialBuffered(Map<Tensor, SimpleMatrix> grads, GradQueue context) {
-        for (var e : grads.entrySet()) {
-            var t = e.getKey();
-            var g = e.getValue();
-            if (t.parameter)
-                context.addGrad(t, array(g));
-            else
-                t.addGrad(g);
-        }
-        return grads.keySet().stream();
-    }
+    // private Stream<Tensor> backwardSerialBuffered(Map<Tensor, SimpleMatrix> grads, GradQueue context) {
+    //     for (var e : grads.entrySet()) {
+    //         var t = e.getKey();
+    //         var g = e.getValue();
+    //         if (t.parameter)
+    //             context.addGrad(t, array(g));
+    //         else
+    //             t.addGrad(g);
+    //     }
+    //     return grads.keySet().stream();
+    // }
+    */
 
     /** untested */
+    /*
     private Iterable<Tensor> backwardParallel() {
         return ParallelBackward.backward(this);
     }
+    */
 
     private Map<Tensor, SimpleMatrix> gradients(double grad) {
         return gradients(gradientQueue(), gradientMap(grad));
@@ -1114,11 +1169,14 @@ public class Tensor {
         //return "Tensor(data=" + this.data + ", requiresGrad=" + this.hasGrad() + ")";
     }
 
+    /*
     public final Tensor siglinear() {
         return siglinear(-4, +4, 0, +1); //-4..+4 resembles sigmoid's range
     }
 
+    */
     /** linear-approximated Sigmoid, inspired by Relu */
+    /*
     public Tensor siglinear(float xMin, float xMax, float yMin, float yMax) {
         var xRange = xMax - xMin;
         var yRange = yMax - yMin;
@@ -1129,6 +1187,7 @@ public class Tensor {
              x -> x <= xMin || x >= xMax ? 0 : slope //inclusive
         );
     }
+    */
 
     public Tensor relu() {
         return op(
@@ -1242,7 +1301,7 @@ public class Tensor {
                     double[] g = array(grad), d = array(), out = array(gradOut[0]);
                     var n = g.length;
                     for (var i = 0; i < n; i++)
-                        out[i] = g[i] * Util.signum(d[i]);
+                        out[i] = g[i] * Math.signum(d[i]);
                 }
             };
         }
@@ -1424,7 +1483,7 @@ public class Tensor {
             Arrays.fill(y, 1);
         } else if (power == 2) {
             for (var i = 0; i < y.length; i++)
-                y[i] = Util.sqr(d[i]);
+                y[i] = d[i] * d[i];
         } else {
             for (var i = 0; i < y.length; i++)
                 y[i] = Math.pow(d[i], power);
@@ -1556,7 +1615,7 @@ public class Tensor {
 
     public Tensor sigmoid() {
         return unaryOp(
-        x -> TensorUtil.newMatrix(x, Util::sigmoid),
+        x -> TensorUtil.newMatrix(x, val -> 1.0 / (1.0 + Math.exp(-val))),
                 (t, grad, out) -> {
                     var s = t.array();
                     var n = s.length;
@@ -1622,7 +1681,7 @@ public class Tensor {
 
     public Tensor log1p() {
         return unaryOp(
-            x -> TensorUtil.newMatrix(x, Util::log1p),
+            x -> TensorUtil.newMatrix(x, Math::log1p),
             (Y,G,gradOut)-> {
                 double[] d = array(), gradIn = array(G);
                 for (var i = 0; i < gradOut.length; i++)
@@ -1652,7 +1711,11 @@ public class Tensor {
         assertClippable(min, max); if (TensorUtil.clipDisabled(min, max)) return this;
 
         return unaryOp(
-            d -> TensorUtil.newMatrix(d, x -> clampSafe(x, min, max)),
+            d -> TensorUtil.newMatrix(d, x_val -> {
+                if (x_val < min) return min;
+                if (x_val > max) return max;
+                return x_val;
+            }),
             g -> {
                 var y = new SimpleMatrix(g.getNumRows(), g.getNumCols());
                 double[] cc = array(y), dd = array(), gg = array(g);
@@ -1677,8 +1740,12 @@ public class Tensor {
                     var y = new SimpleMatrix(G.getNumRows(), G.getNumCols());
                     double[] go = array(y), gi = array(G);
                     var v = go.length;
-                    for (var j = 0; j < v; j++)
-                        go[j] = clampSafe(gi[j], min, max);
+                    for (var j = 0; j < v; j++) {
+                        double val_gi_j = gi[j];
+                        if (val_gi_j < min) go[j] = min;
+                        else if (val_gi_j > max) go[j] = max;
+                        else go[j] = val_gi_j;
+                    }
                     return y;
                 }
         );
@@ -1711,7 +1778,11 @@ public class Tensor {
     }
 
     public Tensor clipData(double min, double max) {
-        clamp(array(), min, max);
+        double[] arr = array();
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] < min) arr[i] = min;
+            else if (arr[i] > max) arr[i] = max;
+        }
         return this;
     }
 
@@ -1752,7 +1823,7 @@ public class Tensor {
         for (var r = 0; r < R; r++) {
             double sumSq = 0;
             for (var c = 0; c < C; c++)
-                sumSq += Util.sqr(data(r, c));
+                sumSq += data(r,c) * data(r,c);
             y.data.set(r, 0, Math.sqrt(sumSq));
         }
 
@@ -1764,11 +1835,17 @@ public class Tensor {
     }
 
     public void mulThis(double x) {
-        jcog.Util.mul(array(), x);
+        double[] arr = array();
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] *= x;
+        }
     }
 
     public void addThis(double[] x) {
-        addTo(array(), x);
+        double[] thisArray = array();
+        for (int i = 0; i < thisArray.length; i++) {
+            thisArray[i] += x[i];
+        }
     }
 
     /** TODO optimize */
@@ -1777,11 +1854,19 @@ public class Tensor {
     }
 
     public final void addGrad(Tensor x) {
-        addTo(grad.array(), x.array());
+        double[] thisGradArray = grad.array();
+        double[] xArray = x.array();
+        for (int i = 0; i < thisGradArray.length; i++) {
+            thisGradArray[i] += xArray[i];
+        }
     }
 
     public void addGrad(SimpleMatrix x) {
-        addTo(grad.array(), array(x));
+        double[] thisGradArray = grad.array();
+        double[] xArray = array(x);
+        for (int i = 0; i < thisGradArray.length; i++) {
+            thisGradArray[i] += xArray[i];
+        }
     }
 
     public final Tensor setGrad(double[][] x) {
@@ -2050,7 +2135,11 @@ public class Tensor {
 
     public Tensor signum() {
         var d = array();
-        var y = new Tensor(arrayOf(x -> Util.signum(d[x]), new double[volume()]), this.hasGrad());
+        double[] resultArr = new double[volume()];
+        for(int i=0; i<d.length; i++) {
+            resultArr[i] = Math.signum(d[i]);
+        }
+        var y = new Tensor(resultArr, rows(), cols(), this.hasGrad());
 
         // If gradient tracking is enabled, define the backward operation
         if (y.hasGrad()) {
@@ -2088,7 +2177,8 @@ public class Tensor {
                         }
                     }
                     if (g0!=null) {
-                        System.err.println(Tensor.this + " gradient nonFinite=" + nonFinite + "\n:\t" + Str.n4(g0));
+                        //System.err.println(Tensor.this + " gradient nonFinite=" + nonFinite + "\n:\t" + Str.n4(g0));
+                        System.err.println("Tensor gradient nonFinite=" + nonFinite);
                     }
 
                     grad.setTo(g);
@@ -2140,17 +2230,19 @@ public class Tensor {
         Huber, MeanSquared /* L2 */, SubAbs /* L1 */
     }
 
+    /*
     public static class Optimizer {
-        public final List<Optimizers.OptimizerStep> step = new Lst<>();
+        // This class depends on Optimizers.OptimizerStep which is in an excluded file.
+        // public final List<Optimizers.OptimizerStep> step = new ArrayList<>();
 
-        public Optimizer(Optimizers.OptimizerStep... steps) {
-            for (var s : steps) if (s!=null) step.add(s);
-        }
+        // public Optimizer(Optimizers.OptimizerStep... steps) {
+        //     for (var s : steps) if (s!=null) step.add(s);
+        // }
 
         public final void run(Stream<Tensor> tt) {
             var p = tt
                     .filter(t -> t.parameter)
-                    .sorted(GradQueue.TensorSorter)
+                    // .sorted(GradQueue.TensorSorter) // GradQueue is commented out
                     .toList();
 
             if (!p.isEmpty()) {
@@ -2160,12 +2252,14 @@ public class Tensor {
         }
 
         protected void _run(List<Tensor> p) {
-            for (var s : step)
-                s.accept(p);
+            // for (var s : step)
+            //     s.accept(p);
         }
 
     }
+    */
 
+    /*
     public static class GradQueue implements Iterable<Tensor> {
         private static final Comparator<Tensor> TensorSorter =
             Comparator.comparingInt(System::identityHashCode);
@@ -2188,7 +2282,12 @@ public class Tensor {
                     //.toList();
 
                 if (factor != 1)
-                    grads.keySet().forEach(g -> Util.mul(g.grad.array(), factor));
+                    grads.keySet().forEach(g -> {
+                        double[] arr = g.grad.array();
+                        for (int i = 0; i < arr.length; i++) {
+                            arr[i] *= factor;
+                        }
+                    });
 
                 if (o != null)
                     o.run(grads.keySet().stream());
@@ -2211,6 +2310,7 @@ public class Tensor {
             return mul(1.0/d);
         }
     }
+    */
 
     abstract public static class TensorOp {
         private static final BiFunction<SimpleMatrix, SimpleMatrix, SimpleMatrix> tensorGradMerge = TensorUtil::_addTo;
@@ -2222,11 +2322,26 @@ public class Tensor {
             if (parents.length < 1)
                 throw new UnsupportedOperationException();
             this.parents = parents;
-            this.generation = ((int) Util.max(Tensor::generation, parents)) + 1;
+            int maxGen = -1;
+            for (Tensor p : parents) {
+                if (p != null) { // Add null check for safety, though parents shouldn't be null
+                    maxGen = Math.max(maxGen, p.generation());
+                }
+            }
+            this.generation = maxGen + 1;
         }
 
         final SimpleMatrix[] allocateParentGrads() {
-            return map(p -> p.hasGrad() ? new SimpleMatrix(p.rows(), p.cols()) : null, new SimpleMatrix[parents.length], parents);
+            SimpleMatrix[] result = new SimpleMatrix[parents.length];
+            for (int i = 0; i < parents.length; i++) {
+                Tensor p = parents[i];
+                if (p != null && p.hasGrad()) { // Add null check
+                    result[i] = new SimpleMatrix(p.rows(), p.cols());
+                } else {
+                    result[i] = null;
+                }
+            }
+            return result;
         }
 
         public abstract void backward(SimpleMatrix grad, SimpleMatrix[] gradParent);

@@ -1,14 +1,15 @@
 package jcog.tensor;
 
-import jcog.Util;
-import jcog.util.KahanSum;
+//import jcog.Util;
+//import jcog.util.KahanSum;
 import org.ejml.concurrency.EjmlConcurrency;
 import org.ejml.data.DMatrixRMaj;
 import org.ejml.dense.row.CommonOps_MT_DDRM;
 import org.ejml.simple.SimpleMatrix;
-import pabeles.concurrency.IntRangeConsumer;
-import pabeles.concurrency.IntRangeTask;
+//import pabeles.concurrency.IntRangeConsumer;
+//import pabeles.concurrency.IntRangeTask;
 
+import java.util.Arrays; // For stream().sum() or manual loops
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveTask;
 import java.util.function.DoubleUnaryOperator;
@@ -25,8 +26,13 @@ public class TensorUtil {
 
         if (m == 1)
             _addTo(s, x);
-        else
-            Util.addTo(Tensor.array(s), Tensor.array(x), m);
+        else {
+            double[] sArray = Tensor.array(s);
+            double[] xArray = Tensor.array(x);
+            for (int i = 0; i < sArray.length; i++) {
+                sArray[i] += xArray[i] * m;
+            }
+        }
 
         return s;
     }
@@ -42,7 +48,11 @@ public class TensorUtil {
      * x += y
      */
     static SimpleMatrix _addTo(SimpleMatrix x, SimpleMatrix y) {
-        Util.addTo(Tensor.array(x), Tensor.array(y));
+        double[] xArray = Tensor.array(x);
+        double[] yArray = Tensor.array(y);
+        for (int i = 0; i < xArray.length; i++) {
+            xArray[i] += yArray[i];
+        }
         return x;
     }
 
@@ -56,15 +66,28 @@ public class TensorUtil {
     }
 
     static double sumAbs(SimpleMatrix m) {
-        return Util.sumAbs(Tensor.array(m));
+        double sum = 0;
+        double[] arr = Tensor.array(m);
+        for (double val : arr) {
+            sum += Math.abs(val);
+        }
+        return sum;
     }
 
     static double sumSqr(SimpleMatrix m) {
-        return Util.sumSqr(Tensor.array(m));
+        double sum = 0;
+        double[] arr = Tensor.array(m);
+        for (double val : arr) {
+            sum += val * val;
+        }
+        return sum;
     }
 
     static void eleMul(SimpleMatrix X, double y) {
-        Util.mul(Tensor.array(X), y);
+        double[] xArray = Tensor.array(X);
+        for (int i = 0; i < xArray.length; i++) {
+            xArray[i] *= y;
+        }
     }
 
     static void eleMul(SimpleMatrix O, SimpleMatrix X, double y) {
@@ -86,7 +109,13 @@ public class TensorUtil {
     }
 
     static double eleSum(SimpleMatrix d) {
-        return Util.sum(Tensor.array(d));
+        double sum = 0;
+        double[] arr = Tensor.array(d);
+        for (double val : arr) {
+            sum += val;
+        }
+        return sum;
+        // Or consider: return Arrays.stream(Tensor.array(d)).sum();
     }
 
     private static SimpleMatrix signum(SimpleMatrix matrix) {
@@ -109,10 +138,10 @@ public class TensorUtil {
         var g = Tensor.array(G);
         var n = d.length;
         if (n!=g.length) throw new UnsupportedOperationException();
-        var s = new KahanSum();
+        double sum = 0;
         for (var i = 0; i < n; i++)
-            s.add(d[i] * g[i]);
-        return s.value();
+            sum += d[i] * g[i];
+        return sum;
     }
 
     static void assertClippable(double min, double max) {
@@ -134,31 +163,35 @@ public class TensorUtil {
     }
 
     static void matmul(DMatrixRMaj A, DMatrixRMaj B, DMatrixRMaj AB) {
-        if (EjmlConcurrency.useConcurrent(AB))
-            CommonOps_MT_DDRM.mult(A, B, AB);
-        else if (Math.max(A.getNumElements(), B.getNumElements()) > MatUtil_OpenCL.ELEMENT_THRESHOLD)
-            MatUtil_OpenCL.get().mult(A, B, AB);
-        else
-            MatUtil_CPU.mult(A, B, AB);
+        // if (EjmlConcurrency.useConcurrent(AB))
+        //    CommonOps_MT_DDRM.mult(A, B, AB);
+        // else if (Math.max(A.getNumElements(), B.getNumElements()) > MatUtil_OpenCL.ELEMENT_THRESHOLD)
+        //     MatUtil_OpenCL.get().mult(A, B, AB); // Comment this out
+        // else
+        //     MatUtil_CPU.mult(A, B, AB); // Comment this out
+        CommonOps_MT_DDRM.mult(A, B, AB);
     }
 
     static void matmulTransA(DMatrixRMaj A, DMatrixRMaj B, DMatrixRMaj AtB) {
-        if (EjmlConcurrency.useConcurrent(AtB))
-            CommonOps_MT_DDRM.multTransA(A, B, AtB);
-        else
-            MatUtil_CPU.multTransA(A, B, AtB); //CommonOps_DDRM.multTransA(dd, gg, gg1);
+        // if (EjmlConcurrency.useConcurrent(AtB))
+        //    CommonOps_MT_DDRM.multTransA(A, B, AtB);
+        // else
+        //    MatUtil_CPU.multTransA(A, B, AtB); // Comment this out
+        CommonOps_MT_DDRM.multTransA(A, B, AtB);
     }
 
     static void matmulTransB(DMatrixRMaj A, DMatrixRMaj B, DMatrixRMaj ABt) {
-        if (EjmlConcurrency.useConcurrent(ABt))
-            CommonOps_MT_DDRM.multTransB(A, B, ABt);
-        else
-            MatUtil_CPU.multTransB(A, B, ABt);
+        // if (EjmlConcurrency.useConcurrent(ABt))
+        //    CommonOps_MT_DDRM.multTransB(A, B, ABt);
+        // else
+        //    MatUtil_CPU.multTransB(A, B, ABt); // Comment this out
+        CommonOps_MT_DDRM.multTransB(A, B, ABt);
     }
 
-    protected static final ForkJoinPool FORK_JOIN_POOL = new ForkJoinPool(/*TODO parallelism, async, etc */);
-    protected static final int parallelism = Math.max(1, Runtime.getRuntime().availableProcessors()-1);
+    //protected static final ForkJoinPool FORK_JOIN_POOL = new ForkJoinPool(/*TODO parallelism, async, etc */);
+    //protected static final int parallelism = Math.max(1, Runtime.getRuntime().availableProcessors()-1);
 
+    /*
     public static double sumParallel(int size, ToDoubleFunction<Integer> computeFunction) {
         var threshold = Math.max(1, size / parallelism);
         return FORK_JOIN_POOL.invoke(new ParallelSumTask(0, size, threshold, computeFunction));
@@ -203,10 +236,13 @@ public class TensorUtil {
         }
 
         private double computeN() {
-            var k = new KahanSum();
+            //var k = new KahanSum(); // KahanSum removed
+            double sum = 0;
             for (var i = start; i < end; i++)
-                k.add(f.applyAsDouble(i));
-            return k.value();
+                //k.add(f.applyAsDouble(i));
+                sum += f.applyAsDouble(i);
+            //return k.value();
+            return sum;
         }
 
         private double computeFork(int length) {
@@ -216,7 +252,9 @@ public class TensorUtil {
             left.fork();
             var rightResult = right==null ? compute(mid, end) : right.compute();
             double leftResult = left.join();
-            return Util.sum(rightResult, leftResult);
+            //return Util.sum(rightResult, leftResult); // Util.sum removed
+            return rightResult + leftResult;
         }
     }
+    */
 }
