@@ -15,14 +15,11 @@ import static java.util.stream.Collectors.toSet;
 public enum TermByteMatcher {;
 
     public static MultiSequenceMatcher any(Set<Term> t) {
-        Set<SequenceMatcher> f = t.stream().map(TermByteMatcher::eq).collect(toSet());
-        return new ListMultiSequenceMatcher(f);
-        ///return SequenceMatcherTrieFactory.create(f);
+        return new ListMultiSequenceMatcher(t.stream().map(TermByteMatcher::eq).collect(toSet()));
     }
 
     public static SequenceMatcher eq(Term z) {
         return new ByteSequenceMatcher(IO.termToBytes(z));
-        //return ByteMatcherCompiler.compileFrom(IO.termToBytes(z));
     }
 
 }

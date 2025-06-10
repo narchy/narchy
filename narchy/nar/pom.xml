@@ -46,7 +46,12 @@
         </dependency>
         <dependency>
             <groupId>dumb</groupId>
-            <artifactId>db</artifactId>
+            <artifactId>util</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>dumb</groupId>
+            <artifactId>realtime</artifactId>
             <version>1.0</version>
         </dependency>
         <dependency>
