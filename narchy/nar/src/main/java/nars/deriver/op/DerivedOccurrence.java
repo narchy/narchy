@@ -95,19 +95,75 @@ public enum DerivedOccurrence {
         }
     },
 
-    /** TODO not fully impl yet: works only with question derivations, see impl.strong.nal */
     Pre() {
         @Override
-        protected void when(MutableTruthInterval t, long ts, long te, long bs, long be, byte punc, Deriver d) {
-            prePost(false, ts, te, bs, be, (NALPremise) d.premise, t);
+        protected void when(NALPremise i, byte punc, Deriver d, MutableTruthInterval t) {
+            Term taskTerm = i.task().term();
+            Term beliefTerm = i.belief().term(); // Assuming NonSeedTaskPremise or similar access
+
+            Compound implicationTerm;
+            long knownEventStart, knownEventEnd;
+
+            // Pre: deriving antecedent (A) from consequent (B), with (A ==> B) or (A && dt B)
+            // So, the component we know is B (the consequent).
+            if (taskTerm.IMPL() && !beliefTerm.IMPL()) { // Task is implication, belief is consequent B
+                implicationTerm = (Compound) taskTerm;
+                knownEventStart = i.beliefStart();
+                knownEventEnd = i.beliefEnd();
+            } else if (beliefTerm.IMPL() && !taskTerm.IMPL()) { // Belief is implication, task is consequent B
+                implicationTerm = (Compound) beliefTerm;
+                knownEventStart = i.taskStart();
+                knownEventEnd = i.taskEnd();
+            } else {
+                // Neither or both are implications - this rule shouldn't apply or premises are malformed.
+                t.clear(); // Invalidates the truth interval
+                return;
+            }
+
+            if (knownEventStart == ETERNAL) {
+                t.occurr(ETERNAL, ETERNAL); // If known event is eternal, derived is eternal
+                return;
+            }
+
+            prePost(false, knownEventStart, knownEventEnd, implicationTerm, t);
         }
     },
 
-    /** TODO not fully impl yet: works only with question derivations, see impl.strong.nal */
     Post() {
         @Override
-        protected void when(MutableTruthInterval t, long ts, long te, long bs, long be, byte punc, Deriver d) {
-            prePost(true, ts, te, bs, be, (NALPremise) d.premise, t);
+        protected void when(NALPremise i, byte punc, Deriver d, MutableTruthInterval t) {
+            Term taskTerm = i.task().term();
+            Term beliefTerm = i.belief().term(); // Assuming NonSeedTaskPremise or similar access
+
+            Compound implicationTerm;
+            long knownEventStart, knownEventEnd;
+
+            // Post: deriving consequent (B) from antecedent (A), with (A ==> B) or (A && dt B)
+            // So, the component we know is A (the antecedent).
+            if (taskTerm.IMPL() && !beliefTerm.IMPL()) { // Task is implication, belief is antecedent A
+                implicationTerm = (Compound) taskTerm;
+                // This case is tricky for Post: if task is (A==>B) and belief is A,
+                // then this is a standard forward derivation.
+                // knownEvent is A, which is the belief.
+                knownEventStart = i.beliefStart();
+                knownEventEnd = i.beliefEnd();
+
+            } else if (beliefTerm.IMPL() && !taskTerm.IMPL()) { // Belief is implication, task is antecedent A
+                implicationTerm = (Compound) beliefTerm;
+                knownEventStart = i.taskStart();
+                knownEventEnd = i.taskEnd();
+            } else {
+                // Neither or both are implications - this rule shouldn't apply or premises are malformed.
+                t.clear(); // Invalidates the truth interval
+                return;
+            }
+
+            if (knownEventStart == ETERNAL) {
+                t.occurr(ETERNAL, ETERNAL); // If known event is eternal, derived is eternal
+                return;
+            }
+
+            prePost(true, knownEventStart, knownEventEnd, implicationTerm, t);
         }
     },
 
@@ -193,37 +249,46 @@ public enum DerivedOccurrence {
     },
     ;
 
+    /**
+     * Calculates the occurrence time for a derived event based on an implication and a known component event.
+     *
+     * @param fwd              True for Post-derivation (calculating consequent time from antecedent),
+     *                         False for Pre-derivation (calculating antecedent time from consequent).
+     * @param knownEventStart  Start time of the known component event.
+     * @param knownEventEnd    End time of the known component event.
+     * @param implicationTerm  The Compound term representing the implication (e.g., (A ==> B) or (A && dt B)).
+     * @param out              MutableTruthInterval to store the calculated occurrence time.
+     */
+    private static void prePost(boolean fwd, long knownEventStart, long knownEventEnd, Compound implicationTerm, MutableTruthInterval out) {
 
-    private static void prePost(boolean fwd, long ts, long te, long bs, long be, NALPremise p, MutableTruthInterval out) {
-
-        var tt = p.from();
-        var tImpl = tt.IMPL();
-        var bb = p.to();
-        var bImpl = bb.IMPL();
-        assert(tImpl ^ bImpl);
-
-        boolean occTB;
-        if (bs == TIMELESS) occTB = true;
-        else if (ts == ETERNAL) occTB = false;
-        else if (bs == ETERNAL) occTB = true;
-        else occTB = bImpl;
-
-        long s, e;
-        if (occTB) { s = ts; e = te; } else { s = bs; e = be; }
-
-        if (s!=ETERNAL) {
-            var impl = (Compound) (tImpl ? tt : bb);
-            var idt = impl.dt();
-            if (idt!=XTERNAL) {
-                if (idt==DTERNAL) idt = 0;
-                int shift;
-                if (fwd) shift = idt;
-                else     shift = -idt - impl.seqDurSub(0, false);
-                s += shift;
-                e += shift;
-            }
+        if (knownEventStart == ETERNAL) {
+            out.occurr(ETERNAL, ETERNAL);
+            return;
         }
-        out.occurr(s, e);
+
+        long dt = implicationTerm.dt();
+
+        if (dt == XTERNAL) {
+            // If dt is XTERNAL, the derived time is considered ETERNAL,
+            // unless specific XTERNAL semantics dictate otherwise in the future.
+            out.occurr(ETERNAL, ETERNAL);
+            return;
+        }
+        if (dt == DTERNAL) {
+            dt = 0;
+        }
+
+        long derivedStart, derivedEnd;
+        if (fwd) { // Post: deriving consequent B from antecedent A. knownEvent is A.
+            derivedStart = knownEventStart + dt;
+            derivedEnd = knownEventEnd + dt;
+        } else {   // Pre: deriving antecedent A from consequent B. knownEvent is B.
+            // antecedentDuration is the duration of A, the first component of the implication.
+            long antecedentDuration = implicationTerm.seqDurSub(0, false);
+            derivedStart = knownEventStart - dt - antecedentDuration;
+            derivedEnd = knownEventEnd - dt - antecedentDuration;
+        }
+        out.occurr(derivedStart, derivedEnd);
     }
 
 
