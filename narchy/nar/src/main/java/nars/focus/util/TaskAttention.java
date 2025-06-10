@@ -26,11 +26,13 @@ import static nars.Op.*;
 public class TaskAttention implements Consumer<NALTask>, Iterable<PLink<NALTask>> {
 
     public final TaskAttentionModel model;
-    public final Focus focus;
+    //public final Focus focus;
+    public final NAR nar; // Changed from Focus to NAR
 
-    public TaskAttention(boolean puncBag, Focus f) {
+    public TaskAttention(boolean puncBag, NAR n) { // Changed from Focus f to NAR n
         model = puncBag ? new PuncBagAttentionModel() : new BagAttentionModel();
-        this.focus = f;
+        //this.focus = f;
+        this.nar = n;
     }
 
     @Override
@@ -102,8 +104,12 @@ public class TaskAttention implements Consumer<NALTask>, Iterable<PLink<NALTask>
     }
 
     private float pri(NALTask t) {
-        var f = focus;
-        return f.budget.priIn(t, f);
+        //var f = focus;
+        //return f.budget.priIn(t, f);
+        // Assuming NAR will have a budget field, or this logic is adapted
+        // For now, placeholder, this needs NAR to have budget access logic similar to Focus
+        // This will be refined when NAR gets its budget field.
+        return nar.budget.priIn(t, nar); // This line assumes NAR has 'budget' and can be passed as PrioSource to budget.priIn
     }
 
     public final boolean isEmpty() {

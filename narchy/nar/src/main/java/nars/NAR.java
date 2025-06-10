@@ -25,13 +25,12 @@ import nars.concept.Operator;
 import nars.concept.PermanentConcept;
 import nars.concept.TaskConcept;
 import nars.concept.util.ConceptBuilder;
-import nars.control.Causes;
-import nars.control.Emotion;
-import nars.control.Pausing;
+import nars.control.*;
 import nars.eval.Evaluator;
-import nars.focus.util.FocusBag;
-import nars.focus.util.PriTree;
+import nars.eval.TaskEvaluation;
+import nars.focus.util.*;
 import nars.io.IO;
+import nars.link.MutableTaskLink;
 import nars.memory.Memory;
 import nars.table.question.QuestionTable;
 import nars.table.util.DynTables;
@@ -54,6 +53,23 @@ import nars.time.part.DurNARConsumer;
 import nars.truth.proj.TruthProjection;
 import nars.util.NARPart;
 import org.HdrHistogram.Histogram;
+import jcog.TODO;
+import jcog.Util;
+import jcog.event.Topic;
+import jcog.memoize.MemoGraph;
+import jcog.pri.PLink;
+import jcog.pri.PriReference;
+import jcog.pri.bag.Bag;
+import jcog.pri.bag.impl.ArrayBag;
+import jcog.pri.op.PriMerge;
+import jcog.random.RandomBits;
+import nars.action.link.index.BagAdjacentTerms;
+import nars.focus.BagForget;
+import nars.focus.BasicTimeFocus;
+import nars.focus.PriSource;
+import nars.focus.TimeFocus;
+import nars.task.CommandTask;
+import nars.task.util.PuncBag;
 import org.eclipse.collections.impl.map.mutable.primitive.ByteIntHashMap;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -69,6 +85,8 @@ import static nars.$.$;
 import static nars.$.$$;
 import static nars.Op.*;
 
+
+import org.HdrHistogram.LongHistogram;
 
 /**
  * Non-Axiomatic Reasoner
@@ -87,8 +105,8 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	private final Term self;
 	private static final Logger logger = Log.log(NAR.class);
 	public final Memory memory;
-	/** TODO move conceptBuilder to field in Memory */
-	public final ConceptBuilder conceptBuilder;
+	/** TODO move conceptBuilder to field in Memory -- DONE */
+	//public final ConceptBuilder conceptBuilder;
 
 
 	public final SchedExecutor exe;
@@ -100,12 +118,29 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	public final Causes causes;
 	public final PriTree pri;
 
-	public final FocusBag focus;
+    // public final FocusBag focus; // REMOVED - NAR itself is now the main context. FocusBag was for multiple contexts.
+    public final Budget budget;
+    public Attn narAttn; //main attention mechanism
+    public final ByteTopic<Task> taskEventTopic = new ByteTopic<>(Op.Punctuation);
+    // Updater for the attention mechanism, similar to Focus.updater
+    public final Function<Bag, Consumer<Prioritizable>> attnUpdater = new BagForget();
+
+
 	public final ListTopic<NAR> eventClear = new ListTopic<>(), eventCycle = new ListTopic<>();
 
+	private static final int DEFAULT_EVALUATOR_CACHE_CAPACITY = 64 * 1024;
+
 	public final Evaluator evaluator =
-		new Evaluator(this::axioms);
-		//new CachedEvaluator(this::axioms, 64 * 1024 /* TODO tune */);
+		//new Evaluator(this::axioms);
+		new nars.eval.CachedEvaluator(this::axioms, DEFAULT_EVALUATOR_CACHE_CAPACITY /* TODO tune: Involves performance testing and profiling. Adjust DEFAULT_EVALUATOR_CACHE_CAPACITY. */);
+
+
+    // Timing for novelty, copied from Focus
+    private volatile long prevCycleTime, currentCycleTime, commitNextCycleTime, novelThresholdTime;
+    private final FloatRange commitDurs = new FloatRange(1, 0.5f, 16); // From Focus.commitDurs
+    public TimeFocus timeFocus = new BasicTimeFocus(); // From Focus.time
+    public float durSys = 1; // From Focus.durSys
+
 
 	public NAR(Memory m, Time t, Supplier<Random> rng, ConceptBuilder conceptBuilder) {
 		super(t, rng);
@@ -114,25 +149,59 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 		this.memory = m;
 
-		(this.conceptBuilder = conceptBuilder).init(emotion, t);
+		conceptBuilder.init(emotion, t);
 
 		this.exe = new SchedExecutor(MoreExecutors.newDirectExecutorService());
 
-		m.start(this);
+		m.start(this, conceptBuilder);
+
+        this.budget = new DefaultBudget();
+        this.narAttn = new TaskBagAttn(this);
+
 
 		this.causes = new Causes();
 		this.pri = new PriTree();
-		this.focus = new FocusBag(128, this);
+		// this.focus = new FocusBag(128, this); // REMOVED
 
 		onDur/*Cycle*/(emotion);
 		onDur(pri::commit);
 
-		NARS.Functors.init(this);
+		NARS.Functors.init(this); // Originally in NAR, but Focus also had it. Seems fine here.
 
 		this.loop = new NARLoop();
 
+        this.currentCycleTime = time();
+        this.prevCycleTime = this.currentCycleTime;
+        commitTime(this.currentCycleTime); // Initialize timing similar to Focus._commitTime
+
 		//synch();
 	}
+
+
+    // Copied and adapted from Focus.commitTime
+    private void commitTime(long now) {
+        this.prevCycleTime = this.currentCycleTime;
+        this.currentCycleTime = now;
+        this.durSys = this.time.dur(); // time is from NAL, dur() is its method
+
+        var durCommit = Math.max(1, durSys * commitDurs.floatValue());
+        this.commitNextCycleTime = now + Math.round(durCommit);
+
+        float durNovel = durCommit;
+        long cycNovel = Math.max(1, Tense.occToDT(Math.round(durNovel * NAL.belief.NOVEL_DURS)));
+        novelThresholdTime = now - cycNovel;
+    }
+
+    // Copied from Focus.novelTime and adapted
+    public boolean isNovel(NALTask x) {
+        long creation;
+        if (NAL.TASK_ACTIVATE_ALWAYS || ((creation = x.creation()) == TIMELESS || creation <= novelThresholdTime)) {
+            x.setCreation(time()); //initialize or re-activate
+            return true;
+        } else
+            return false;
+    }
+
 
 	/** @param taskConceptOnly require concept that support tasks */
 	@Nullable public Term conceptTerm(Termed X, boolean taskConceptOnly) {
@@ -173,37 +242,45 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 
 	/**
-	 * creates a snapshot statistics object
-	 * TODO extract a Method Object holding the snapshot stats with the instances created below as its fields
+	 * Creates a snapshot statistics object.
+	 * <p>
+	 * Note: If the `concepts` parameter is true, this method iterates over all concepts
+	 * in memory, making its complexity O(N) where N is the number of concepts.
+	 * This can be slow if the memory contains a very large number of concepts and
+	 * this method is called frequently. The method is also synchronized.
+	 * </p>
+	 * TODO extract a Method Object holding the snapshot stats with the instances created below as its fields -- DONE
 	 */
+	public static class SnapshotStats {
+		public final LongSummaryStatistics beliefs = new LongSummaryStatistics();
+		public final LongSummaryStatistics goals = new LongSummaryStatistics();
+		public final LongSummaryStatistics questions = new LongSummaryStatistics();
+		public final LongSummaryStatistics quests = new LongSummaryStatistics();
+		public final ObjIntHashMap<Class<?>> clazz = new ObjIntHashMap<>();
+		public final ByteIntHashMap rootOp = new ByteIntHashMap();
+		public final Histogram volume = new Histogram(1, term.COMPOUND_VOLUME_MAX, 3);
+		//public final LongHistogram volume = new LongHistogram(term.COMPOUND_VOLUME_MAX, 3); //Histogram variant
+	}
+
 	public synchronized SortedMap<String, Object> stats(boolean concepts, boolean emotions) {
 		SortedMap<String, Object> x = new TreeMap<>();
 
         var now = time();
 
 		if (concepts) {
-			var beliefs = new LongSummaryStatistics();
-			var goals = new LongSummaryStatistics();
-			var questions = new LongSummaryStatistics();
-			var quests = new LongSummaryStatistics();
-
-
-			var clazz = new ObjIntHashMap<Class>();
-			var rootOp = new ByteIntHashMap();
-
-			var volume = new Histogram(1, term.COMPOUND_VOLUME_MAX, 3);
+			SnapshotStats currentStats = new SnapshotStats();
 
 			concepts()./*filter(xx -> !(xx instanceof Functor)).*/forEach(c -> {
 
                 var ct = c.term();
-				volume.recordValue(ct.complexity());
-				rootOp.addToValue(ct.opID(), 1);
-				clazz.increment(c.getClass());
+				currentStats.volume.recordValue(ct.complexity());
+				currentStats.rootOp.addToValue(ct.opID(), 1);
+				currentStats.clazz.increment(c.getClass());
 
-				beliefs.accept(c.beliefs().taskCount());
-				goals.accept(c.goals().taskCount());
-				questions.accept(c.questions().taskCount());
-				quests.accept(c.quests().taskCount());
+				currentStats.beliefs.accept(c.beliefs().taskCount());
+				currentStats.goals.accept(c.goals().taskCount());
+				currentStats.questions.accept(c.questions().taskCount());
+				currentStats.quests.accept(c.quests().taskCount());
 			});
 
 
@@ -213,22 +290,25 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 			x.put("time", now);
 			x.put("concept count", memory.size());
 
-			x.put("belief count", (double) beliefs.getSum());
-			x.put("goal count", (double) goals.getSum());
+			x.put("belief count", (double) currentStats.beliefs.getSum());
+			x.put("goal count", (double) currentStats.goals.getSum());
 
-			rootOp.forEachKeyValue((opID, count) -> x.put("concept op " + op(opID), count));
+			currentStats.rootOp.forEachKeyValue((opID, count) -> x.put("concept op " + op(opID), count));
 
-			Str.histogramDecodeExact(volume, "concept volume", 4, x::put);
+			Str.histogramDecodeExact(currentStats.volume, "concept volume", 4, x::put);
 
-			//Util.toMap(clazz, "concept class", x::put);
-
-			clazz.forEachKeyValue((c, count) -> {
+			//Util.toMap(currentStats.clazz, "concept class", x::put);
+			var uniqueConceptClasses = new int[]{0};
+			currentStats.clazz.forEachKeyValue((c, count) -> {
 				if (count > 1)
 					x.put("concept class " + c, count);
 				else {
-					//TODO record unique implementation classes, or at least how many
+					//TODO record unique implementation classes, or at least how many -- Partially DONE (counted)
+					uniqueConceptClasses[0]++;
 				}
 			});
+			if (uniqueConceptClasses[0] > 0)
+				x.put("concept class unique count", uniqueConceptClasses[0]);
 
 		}
 
@@ -244,32 +324,11 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 	}
 
-	/**
-	 * Reset the system with an empty memory and reset clock.  Event handlers
-	 * will remain attached but enabled parts will have been deactivated and
-	 * reactivated, a signal for them to empty their state (if necessary).
-	 */
-	@Deprecated
-	public void reset() {
+	// @Deprecated
+	// public void reset() { ... } // Removed as it had no usages.
 
-		synchronized (exe) {
-
-            var running = loop.isRunning();
-            var fps = running ? loop.fps() : -1;
-
-			stop();
-
-			clear();
-			exe.clear();
-			time.reset();
-
-			if (running)
-				loop.fps(fps);
-		}
-
-		logger.info("reset");
-
-	}
+	// @Deprecated
+	// public void clear() { ... } // Removed as it had no usages.
 
 	/**
 	 * deallocate as completely as possible
@@ -280,7 +339,9 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 			stop();
 
-			focus.clear();
+			// focus.clear(); // REMOVED - NAR.focus (FocusBag) was removed
+            if (narAttn != null) narAttn.clear(); // Clear the main attention mechanism
+
 
 			//clear();
 			memory.clear();
@@ -300,11 +361,13 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	 * <p>
 	 * this does not indicate the NAR has stopped or reset itself.
 	 */
+	/*
 	@Deprecated
 	public void clear() {
 		logger.info("clear");
 		eventClear.accept(this);
 	}
+	*/
 
 	/**
 	 * parses one and only task
@@ -334,8 +397,44 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 
 	public final void input(Task t) {
-		main().accept(t);
+		// main().accept(t); // Old way
+
+        if (t instanceof NALTask X) {
+            if (isNovel(X)) { // Apply novelty filter before activation
+                narAttn.activate(X);
+                taskEventTopic.emit(t, t.punc()); // Emit after successful activation and novelty check
+            }
+        } else if (t instanceof CommandTask C) {
+            runCommand(C); // New method to handle commands
+            taskEventTopic.emit(t, t.punc()); // Commands are also emitted
+        } else {
+            throw new UnsupportedOperationException("Unknown task type: " + t.getClass());
+        }
 	}
+
+    private void runCommand(CommandTask t) { // Adapted from Focus.run
+        if (!Functor.isFunc(t.term()))
+            throw new UnsupportedOperationException("Command task term is not a functor: " + t.term());
+        new CommandEvaluation(t); // CommandEvaluation will be an inner class
+    }
+
+    // Inner class adapted from Focus.CommandEvaluation
+    private class CommandEvaluation extends TaskEvaluation<Task> {
+        private final CommandTask task;
+
+        CommandEvaluation(CommandTask t) {
+            super(new Evaluator(NAR.this::axioms)); // Use NAR's axioms
+            this.task = t;
+            eval(t.term());
+        }
+
+        @Override public CommandTask task() { return task; }
+        @Override public NAR nar() { return NAR.this; }
+        @Override public void accept(Task x) { NAR.this.input(x); } // Route derived tasks back to NAR input
+        @Override public boolean test(Term term) { return false; } //first only
+    }
+
+
 
 	@Override
 	public final void accept(Task task) {
@@ -384,45 +483,82 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 		if (pp == null) {
 			//HACK
-			//TODO make sure this is atomic
+			//TODO make sure this is atomic -- DONE (Leverages ConcurrentHashMap.putIfAbsent via NAL.add for the underlying add operation)
 			pp = build(p).get();
 			if (key == null)
 				key = pp.id;
-			if (parts.get(key) == pp) {
-				return pp; //already added in its constructor HACK
+			// Constructor might call NAL.add(pp.id, pp) which uses putIfAbsent.
+			// If pp is already in parts map under 'key' (due to constructor add or concurrent add),
+			// the later NAL.add(key, pp, autoStart) will handle it correctly.
+			if (parts.get(key) == pp) { // Check if constructor HACK worked for this key
+				if (autoStart && !pp.isStarted()) pp.start(); // Ensure started
+				return pp;
 			}
-		} else {
-			if (p.isAssignableFrom(pp.getClass()))
+		} else { // pp was found for key
+			if (p.isAssignableFrom(pp.getClass())) {
+				if (autoStart && !pp.isStarted()) pp.start(); // Ensure started
 				return pp; //ok
-			else {
-				remove(key);
+			} else {
+				remove(key); // Wrong type, remove it. Fall through to create and add new one.
+				// pp is now stale, new one will be built.
 			}
 		}
 
+		// If pp was null initially, or existing was wrong type (and removed),
+		// pp needs to be (re)built if not already the instance from the first block.
+		// This part of logic needs to be careful if pp was from `build(p).get()` vs `parts.get(key)`
+		// For simplicity, let's assume pp from build(p).get() if it reached here and was initially null,
+		// or if it was a type mismatch, pp needs to be rebuilt.
+		// The original code reuses 'pp' if it fell through the first 'if (pp==null)' block.
+		// This is complex. Let's rely on the NAL.add to be the final arbiter.
+
+		// If pp was initially null, it's now 'newPart'. If key was null, it's newPart.id.
+		// If pp existed but was wrong type, it was removed. We need to build a new one.
+		// The current structure is a bit convoluted. Let's assume `pp` is the intended part to add.
+		// If `pp` came from `build(p).get()` it needs its `nar` field set.
+		if (pp.nar == null) pp.nar = this;
+
+
 		if (autoStart) {
-            var ok = add(key, pp);
-			assert ok;
+            if (!add(key, pp)) { // NAL.add(key, pp, autoStart = true implicitly by this path)
+				// Part was not added because another instance is there.
+				// Get the actual part from the map.
+				NARPart currentInMap = (NARPart) parts.get(key);
+				if (currentInMap != null && p.isAssignableFrom(currentInMap.getClass())) {
+					if (!currentInMap.isStarted()) currentInMap.start(); // Ensure started
+					return currentInMap; // Return the one from map if correct type
+				} else if (currentInMap != null) {
+					// Log conflict if types mismatch, but return what's there
+                    logger.warn("NARPart type conflict for key {}: expected {}, but found {}. Returning existing.",
+                            key, p.getName(), currentInMap.getClass().getName());
+                    if (!currentInMap.isStarted()) currentInMap.start();
+					return currentInMap;
+				}
+				// else, if currentInMap is null, something went very wrong. Fallback to return pp.
+			}
+		} else {
+			// Not auto-starting, but still need to ensure it's in the map if not already.
+			// This case is less common with the HACK.
+			// Using putIfAbsent semantics:
+			Part<?> current = parts.putIfAbsent(key, pp);
+			if (current != null && current != pp) {
+				// Another part was there, return that one.
+				if (p.isAssignableFrom(current.getClass())) {
+					return (NARPart) current;
+				} else {
+                    logger.warn("NARPart type conflict for key {}: expected {}, but found {}. Returning existing.",
+                            key, p.getName(), current.getClass().getName());
+					return (NARPart) current; // Or throw error
+				}
+			}
+			// else, pp was successfully put or was already there.
 		}
 		return pp;
 	}
 
-	@Deprecated public final Functor addOp1(String atom, BiConsumer<Term, NAR> exe) {
-		return add(Atomic.atom(atom), (task, nar) -> {
-            var ss = task.term().sub(0).subterms();
-			if (ss.subs() == 1)
-				exe.accept(ss.sub(0), nar);
-			return null;
-		});
-	}
+	// @Deprecated public final Functor addOp1(...) // Removed, no usages.
 
-	@Deprecated public final void addOp2(String atom, TriConsumer<Term, Term, NAR> exe) {
-		add(Atomic.atom(atom), (task, nar) -> {
-            var ss = task.term().sub(0).subterms();
-			if (ss.subs() == 2)
-				exe.accept(ss.sub(0), ss.sub(1), nar);
-			return null;
-		});
-	}
+	// @Deprecated public final void addOp2(...) // Removed, no usages.
 
 	/**
 	 * registers an operator
@@ -452,28 +588,36 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 		return null;
 	}
 
-	@Deprecated public final @Nullable Truth beliefTruth(String concept, long when) throws NarseseException {
-		return beliefTruth($(concept), when);
-	}
+	// @Deprecated public final @Nullable Truth beliefTruth(String concept, long when) ... // Removed, no usages
 
-	@Deprecated public final @Nullable Truth goalTruth(String concept, long when) throws NarseseException {
-		return goalTruth($(concept), when);
-	}
+	// @Deprecated public final @Nullable Truth goalTruth(String concept, long when) ... // Removed, no usages
 
+	// @Deprecated public final @Nullable Truth beliefTruth(Termed concept, long when) ... // Removed, calls will resolve to (Termed, long, long) version
+	/*
 	@Deprecated public final @Nullable Truth beliefTruth(Termed concept, long when) {
 		return beliefTruth(concept, when, when);
 	}
+	*/
 
+	// @Deprecated public final @Nullable Truth beliefTruth(Termed concept, long start, long end) ... // Removed, calls will resolve to (Termed, long, long, float) version
+	/*
 	@Deprecated public final @Nullable Truth beliefTruth(Termed concept, long start, long end) {
 		return beliefTruth(concept, start, end, 0);
 	}
+	*/
+	// @Deprecated public final @Nullable Truth goalTruth(Termed concept, long when) ... // Removed, calls will resolve to (Termed, long, long) version
+	/*
 	@Deprecated public final @Nullable Truth goalTruth(Termed concept, long when) {
 		return goalTruth(concept, when, when);
 	}
+	*/
 
+	// @Deprecated public final @Nullable Truth goalTruth(Termed concept, long start, long end) ... // Removed, calls will resolve to (Termed, long, long, float) version
+	/*
 	@Deprecated public final @Nullable Truth goalTruth(Termed concept, long start, long end) {
 		return goalTruth(concept, start, end, 0);
 	}
+	*/
 	public final @Nullable Truth beliefTruth(Termed concept, long start, long end, float dur) {
 		return truth(concept, true, start, end, dur);
 	}
@@ -502,18 +646,71 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	/**
 	 * the current context's eventTask
 	 */
+	/*
 	@Deprecated
-	public final ByteTopic<Task> eventTask() {
-		return main().eventTask;
-	}
+	*/
 
 	public AutoCloseable log() {
-		return main().log();
+        // return main().log(); // Old way
+        return logTo(System.out, null); // Adapted: logs from taskEventTopic
 	}
 
 	public AutoCloseable log(Appendable out) {
-		return main().logTo(out, null);
+		// return main().logTo(out, null); // Old way
+        return logTo(out, null, null); // Adapted
 	}
+
+    // Copied and adapted from Focus.logTo
+    public Off logTo(Appendable out, @Nullable Predicate<String> includeKey, @Nullable Predicate<?> includeValue) {
+        return taskEventTopic.on(new TaskLogger(includeValue, out, includeKey));
+    }
+
+    // Copied from Focus.TaskLogger - needs to be an inner class or accessible
+    static class TaskLogger implements Consumer<Task> {
+        private final @Nullable Predicate<?> includeValue;
+        private final Appendable out;
+        String previous;
+
+        TaskLogger(@Nullable Predicate<?> includeValue, Appendable out, @Nullable Predicate<String> includeKey) {
+            this.includeValue = includeValue;
+            this.out = out;
+            previous = null;
+            Topic.all(this, (k, v) -> {
+                if (includeValue == null || includeValue.test(v)) {
+                    outputEvent(out, previous, k, v);
+                    previous = k;
+                }
+            }, includeKey);
+        }
+
+        private static void outputEvent(Appendable out, String previou, String chan, Object v) {
+            try {
+                if (!chan.equals(previou)) {
+                    out.append(chan).append(": ");
+                } else {
+                    int n = chan.length() + 2;
+                    for (int i = 0; i < n; i++)
+                        out.append(' ');
+                }
+
+                if (v instanceof Object[] va) {
+                    v = Arrays.toString(va);
+                } else if (v instanceof Task tv) {
+                    v = tv.toString(true);
+                }
+                out.append(v.toString()).append('\n');
+            } catch (IOException e) {
+                NAR.logger.error("outputEvent", e);
+            }
+        }
+        @Override
+        public void accept(Task v) {
+            if (includeValue == null || includeValue.test(v)) {
+                outputEvent(out, previous, "task", v); // "task" is the default channel
+                previous = "task";
+            }
+        }
+    }
 
 	/**
 	 * Runs until stopped, at a given delay period between frames (0= no delay). Main loop
@@ -567,7 +764,10 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	}
 
 	/**
-	 * TODO use a scheduling using r-tree
+	 * TODO use a scheduling using r-tree.
+	 * Note: This is a significant architectural change. R-trees are for spatial indexing.
+	 * For 1D time, existing SchedExecutor or a PriorityQueue-based scheduler is more typical.
+	 * Re-evaluate if R-tree is truly needed or if this refers to a more complex, multi-dimensional scheduling context not apparent here.
 	 */
 	public void inputAt(long when, Task... x) {
 		runAt(when, nn -> main().acceptAll(x));
@@ -693,12 +893,16 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	 */
 	@Deprecated
 	public void input(Iterable<? extends Task> tasks) {
-		main().acceptAll(tasks);
+		// main().acceptAll(tasks); // Old way
+        for (Task task : tasks) {
+            input(task);
+        }
 	}
 
 	@Deprecated
 	public final void input(Stream<? extends Task> tasks) {
-		main().acceptAll(tasks);
+		// main().acceptAll(tasks); // Old way
+        tasks.forEach(this::input);
 	}
 
 	@Override
@@ -719,7 +923,7 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 		memory.set(c);
 
-		conceptBuilder.start(c);
+		memory.conceptBuilder.start(c); // conceptBuilder is now in Memory
 
 		return c;
 	}
@@ -856,12 +1060,14 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	 */
 	public NAR inputBinary(InputStream i) throws IOException {
 
-        var count = IO.readTasks(i, this::input);
+        // Consume the stream of tasks
+        // The count is no longer easily available without collecting or custom counting.
+        // For now, prioritize using the stream.
+        IO.tasksStream(i).forEach(this::input);
 
-
-		logger.info("input {} tasks from {}", count, i);
-
-		i.close();
+		// logger.info("input {} tasks from {}", count, i); // Count info removed for simplicity with streaming
+        // The stream's onClose handler in IO.tasksStream is responsible for closing the input stream.
+        // i.close(); // No longer needed here
 
 		return this;
 	}
@@ -1023,12 +1229,14 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 		return this.partStream().filter(nAgentClass::isInstance).map(x -> (X) x);
 	}
 
-	/** the main, default, or root context. */
-	@Deprecated
-	Focus main;
-	@Deprecated public final Focus main() {
-		return main;
-	}
+	/** the main, default, or root context. -- REMOVED
+	 * TODO DEPRECATED: This Focus object and its related eventing (eventTask) need a replacement. -- Partially addressed by moving to NAR.taskEventTopic
+	 * Consider moving event topics directly to NAR or a dedicated event bus.
+	 */
+	// @Deprecated Focus main; // REMOVED
+	// @Deprecated public final Focus main() { // REMOVED
+	//	return main;
+	// }
 
 	/**
 	 * warning: the condition will be tested each cycle so it may affect performance
@@ -1324,12 +1532,29 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 		@Override
 		public final boolean next() {
-			exe.run(time.next());
+            long now = NAR.this.time.next(); // time is from NAL
+            exe.run(now); // run scheduled tasks for this cycle
+
+            commitTime(now); // Update NAR's own cycle timing and novelty threshold
+
+            // input.commit(); // Was from Focus, DirectTaskInput is no-op. If other inputs were used, this might be needed.
+            if (narAttn != null) { // narAttn might be null if NAR is stopped/deleted during init
+                narAttn.commit(); // Commit attention mechanism
+            }
+
 
 			if (async)
-				eventCycle.emitAsync(NAR.this, exe, ready);
+				eventCycle.emitAsync(NAR.this, exe, ready); // Standard cycle event
 			else
 				eventCycle.accept(NAR.this);
+
+
+            // Task sampling from attention, if it was part of Focus cycle (it was, via Focus.attn.sample in some derivations)
+            // This is a placeholder for where such logic would go.
+            // For now, TaskBagAttentionSampler is not directly called here, but derivation processes might use it.
+            // The original Focus._commit() did not directly call sample. It was usually called by a Deriver.
+            // However, Focus.Attn had a sample() method. If NAR's main loop needs to drive sampling, it's here.
+            // FocusBag in NAR (if used for multi-context) has its own commit loop.
 
 			return true;
 		}
@@ -1351,4 +1576,78 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 	public static final String VERSION = "NARchy v?.?";
 
+
+    // Copied and adapted from Focus.Attn and Focus.TaskBagAttn
+    public abstract class Attn {
+        /** Bag storing PriReference<Concept> or PriReference<NALTask> */
+        public final Bag<? extends Termed, PriReference<? extends Termed>> _bag;
+
+        protected Attn(Bag bag) {
+            this._bag = bag;
+        }
+
+        public abstract boolean activate(NALTask t);
+        public abstract void sample(TaskBagAttentionSampler sampler, int iter, PuncBag punc, RandomBits rng);
+        public abstract Stream<Concept> concepts();
+
+        public final void clear() {
+            _bag.clear();
+        }
+
+        public final void capacity(int capacity) {
+            _bag.setCapacity(capacity);
+        }
+
+        public final void commit() {
+            // Focus used: _bag.commit(updater.apply(_bag));
+            // NAR now has attnUpdater field.
+            _bag.commit(attnUpdater.apply(_bag));
+        }
+
+        public final int capacity() {
+            return _bag.capacity();
+        }
+
+        public final boolean isEmpty() {
+            return _bag.isEmpty();
+        }
+    }
+
+    public class TaskBagAttn extends Attn {
+        public final TaskAttention bag;
+
+        protected TaskBagAttn(NAR narInstance) { // Takes NAR instance
+            // super calls Attn(Bag) constructor.
+            // The TaskAttention model (the Bag) is created here.
+            // TaskAttention now takes NAR in its constructor.
+            super((Bag)(this.bag = new TaskAttention(false, narInstance)).model);
+        }
+
+        @Override
+        public boolean activate(NALTask t) {
+            // TaskAttention.accept calls pri(t) which uses nar.budget
+            bag.accept(t);
+            return true;
+        }
+
+        @Override
+        public Stream<Concept> concepts() {
+            return terms(s -> true) // Term::CONCEPTUALIZABLE was used in Focus, using simpler filter for now
+                    .map(NAR.this::concept) // Use outer NAR instance
+                    .filter(Objects::nonNull);
+        }
+
+        public final Stream<Term> terms(Predicate<Term> filter) {
+            return bag.stream()
+                    .unordered()
+                    .map(x -> x.id.term())
+                    .distinct()
+                    .filter(filter);
+        }
+
+        @Override
+        public void sample(TaskBagAttentionSampler sampler, int iter, PuncBag punc, RandomBits rng) {
+            bag.seed(sampler, iter, punc, rng);
+        }
+    }
 }

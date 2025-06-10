@@ -3,6 +3,7 @@ package nars.memory;
 import nars.Concept;
 import nars.NAR;
 import nars.Term;
+import nars.concept.ConceptBuilder;
 import nars.concept.NodeConcept;
 import nars.concept.PermanentConcept;
 import nars.term.Functor;
@@ -25,6 +26,7 @@ public abstract class Memory {
 		prev instanceof PermanentConcept && !(next instanceof PermanentConcept) ? prev : next;
 
 	protected NAR nar;
+	protected ConceptBuilder conceptBuilder;
 
     /**
 	 * internal get procedure (synchronous)
@@ -45,14 +47,15 @@ public abstract class Memory {
 
 	public final void set(Functor t) {
         var c = new NodeConcept.FunctorConcept(t);
-		nar.conceptBuilder.start(c);
+		this.conceptBuilder.start(c);
 		set(t, c);
 	}
 
 	public abstract void clear();
 
-	public void start(NAR nar) {
+	public void start(NAR nar, ConceptBuilder conceptBuilder) {
 		this.nar = nar;
+		this.conceptBuilder = conceptBuilder;
 	}
 
 	/**

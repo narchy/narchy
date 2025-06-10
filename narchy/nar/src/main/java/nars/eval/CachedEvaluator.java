@@ -22,6 +22,9 @@ public non-sealed class CachedEvaluator extends Evaluator {
     @Nullable
     EvaluationPhase compile(Compound x) {
         var y = memoize.apply(x);
-        return y == EvaluationPhase.NULL ? null : y; //HACK
+        // HACK: The caching mechanism (memoize) might use EvaluationPhase.NULL as a sentinel
+        // for cached "null" results, as some cache implementations do not support storing null directly.
+        // This line translates that sentinel back to a true null, as expected by the compile method's contract.
+        return y == EvaluationPhase.NULL ? null : y;
     }
 }

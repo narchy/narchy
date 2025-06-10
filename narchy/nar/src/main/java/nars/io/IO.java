@@ -17,9 +17,17 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by me on 5/29/16.
@@ -74,6 +82,62 @@ public enum IO {
         }
         ii.close();
         return count;
+    }
+
+    public static Stream<Task> tasksStream(InputStream i) {
+        DataInputStream dis = new DataInputStream(i);
+
+        Iterator<Task> taskIterator = new Iterator<Task>() {
+            private Task nextTask = null;
+            private boolean triedToLoadNext = false;
+
+            @Override
+            public boolean hasNext() {
+                if (nextTask != null) {
+                    return true;
+                }
+                if (triedToLoadNext) { // Already tried and failed (nextTask is null)
+                    return false;
+                }
+
+                try {
+                    nextTask = TaskIO.readTask(dis); // Attempt to read a full task
+                    triedToLoadNext = true;
+                    return nextTask != null; // Should always be true unless TaskIO.readTask can return null on non-exception
+                } catch (EOFException e) {
+                    triedToLoadNext = true; // EOF means no more tasks
+                    nextTask = null;
+                    try { dis.close(); } catch (IOException ce) { /* log or ignore close exception */ }
+                    return false;
+                } catch (IOException e) {
+                    triedToLoadNext = true;
+                    nextTask = null;
+                    try { dis.close(); } catch (IOException ce) { /* log or ignore close exception */ }
+                    throw new UncheckedIOException(e); // Propagate other IOExceptions
+                }
+            }
+
+            @Override
+            public Task next() {
+                if (!hasNext()) { // hasNext() will load the next task if available
+                    throw new NoSuchElementException("No more tasks available.");
+                }
+                Task taskToReturn = nextTask;
+                nextTask = null; // Consume the pre-loaded task
+                triedToLoadNext = false; // Reset for the next hasNext call
+                return taskToReturn;
+            }
+        };
+
+        return StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(taskIterator, Spliterator.ORDERED | Spliterator.NONNULL), false)
+                .onClose(() -> { // Ensure stream closure also attempts to close DataInputStream
+                    try {
+                        dis.close();
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
     }
 
 

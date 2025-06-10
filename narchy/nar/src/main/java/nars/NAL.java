@@ -622,6 +622,45 @@ public abstract class NAL<W extends NAL<?>> extends Thing<W, Term> implements Ti
         return random.get();
     }
 
+
+    /**
+     * Adds a part to this NAL instance.
+     * Uses ConcurrentHashMap.putIfAbsent to ensure atomicity if the part wasn't already there.
+     * If a different part instance was already associated with the key, it's not replaced by this call.
+     *
+     * @param key The key for the part.
+     * @param p The part to add.
+     * @param autoStart If true, and the part is newly added or was already present but not started, it will be started.
+     * @return true if `p` is now the part associated with `key` (either newly added or was already there), false otherwise (another part instance is associated with `key`).
+     */
+    protected final boolean add(Term key, Part<N> p, boolean autoStart) {
+        if (p == null) throw new NullPointerException("Part cannot be null");
+        if (key == null) throw new NullPointerException("Key cannot be null for adding a part");
+
+        Part<N> existingPart = parts.putIfAbsent(key, p);
+
+        if (existingPart == null) {
+            // p was successfully added
+            if (autoStart) {
+                p.start();
+            }
+            return true;
+        } else if (existingPart == p) {
+            // p was already there
+            if (autoStart && !p.isStarted()) {
+                p.start();
+            }
+            return true;
+        } else {
+            // Another part `existingPart` is associated with the key. p was not added.
+            // If existingPart needs to be started (e.g. if this call was meant to ensure it's started)
+            if (autoStart && !existingPart.isStarted()) {
+                existingPart.start();
+            }
+            return false; // p is not the one in the map under `key`
+        }
+    }
+
     public enum truth { ;
         /** num distinct freqs and confs */
         public static final int
