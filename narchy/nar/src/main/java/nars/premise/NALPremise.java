@@ -6,6 +6,7 @@ package nars.premise;
 
 import jcog.Util;
 import nars.*;
+import nars.utils.Profiler;
 import nars.deriver.reaction.Reaction;
 import nars.link.MutableTaskLink;
 import nars.task.proxy.SpecialTermTask;
@@ -63,8 +64,9 @@ public abstract class NALPremise extends AbstractPremise {
 
     @Override
     public final void run(Deriver d) {
+        long reactionsStartTime = Profiler.startTime();
         d.model.what.test(d);
-
+        Profiler.recordTime("NALPremise.runReactions", reactionsStartTime);
 
         if (belief()!=null) {
             if (!this.self()) {

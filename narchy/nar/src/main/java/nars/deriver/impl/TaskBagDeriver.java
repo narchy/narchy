@@ -1,6 +1,7 @@
 package nars.deriver.impl;
 
 import jcog.Util;
+import nars.utils.Profiler;
 import jcog.pri.op.PriMerge;
 import jcog.signal.IntRange;
 import jcog.sort.PrioritySet;
@@ -142,11 +143,17 @@ public class TaskBagDeriver extends Deriver {
         }
 
         public final void runSeed(NALTask t, int iter) {
-            runSeed(NALPremise.the(t), iter);
+            long premiseConstructionStartTime = Profiler.startTime();
+            NALPremise.SeedTaskPremise seedPremise = NALPremise.the(t);
+            Profiler.recordTime("TaskBagDeriver.constructSeedPremise", premiseConstructionStartTime);
+            runSeed(seedPremise, iter);
         }
 
         protected void run(int seedCount, int itersPerSeed) {
+            long taskSelectionStartTime = Profiler.startTime();
             var seeds = tasks.seed(focus, seedCount, rng);
+            Profiler.recordTime("TaskBagDeriver.selectTasksForPremises", taskSelectionStartTime);
+
             for (int i = 0, size = seeds.size(); i < size; i++)
                 runSeed(seeds.getAndNull(i), itersPerSeed);
         }

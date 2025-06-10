@@ -1589,17 +1589,18 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
                 Profiler.recordTime("NARLoop.attentionCommit");
             }
 
-
-			if (async) {
-                Profiler.startTime("NARLoop.cycleEventsAsync");
-				eventCycle.emitAsync(NAR.this, exe, ready); // Standard cycle event
-                Profiler.recordTime("NARLoop.cycleEventsAsync");
-            }
-			else {
-                Profiler.startTime("NARLoop.cycleEventsSync");
-				eventCycle.accept(NAR.this);
-                Profiler.recordTime("NARLoop.cycleEventsSync");
-            }
+        long eventCycleProcessingStartTime = Profiler.startTime(); // <<< ADD THIS LINE
+        if (async) {
+            // Profiler.startTime("NARLoop.cycleEventsAsync"); // This was too granular, covered by the new timer
+            eventCycle.emitAsync(NAR.this, exe, ready);
+            // Profiler.recordTime("NARLoop.cycleEventsAsync");
+        }
+        else {
+            // Profiler.startTime("NARLoop.cycleEventsSync"); // This was too granular, covered by the new timer
+            eventCycle.accept(NAR.this);
+            // Profiler.recordTime("NARLoop.cycleEventsSync");
+        }
+        Profiler.recordTime("NARLoop.eventCycleProcessing", eventCycleProcessingStartTime); // <<< ADD THIS LINE
 
 
             // Task sampling from attention, if it was part of Focus cycle (it was, via Focus.attn.sample in some derivations)

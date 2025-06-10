@@ -3,6 +3,7 @@ package nars.deriver.reaction;
 import jcog.TODO;
 import nars.Deriver;
 import nars.Premise;
+import nars.utils.Profiler;
 import nars.action.Action;
 import nars.term.control.*;
 import org.jetbrains.annotations.Nullable;
@@ -162,7 +163,12 @@ public class ReactionModel {
     public BiFunction<Premise, Deriver,Premise> premisePreProcessor = null;
 
     public Premise pre(Premise p, Deriver d) {
-        return premisePreProcessor != null ? premisePreProcessor.apply(p, d) : p;
+        long startTime = Profiler.startTime();
+        try {
+            return premisePreProcessor != null ? premisePreProcessor.apply(p, d) : p;
+        } finally {
+            Profiler.recordTime("ReactionModel.pre", startTime);
+        }
     }
 
 //    /** may confuse the JIT if it doesn't see that each bound Deriver instance isn't the same

@@ -98,6 +98,8 @@ public class NARS {
             conceptBuilder.get()
         );
 
+        n.enableProfiling(); // <<< ADD THIS LINE
+
         var self = n.self();
 
         n.add(n.main = focus.apply(self)); //HACK
