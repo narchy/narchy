@@ -38,7 +38,9 @@ import nars.task.util.PuncBag;
 import nars.term.Termed;
 import nars.time.Tense;
 import nars.util.NARPart;
+import nars.utils.Profiler;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -59,7 +61,7 @@ import static nars.term.Functor.isFunc;
 
 public class Focus extends NARPart implements Externalizable, ConsumerX<Task> {
 
-
+    private static final Logger logger = jcog.Log.log(Focus.class);
 
     public final ByteTopic<Task> eventTask = new ByteTopic<>(Op.Punctuation);
 
@@ -585,6 +587,8 @@ public class Focus extends NARPart implements Externalizable, ConsumerX<Task> {
 
     public void activate(NALTask t) {
         if (novelTime(t)) {
+            logger.debug("Activating task in focus {}: {}, calculated priority: {}", this.id, t, t.priElseZero()); // Assuming priElseZero is the calculated priority
+            Profiler.incrementCounter("Focus.tasksActivated." + this.id);
             attn.activate(t);
             log(t);
         }

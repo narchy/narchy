@@ -1,5 +1,6 @@
 package nars.deriver.impl;
 
+import jcog.Log;
 import jcog.Util;
 import nars.utils.Profiler;
 import jcog.pri.op.PriMerge;
@@ -9,8 +10,10 @@ import nars.*;
 import nars.deriver.reaction.ReactionModel;
 import nars.focus.util.TaskBagAttentionSampler;
 import nars.premise.NALPremise;
+import nars.term.Term;
 import nars.time.clock.RealTime;
 import org.eclipse.collections.api.block.function.primitive.FloatFunction;
+import org.slf4j.Logger;
 
 /**
  * "Open-NARS for Applications" for NARchy
@@ -18,6 +21,8 @@ import org.eclipse.collections.api.block.function.primitive.FloatFunction;
  * TODO clear bags when Focus.clear() called
  */
 public class TaskBagDeriver extends Deriver {
+
+    private static final Logger logger = Log.log(TaskBagDeriver.class);
 
     /** default depth (subpremise evaluations) per seed */
     public static int DEPTH = 9;
@@ -105,6 +110,8 @@ public class TaskBagDeriver extends Deriver {
         }
 
         public void add(Premise x, Premise parent) {
+            logger.debug("Adding premise: {}, parent: {}", x, parent);
+            Profiler.incrementCounter("PremiseSet.premisesAdded");
             if (queue.put(x, priorityFunction.floatValueOf(x)))
                 onDerived(x);
         }
@@ -138,15 +145,26 @@ public class TaskBagDeriver extends Deriver {
         }
 
         protected void run(Premise p) {
+            logger.debug("Running premise: {}, reaction: {}", p, p.reaction());
+            long startTime = Profiler.startTime();
             TaskBagDeriver.this.run(p);
+            Profiler.recordTime("Deriver.runPremise", startTime);
+            Profiler.incrementCounter("Deriver.premisesRun");
+            if (p.reaction() != null) {
+                //TODO check if this gets the simple class name or fully qualified
+                Profiler.incrementCounter("Deriver.reactionRun." + p.reaction().getClass().getSimpleName());
+            }
             queue.priMul(p, decayRate);
         }
 
         public final void runSeed(NALTask t, int iter) {
+            logger.info("Processing seed task: {}", t);
+            long runSeedStartTime = Profiler.startTime();
             long premiseConstructionStartTime = Profiler.startTime();
             NALPremise.SeedTaskPremise seedPremise = NALPremise.the(t);
             Profiler.recordTime("TaskBagDeriver.constructSeedPremise", premiseConstructionStartTime);
             runSeed(seedPremise, iter);
+            Profiler.recordTime("PremiseSet.runSeed", runSeedStartTime);
         }
 
         protected void run(int seedCount, int itersPerSeed) {

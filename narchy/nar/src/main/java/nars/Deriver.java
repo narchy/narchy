@@ -123,8 +123,16 @@ public abstract class Deriver extends NARPart {
 	}
 
 	public final void add(NALTask x, boolean priAuto) {
-		if (invalidDerived(x))
+		logger.debug("Derived task: {}, priority auto: {}, truth: {}", x, priAuto, x.truth());
+		Profiler.incrementCounter("Deriver.tasksDerived");
+
+		if (invalidDerived(x)) {
+			logger.debug("Derived task {} is invalid.", x);
+			// Consider adding more specific logging for why it's invalid if reasons are available here
+			// For example, if invalidDerived returned a reason or set a flag.
+			// logger.debug("Reason for invalid: {}", reason);
 			return;
+		}
 
 		if (x.uncreated()) {
 			if (priAuto)
@@ -557,28 +565,29 @@ public abstract class Deriver extends NARPart {
 		}
 
 		public void unify(Term Tp, Term Bp, Term T, Term B, boolean f, boolean s, DerivingPremise p) {
+            logger.trace("Attempting to unify patterns: Tp={}, Bp={} with terms: T={}, B={}", Tp, Bp, T, B);
             long profilerStartTime = Profiler.startTime();
+            Profiler.incrementCounter("PremiseUnify.unificationAttempts");
 			s = s && T.equals(B);
-			if (unify(f ? Tp : Bp, f ? T : B, s ? p : null)) { // Timed internally
+			// The calls to unify (super.unify) are tricky to profile individually here without modifying the Unify class itself,
+            // or wrapping calls extensively. Profiling the whole unify dispatch gives a good overview.
+			if (super.unify(f ? Tp : Bp, f ? T : B, s ? p : null)) {
 				if (!s && live()) {
-                    unify(f ? Bp : Tp, f ? B : T, p); // Timed internally
+                    super.unify(f ? Bp : Tp, f ? B : T, p);
                 }
 			}
-            Profiler.recordTime("PremiseUnify.unify.dispatch", profilerStartTime);
+            Profiler.recordTime("PremiseUnify.unify", profilerStartTime); // Records time for the entire dispatch method
 		}
 
 
 		private boolean unify(Term x, Term y, @Nullable DerivingPremise p) {
-            long profilerStartTime = Profiler.startTime();
+            // This method is part of the Unify class's internal recursion.
+            // It's better to profile the entry points to unification (the public unify method above)
+            // to avoid skewed metrics from recursive calls.
             var finish = p!=null;
-
 			this.p = finish ? p : null;
-
-            var unified = unify(x, y, finish); // This is the recursive call to Unify.unify, which is not directly timed here but its callers are.
-
+            var unified = super.unify(x, y, finish); // Call Unify.unify
 			if (finish) this.p = null; //release
-
-            Profiler.recordTime("PremiseUnify.unify.internal", profilerStartTime);
 			return unified;
 		}
 
@@ -615,7 +624,9 @@ public abstract class Deriver extends NARPart {
 		@Override protected final boolean match() {
             var p = this.p;
 			if (p == null) return false; /* done */
-			this.p = null;
+			this.p = null; // Clear before taskify
+            logger.debug("Successful unification, bindings: {}", this.xy);
+            Profiler.incrementCounter("PremiseUnify.successfulUnifications");
 			p.taskify(Deriver.this);
 			return true;
 		}

@@ -329,27 +329,30 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 
 	public final void input(Task t) {
+        logger.info("Input task: {}, type: {}, content: {}", t, t.getClass().getSimpleName(), t.term());
+        Profiler.incrementCounter("NAR.tasksInput");
         long profilerStartTime = Profiler.startTime();
         try {
 
             if (t instanceof NALTask X) {
                 if (isNovel(X)) {
-                    narAttn.activate(X);
+                    narAttn.activate(X); // Assuming narAttn.activate handles its own profiling/logging if needed
                     taskEventTopic.emit(t, t.punc());
                 }
             } else if (t instanceof CommandTask C) {
                 runCommand(C);
                 taskEventTopic.emit(t, t.punc());
             } else {
+                logger.warn("Unknown task type received in NAR.input: {}", t.getClass().getName());
                 throw new UnsupportedOperationException("Unknown task type: " + t.getClass());
             }
         } finally {
-            Profiler.recordTime("NAR.inputTask", profilerStartTime);
-            Profiler.incrementCounter("NAR.inputTask.calls");
+            Profiler.recordTime("NAR.inputTaskDuration", profilerStartTime); // Renamed for clarity from NAR.inputTask
+            // Counters below are fine, but the main timer for the method is inputTaskDuration
             if (t instanceof NALTask) {
-                Profiler.incrementCounter("NAR.inputTask.NALTask");
+                Profiler.incrementCounter("NAR.inputTask.NALTask.calls");
             } else if (t instanceof CommandTask) {
-                Profiler.incrementCounter("NAR.inputTask.CommandTask");
+                Profiler.incrementCounter("NAR.inputTask.CommandTask.calls");
             }
         }
 	}
@@ -1268,32 +1271,33 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 		@Override
 		public final boolean next() {
-            long profilerStartTime = Profiler.startTime();
+            long cycleStartTime = Profiler.startTime();
+            logger.debug("NARLoop.next() cycle start, time: {}", NAR.this.time());
 
             long now = NAR.this.time.next();
-            Profiler.startTime("NARLoop.scheduledTasks");
-            exe.run(now);
-            Profiler.recordTime("NARLoop.scheduledTasks");
 
-            commitTime(now);
+            long scheduledTasksStartTime = Profiler.startTime();
+            exe.run(now);
+            Profiler.recordTime("NARLoop.scheduledTasks", scheduledTasksStartTime);
+
+            commitTime(now); // commitTime itself is not profiled, but it's part of the cycle
 
             if (narAttn != null) {
-                Profiler.startTime("NARLoop.attentionCommit");
+                long attentionCommitStartTime = Profiler.startTime();
                 narAttn.commit();
-                Profiler.recordTime("NARLoop.attentionCommit");
+                Profiler.recordTime("NARLoop.attentionCommit", attentionCommitStartTime);
             }
 
-        long eventCycleProcessingStartTime = Profiler.startTime();
-        if (async) {
-            eventCycle.emitAsync(NAR.this, exe, ready);
-        }
-        else {
-            eventCycle.accept(NAR.this);
-        }
-        Profiler.recordTime("NARLoop.eventCycleProcessing", eventCycleProcessingStartTime);
+            long eventCycleProcessingStartTime = Profiler.startTime();
+            if (async) {
+                eventCycle.emitAsync(NAR.this, exe, ready);
+            } else {
+                eventCycle.accept(NAR.this);
+            }
+            Profiler.recordTime("NARLoop.eventCycleProcessing", eventCycleProcessingStartTime);
 
-
-            Profiler.recordTime("NARLoop.next", profilerStartTime);
+            logger.debug("NARLoop.next() cycle end, time: {}", NAR.this.time());
+            Profiler.recordTime("NARLoop.nextCycleTotal", cycleStartTime); // Profile the entire next() method
 			return true;
 		}
 

@@ -882,7 +882,6 @@ public class NARS {
             files(
                     "cond.decompose.nal",
 
- Bajaste el archivo .zip y lo subiste a Google Drive con el mismo nombre?
                     "cond.decompose.must.nal",
 
                     "cond.decompose.would.nal",
