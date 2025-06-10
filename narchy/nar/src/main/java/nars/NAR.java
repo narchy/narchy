@@ -142,7 +142,7 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
     public float durSys = 1; // From Focus.durSys
 
 
-	public NAR(Memory m, Time t, Supplier<Random> rng, ConceptBuilder conceptBuilder) {
+	public NAR(Memory m, Time t, Supplier<Random> rng, ConceptBuilder conceptBuilder, boolean asyncLoop) {
 		super(t, rng);
 
 		this.self = randomSelf();
@@ -168,7 +168,7 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 
 		NARS.Functors.init(this); // Originally in NAR, but Focus also had it. Seems fine here.
 
-		this.loop = new NARLoop();
+		this.loop = new NARLoop(asyncLoop);
 
         this.currentCycleTime = time();
         this.prevCycleTime = this.currentCycleTime;
@@ -1513,7 +1513,11 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
 	 */
 	public final class NARLoop extends InstrumentedLoop {
 
-		private static final boolean async = true; //TODO false if single-threaded
+		private final boolean async;
+
+		public NARLoop(boolean asyncMode) {
+			this.async = asyncMode;
+		}
 
 		@Override
 		protected void starting() {

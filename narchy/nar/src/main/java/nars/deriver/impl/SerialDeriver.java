@@ -8,9 +8,10 @@ import nars.Deriver;
 import nars.NAR;
 import nars.Premise;
 import nars.action.resolve.TaskResolve;
+import nars.deriver.TaskBagAttentionSampler;
+import nars.entity.NALTask;
 import nars.action.transform.TemporalComposer;
 import nars.deriver.reaction.ReactionModel;
-import nars.link.TaskLink;
 import nars.premise.NALPremise;
 import nars.premise.SubPremise;
 import nars.term.Termed;
@@ -19,6 +20,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 public class SerialDeriver extends Deriver {
+
+    private final TaskBagAttentionSampler taskSampler = new TaskBagAttentionSampler(this);
 
     /** breadth */
     public final IntRange iter = new IntRange(60, 1, 4096);
@@ -45,6 +48,7 @@ public class SerialDeriver extends Deriver {
 
     public SerialDeriver(ReactionModel model, NAR nar) {
         super(model, nar);
+        //this.taskSampler = new TaskBagAttentionSampler(this); //already assigned
 
         /* TODO tune */
         int cacheCapacity = (int) Math.pow(iter.intValue(), 2);
@@ -87,9 +91,16 @@ public class SerialDeriver extends Deriver {
 
     }
 
-    private @Nullable TaskLink seed() {
-        throw new TODO("follow seed pattern in TaskBagDeriver");
-        //return this.focus.links.sample(rng);
+    private @Nullable Premise seed() {
+        //throw new TODO("follow seed pattern in TaskBagDeriver");
+        var tasks = taskSampler.seed(this.focus, 1, this.rng);
+        if (tasks != null && !tasks.isEmpty()) {
+            NALTask t = tasks.get(0);
+            //TODO verify this is the correct way to create a NALPremise.SeedTaskPremise
+            //tasks.remove(0); //TODO is this necessary? TaskBagAttentionSampler.seed does not remove
+            return new NALPremise.SeedTaskPremise(t);
+        }
+        return null;
     }
 
     private void trySeed(Premise seed) {

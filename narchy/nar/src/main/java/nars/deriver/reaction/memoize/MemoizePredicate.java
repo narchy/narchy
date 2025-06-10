@@ -18,6 +18,11 @@ import java.util.Map;
  */
 public final class MemoizePredicate extends PREDICATE<Deriver> {
 
+    // At the top of the MemoizePredicate class
+    private static long totalMemoizeHits = 0;
+    private static long totalMemoizeMisses = 0;
+    private static final Object lock = new Object(); // For thread-safe counter updates
+
     private final PREDICATE<Deriver> predicate;
     private final int memoId; // Unique ID for indexing BitSet
 
@@ -73,18 +78,43 @@ public final class MemoizePredicate extends PREDICATE<Deriver> {
     public boolean test(Deriver d) {
         var b = d.bits;
         int bitIndex = memoId * 2;
-        return b.test(bitIndex + 1) ?
-                b.test(bitIndex) // HIT: Return cached result
-                :
-                miss(bitIndex, b, d); // MISS: Evaluate and cache
+        if (b.test(bitIndex + 1)) { // HIT
+            synchronized (lock) {
+                totalMemoizeHits++;
+            }
+            return b.test(bitIndex);
+        } else { // MISS
+            return miss(bitIndex, b, d);
+        }
     }
 
     private boolean miss(int bitIndex, MetalBitSet b, Deriver d) {
+        synchronized (lock) {
+            totalMemoizeMisses++;
+        }
         boolean y = predicate.test(d);
         if (y)
             b.set(bitIndex);  // Store the memoized result
         b.set(bitIndex + 1);
         return y;
+    }
+
+    public static void logStats() {
+        synchronized (lock) {
+            System.out.println("MemoizePredicate Stats: Hits = " + totalMemoizeHits + ", Misses = " + totalMemoizeMisses);
+            // Optionally, use a logger:
+            // import org.slf4j.Logger;
+            // import org.slf4j.LoggerFactory;
+            // private static final Logger logger = LoggerFactory.getLogger(MemoizePredicate.class);
+            // logger.info("MemoizePredicate Stats: Hits = {}, Misses = {}", totalMemoizeHits, totalMemoizeMisses);
+        }
+    }
+
+    public static void resetStats() {
+        synchronized (lock) {
+            totalMemoizeHits = 0;
+            totalMemoizeMisses = 0;
+        }
     }
 
 

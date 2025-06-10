@@ -30,12 +30,19 @@ public class TaskBagDeriver extends Deriver {
     /** depth (batch work per seed) */
     public final IntRange depth = new IntRange(DEPTH, 4, 256);
 
-    public final PremiseSet premises = new PremiseSet();
+    public final PremiseSet premises;
 
     private final TaskBagAttentionSampler tasks = new TaskBagAttentionSampler(this);
 
-    public TaskBagDeriver(ReactionModel model, NAR nar) {
+    public static final int DEFAULT_PREMISE_QUEUE_CAPACITY = NAL.derive.TASKIFY_INLINE ? 64 : 32;
+
+    public TaskBagDeriver(ReactionModel model, NAR nar, int premiseQueueCapacity) {
         super(model, nar);
+        this.premises = new PremiseSet(premiseQueueCapacity);
+    }
+
+    public TaskBagDeriver(ReactionModel model, NAR nar) {
+        this(model, nar, DEFAULT_PREMISE_QUEUE_CAPACITY);
     }
 
     private void _next(int iter) {
@@ -65,26 +72,39 @@ public class TaskBagDeriver extends Deriver {
         premises.onDerived(x);
     }
 
+    public void setPremisePriorityFunction(FloatFunction<Premise> newPriorityFunction) {
+        this.premises.setPriorityFunction(newPriorityFunction);
+    }
+
     public class PremiseSet {
-        static final int QUEUE_CAPACITY = NAL.derive.TASKIFY_INLINE ? 64 : 32;
-        static final float decayRate =
-            (float) (1f/Math.sqrt(QUEUE_CAPACITY));
-            //1f/QUEUE_CAPACITY;
-            //1/8f;
-            //1/6f;
-            //1/4f;
-            //1/3f;
+        final int queueCapacity;
+        final float decayRate;
 
-        protected PrioritySet<Premise> queue = new PrioritySet<>(QUEUE_CAPACITY);
+        protected PrioritySet<Premise> queue;
 
-        public FloatFunction<Premise> pri = p -> 1;
+        private FloatFunction<Premise> priorityFunction;
+
+        public PremiseSet(int capacity) {
+            this.queueCapacity = capacity;
+            this.decayRate = (float) (1f/Math.sqrt(this.queueCapacity));
+            this.queue = new PrioritySet<>(this.queueCapacity);
+            this.priorityFunction = p -> 1f;
+        }
+
+        public void setPriorityFunction(FloatFunction<Premise> newPriorityFunction) {
+            if (newPriorityFunction == null) {
+                this.priorityFunction = p -> 1f;
+            } else {
+                this.priorityFunction = newPriorityFunction;
+            }
+        }
 
         public boolean isEmpty() {
             return queue.isEmpty();
         }
 
         public void add(Premise x, Premise parent) {
-            if (queue.put(x, pri.floatValueOf(x)))
+            if (queue.put(x, priorityFunction.floatValueOf(x)))
                 onDerived(x);
         }
 
