@@ -28,8 +28,11 @@ import nars.term.Compound;
 import nars.term.Functor;
 import nars.term.Termed;
 import nars.term.atom.Atom;
+import nars.NAL;
 import nars.term.atom.Bool;
 import nars.term.atom.Int;
+// import nars.term.obj.Float; // Removed this import
+import nars.term.obj.QuantityTerm; // Added this import
 import nars.term.functor.AbstractInlineFunctor;
 import nars.term.functor.AbstractInlineFunctor1;
 import nars.term.functor.AbstractInlineFunctor2;
@@ -67,9 +70,6 @@ import static nars.term.util.Image.imageNormalize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-/**
- * NAR builder
- */
 public class NARS {
 
     public static final Logger log = Log.log(NARS.class);
@@ -78,7 +78,7 @@ public class NARS {
 
     protected Time time;
 
-    @Deprecated protected final Function<Term, Focus> focus;
+    protected final Function<Term, Focus> focus;
 
     protected Supplier<Random> rng;
 
@@ -98,11 +98,11 @@ public class NARS {
             conceptBuilder.get()
         );
 
-        n.enableProfiling(); // <<< ADD THIS LINE
+        n.enableProfiling();
 
         var self = n.self();
 
-        n.add(n.main = focus.apply(self)); //HACK
+        n.add(n.main = focus.apply(self));
 
         if (log.isInfoEnabled()) log.info("init {} {}", self, System.identityHashCode(n));
 
@@ -113,9 +113,6 @@ public class NARS {
         return n;
     }
 
-    /**
-     * applied in sequence as final step before returning the NAR
-     */
     private final Map<String,Consumer<NAR>> step = new LinkedHashMap<>();
 
     public NARS memory(Memory concepts) {
@@ -133,10 +130,7 @@ public class NARS {
         return this;
     }
 
-    /**
-     * adds a deriver with the standard rules for the given range (inclusive) of NAL levels
-     */
-    @Deprecated public NARS withNAL(int minLevel, int maxLevel, String... extra) {
+    public NARS withNAL(int minLevel, int maxLevel, String... extra) {
         return then("nal", n -> deriver(Rules.nal(
                 minLevel, maxLevel, extra).core().stm().temporalInduction(), n)
             .everyCycle(n.main()));
@@ -148,18 +142,8 @@ public class NARS {
 
     protected Deriver deriver(ReactionModel m, NAR n) {
         return new TaskBagDeriver(m, n);
-        //return new QueueDeriver(m, n);
-        //return new FairDeriver(m, n);
-        //return new SerialDeriver(m, n);
-        //return new CachedSerialDeriver(m, n, 8 * 1024);
-        //return new EqualizerDeriver(m, n);
-        //return new MixDeriver(m, n);
     }
 
-    /**
-     * generic defaults
-     */
-    @Deprecated
     public static class DefaultNAR extends NARS {
 
         public DefaultNAR(int nal, boolean threadSafe) {
@@ -198,21 +182,11 @@ public class NARS {
         conceptBuilder = DefaultConceptBuilder::new;
     }
 
-    /**
-     * temporary, disposable NAR. safe for single-thread access only.
-     * full NAL8 with STM Linkage
-     */
     public static NAR tmp() {
         return tmp(8);
     }
 
 
-    /**
-     * temporary, disposable NAR. useful for unit tests or embedded components
-     * safe for single-thread access only.
-     *
-     * @param nal adjustable NAL level. level >= 7 include STM (short-target-memory) Linkage plugin
-     */
     public static NAR tmp(int nal) {
         return tmp(0, nal);
     }
@@ -221,15 +195,11 @@ public class NARS {
         return new DefaultNAR(nalStart, nalEnd, false).get();
     }
 
-    /**
-     * single thread but for multithread usage:
-     * unbounded soft reference index
-     */
-    @Deprecated public static NAR threadSafe() {
+    public static NAR threadSafe() {
         return threadSafe(8);
     }
 
-    @Deprecated private static NAR threadSafe(int level) {
+    private static NAR threadSafe(int level) {
         var d = new DefaultNAR(level, true)
                 .time(new RealTime.CS().durFPS(25.0f));
 
@@ -239,16 +209,11 @@ public class NARS {
     }
 
 
-    /** @param durFPS milliseconds realtime.  <=0: infinite */
     public static NARS realtime(float durFPS) {
         NARS d = new DefaultNAR(0, true);
         return durFPS > 0 ? d.time(new RealTime.MS().durFPS(durFPS)) : d;
     }
 
-    /**
-     * provides only low level functionality.
-     * an empty deriver, but allows any kind of target
-     */
     public static NAR shell() {
         return tmp(0);
     }
@@ -259,15 +224,6 @@ public class NARS {
         return this;
     }
 
-    /**
-     * Built-in Functors, Operators, etc.
-     *
-     * registered into a NAR on initialization
-     * Provides the standard core function library
-     * <p>
-     * see:
-     * https:
-     */
     public enum Functors {
         ;
 
@@ -283,12 +239,7 @@ public class NARS {
                 MathFunc.mod,
                 MathFunc.max,
                 MathFunc.min,
-    //            MathFunc.lte,
-    //            MathFunc.gte,
-    //            MathFunc.lt,
-    //            MathFunc.gt,
 
-                //MathFunc.xor,
 
                 Member.member,
 
@@ -343,29 +294,26 @@ public class NARS {
                     }
                 },
 
-                /** removes one matching event, chosen at random  */
                 new AbstractInlineFunctor2(atom("condWithoutAny")) {
                     @Override
-                    @Deprecated protected Term apply(Term conj, Term event) {
+                    protected Term apply(Term conj, Term event) {
                         return CondDiff.diffAny(conj, event, false);
                     }
                 },
 
-                /** removes one matching event, chosen at random, pos or negated */
                 new AbstractInlineFunctor2(atom("condWithoutAnyPN")) {
                     @Override
-                    @Deprecated protected Term apply(Term conj, Term event) {
+                    protected Term apply(Term conj, Term event) {
                         return CondDiff.diffAny(conj, event, true);
                     }
                 },
                 new AbstractInlineFunctor2(atom("condIntersect")) {
                     @Override
-                    @Deprecated protected Term apply(Term x, Term y) {
+                    protected Term apply(Term x, Term y) {
                         return Cond.intersect(x,y);
                     }
                 },
 
-                /** removes all matching events */
                 new AbstractInlineFunctor2(atom("conjWithoutFirst")) {
                     @Override
                     protected Term apply(Term conj, Term event) {
@@ -385,7 +333,6 @@ public class NARS {
                     }
                 },
 
-                /** removes all matching events, pos or negated */
                 new AbstractInlineFunctor2(atom("condWithoutAllPN")) {
                     @Override
                     protected Term apply(Term conj, Term event) {
@@ -393,21 +340,7 @@ public class NARS {
                     }
                 },
 
-    //            new AbstractInlineFunctor1("conjWithoutIndepEvents") {
-    //                @Override
-    //                protected Term apply1(Term conj) {
-    //                    if (!conj.CONJ() || !conj.hasAny(VAR_INDEP)) return conj;//unchanged
-    //                    ConjList c = new ConjList();
-    //                    boolean xternal = conj.dt() == XTERNAL;
-    //                    ((Compound) conj).events((when, what) -> {
-    //                        if (!what.hasAny(VAR_INDEP))
-    //                            c.add(when, what);
-    //                    }, xternal ? TIMELESS : 0, true, xternal);
-    //                    return c.term();
-    //                }
-    //            },
 
-                /** applies the changes in structurally similar terms "from" and "to" to the target target */
                 Functor.f3((Atom) $.atomic("replaceDiff"), (target, from, to) -> {
                     if (from.equals(to))
                         return Null;
@@ -432,9 +365,6 @@ public class NARS {
                     return Null;
                 }),
 
-                /** similar to C/Java "indexOf" but returns a set of all numeric indices where the 2nd argument occurrs as a subterm of the first
-                 *  if not present, returns Null
-                 * */
 
                 Functor.f2("indicesOf", (x, y) -> {
 
@@ -561,7 +491,6 @@ public class NARS {
                     }
                 }),
 
-                /** warning: this returns Null if unchanged */
                 new AbstractInlineFunctor2("withoutPN") {
                     @Override
                     protected Term apply(Term container, Term _content) {
@@ -571,18 +500,14 @@ public class NARS {
                     }
                 },
 
-                /** warning: this returns Null if unchanged */
                 new AbstractInlineFunctor1("negateConds") {
                     @Override protected Term apply1(Term x) {
                         return Cond.negateConds(x,
                             true
-                            //!x.SEQ()
-                            //false
                         );
                     }
                 },
 
-                /** warning: this returns Null if unchanged */
                 new AbstractInlineFunctor2("without") {
                     @Override
                     protected Term apply(Term container, Term content) {
@@ -591,7 +516,6 @@ public class NARS {
                     }
                 },
 
-                /** warning: this returns Null if unchanged */
                 new AbstractInlineFunctor2("unsect") {
                     @Override
                     protected Term apply(Term container, Term content) {
@@ -639,12 +563,66 @@ public class NARS {
                         }
                     }
                     return null;
-                })
+                }),
+
+                new AbstractInlineFunctor("getTemporalInductionImplBidi") {
+                    @Override
+                    public Term apply(Evaluation e, Subterms args) {
+                        return Bool.value(NAL.temporal.TEMPORAL_INDUCTION_IMPL_BIDI);
+                    }
+                },
+                new AbstractInlineFunctor1("setTemporalInductionImplBidi") {
+                    @Override
+                    protected Term apply1(Term val) {
+                        if (val instanceof Bool b) {
+                            NAL.temporal.TEMPORAL_INDUCTION_IMPL_BIDI = b.isTrue();
+                            return b;
+                        }
+                        return Null;
+                    }
+                },
+                new AbstractInlineFunctor("getNovelDurs") {
+                    @Override
+                    public Term apply(Evaluation e, Subterms args) {
+                        return QuantityTerm.the(NAL.belief.NOVEL_DURS);
+                    }
+                },
+                new AbstractInlineFunctor1("setNovelDurs") {
+                    @Override
+                    protected Term apply1(Term val) {
+                        if (val instanceof QuantityTerm q) {
+                            NAL.belief.NOVEL_DURS = q.quant();
+                            return q;
+                        }
+                        if (val instanceof Int i) {
+                            double doubleVal = i.doubleValue();
+                            NAL.belief.NOVEL_DURS = doubleVal;
+                            return QuantityTerm.the(doubleVal);
+                        }
+                        return Null;
+                    }
+                },
+                new AbstractInlineFunctor("getCompoundVolumeMax") {
+                    @Override
+                    public Term apply(Evaluation e, Subterms args) {
+                        return Int.the(NAL.term.COMPOUND_VOLUME_MAX);
+                    }
+                },
+                new AbstractInlineFunctor1("setCompoundVolumeMax") {
+                    @Override
+                    protected Term apply1(Term val) {
+                        if (val instanceof Int i) {
+                            int intVal = i.intValue();
+                            if (intVal > 0) {
+                                NAL.term.COMPOUND_VOLUME_MAX = intVal;
+                                return i;
+                            }
+                        }
+                        return Null;
+                    }
+                }
         };
 
-    //    private static Term nullIfEq(Term mustNotEqual, Term result) {
-    //        return mustNotEqual.equals(result) ? Null : result;
-    //    }
 
         private static final Map<Term, Functor> statiks;
 
@@ -664,27 +642,17 @@ public class NARS {
                 nar.add(t);
         }
 
-        /**
-         * instantiates NAR-local functors
-         */
         private static void registerFunctorsDynamic(NAR nar) {
             nar.add(SetFunc.sort());
 
-            /** dynamic target builder - useful for NAR specific contexts like clock etc.. */
             nar.add(new TermDynamic(nar));
 
-            /** applies # dep and $ indep variable introduction if possible. returns the input term otherwise  */
             nar.add(Functor.f1Inline("varIntro", x -> {
                 if (!(x instanceof Compound c)) return Null;
                 var result = DepIndepVarIntroduction.the.apply(c, nar.random(), null);
                 return result != null ? result : Null;
             }));
 
-    /** TODO
-             * replay(timeStart, timeEnd, [belief|goal|question] [pos|neg]) [!;]
-             * functor context parameter to subsume Operator API as functors that trigger
-             * async reactions when evaluated in imperative contexts
-             */
             nar.add(new AbstractInlineFunctor2("replay") {
 
                 @Override
@@ -698,7 +666,6 @@ public class NARS {
                 var when = n.time();
                 return $.quote(((BeliefTable) c).truth(when, when, n));
             }));
-    //        nar.on(Functor.f1Concept("goalTruth", nar, (c, n) -> $.quote(n.goal(c, n.time()))));
 
             nar.add(f0("self", nar::self));
 
@@ -731,7 +698,6 @@ public class NARS {
         private static void registerOperators(NAR nar) {
 
             nar.add(atom("task"), (x, nn) -> {
-                //TODO punctuation parameter: Task.BeliefAtom, Task.GoalAtom etc
                 var t = NALTask.taskEternal(x.term().sub(0).sub(0), BELIEF, $.t(1.0f, nn.confDefault(BELIEF)), nn);
                 t.withPri(nn.priDefault(BELIEF));
                 nn.input(t);
@@ -739,14 +705,13 @@ public class NARS {
             });
 
             nar.addOp1("assertTrue", (x, nn) -> {
-                if (x.hasVars()) //???
+                if (x.hasVars())
                     assertSame(True, x);
             });
 
-            //TODO separate into assert and equals functors
             nar.addOp2("assertEquals", (x, y, nn) -> {
                 if (!x.equals(y) && !x.hasVars() && !y.hasVars())
-                    assertEquals(/*msg,*/ x, y);
+                    assertEquals( x, y);
             });
 
         }
@@ -781,7 +746,7 @@ public class NARS {
                 var opTerm = s.sub(0);
                 var o = Op.op((Atom) opTerm);
                 if (o == null)
-                    return Null; //TODO throw
+                    return Null;
 
                 int dt;
                 if (s.subs() == 3) {
@@ -807,27 +772,11 @@ public class NARS {
 
     }
 
-    /**
-     * utility class and recipes for building Deriver's
-     *
-     * half of it is patrick's original meta-NAL, which is whats in the .nal files.  the other half of the 'rules' aka reactions are natively coded.  both share a common predicate system that gets compiled into a tree of folded common preconditions for maximum elimination.
-     *
-     * these rules are triggered by matching properties against the current Premise in a Deriver.  the premise consists of, at minimum, a Term from() and optionally Term to(), NALTask fromTask(), NALTask toTask().  this allows all varieties of single and double premises.
-     *
-     * TaskLinks are the elemental Premise.  it derives single and double premises through a dynamic task lookup process that can be biased in different ways, for example, occurrence time (start.. end range).
-     *
-     * the various premise implementations can cache (memoize) data in them to accelerate if they are called again.
-     *
-     * the rates of generating the different 'daughter-product' premises in this chain reaction are individually controllable but seems that even if this is flat it can work with the careful choices of rules.
-     *
-     * in terms of forming new links in the graph search process, compound decomposition is a spiralling inwards.  and termlinking is a spiral outwards.  the priority rates of each of these can be seperately controlled too for different mental dynamics.
-     */
     public static class Rules extends Reactions {
 
         private final TaskWhen when =
             new FocusTiming();
-            //new MultiFocusTiming();
-            //new JitterTiming(when),
+
 
         private static final boolean implTwoStep = false;
 
@@ -843,14 +792,9 @@ public class NARS {
             return core(true);
         }
 
-        /**
-         * standard derivation behaviors
-         */
         public Rules core(boolean varIntro) {
 
-            //add(new TaskResolve(when, AnyTaskResolver));
 
-            //if (!beliefResolveAuto)
             add(beliefResolver);
 
             decomposers();
@@ -862,13 +806,6 @@ public class NARS {
 
             add(new Evaluate());
 
-    //        addAll(
-    //                new AnswerQuestionsFromBeliefTable(
-    //                        new FocusTiming(),
-    //                        true, true, AnyTaskResolver),
-    //                new AnswerQuestionsFromConcepts.AnswerQuestionsFromTaskLinks(when)
-    //                        //.log(true)
-    //        );
 
             return this;
         }
@@ -879,8 +816,7 @@ public class NARS {
             return this;
         }
 
-        /** standard ruleset */
-        @Deprecated public static Rules nal(int minLevel, int maxLevel, String... extraFiles) {
+        public static Rules nal(int minLevel, int maxLevel, String... extraFiles) {
             var r = new Rules();
 
             for (var level = minLevel; level <= maxLevel; level++) {
@@ -899,36 +835,29 @@ public class NARS {
             return r;
         }
 
-        /** TODO ensure called only once */
         public Rules structural() {
             files(
                "inh.nal"
-                //,"inh.goal.nal"
                 ,"sim.nal"
             );
 
             return this;
         }
 
-        /** optional */
         public Rules images() {
 
             add(new ImageUnfold(true));
 
             add(new ImageAlign.ImageAlignBidi());
 
-                //new ImageAlign.ImageAlignUni_Root()
-    //			new ImageAlign.ImageAlignUni_InCompound(true),
-    //			new ImageAlign.ImageAlignUni_InCompound(false),
 
             return this;
         }
 
-        /** same */
         public Rules diff() {
             files(
                     "diff.nal"
-                , "diff.goal.nal" //TODO needs updated if comparator model is used
+                , "diff.goal.nal"
             );
             return this;
         }
@@ -945,7 +874,6 @@ public class NARS {
               "analogy.anonymous.conj.nal"
                   , "analogy.anonymous.impl.nal"
                   , "analogy.mutate.nal"
-                    //,"analogy.goal.nal"
             );
             return this;
         }
@@ -954,18 +882,13 @@ public class NARS {
             files(
                     "cond.decompose.nal",
 
-                    /* X!,  C.  |- before(C,X)! */        "cond.decompose.must.nal",
-                    // /* X!,  C.  |- afterOrDuring(C,X)! */ "cond.decompose.might.nal",
+ Bajaste el archivo .zip y lo subiste a Google Drive con el mismo nombre?
+                    "cond.decompose.must.nal",
 
-                    /* C!,  X.  |- afterOrDuring(C,X)! */ "cond.decompose.would.nal",
+                    "cond.decompose.would.nal",
 
-                    /* C/!, X.  |- before(C,X)!  */       "cond.decompose.wouldve.nal",
+                    "cond.decompose.wouldve.nal",
 
-                    // /* C!,--X0. |- X0! */                 "cond.decompose.should.nal",
-
-                    // /* C!,X0 |- X0! */ "cond.decompose.start.nal",
-
-                    //"nal3.question.nal",
 
                     "contraposition.nal",
                     "conversion.nal",
@@ -978,33 +901,20 @@ public class NARS {
                     "impl.strong.cond.nal",
 
                     "impl.compose.nal"
-                    //,"impl.compose.specific.nal"
 
                   , "impl.decompose.self.nal"
-                  //, "impl.decompose.subcond.nal"
                   , "impl.decompose.specific.nal"
 
                   , "impl.recompose.nal"
 
-                  //, "impl.decompose.or.nal"
 
-                  //,"impl.decompose.inner.nal"
-                  //,"impl.decompose.inner.question.nal",
-
-
-                    //,"quest_induction.nal"
-                    //"equal.nal"
-                    //"xor.nal"
-                    //"impl.disj.nal"
-                    //"nal6.layer2.nal"
-                    //"nal6.mutex.nal"
             );
             return this;
         }
 
         private void varIntro() {
             add(
-                new VariableIntroduction()./*anon().*/taskPunc(true,
+                new VariableIntroduction().taskPunc(true,
                     NAL.derive.VARIABLE_INTRODUCE_GOALS,
                     NAL.derive.VARIABLE_INTRODUCE_QUESTIONS,
                     NAL.derive.VARIABLE_INTRODUCE_QUESTS)
@@ -1024,13 +934,11 @@ public class NARS {
 
         private void temporalInductionConj(boolean full, boolean disj) {
             if (!full) {
-                //auto-negate
                 add(new TemporalInduction.ConjInduction(0, 0));
 
                 if (disj)
                     add(new TemporalInduction.DisjInduction(0, 0));
             } else {
-                //disj = ignored
 
                 addAll(
                       new TemporalInduction.ConjInduction(+1, +1)
@@ -1039,8 +947,6 @@ public class NARS {
                     , new TemporalInduction.ConjInduction(-1, -1)
                 );
 
-    //					.iff(  TheTask, TermMatcher.ConjSequence.the, false)
-    //					.iff(TheBelief, TermMatcher.ConjSequence.the, false)
             }
         }
 
@@ -1053,8 +959,7 @@ public class NARS {
                 );
             } else {
                 add(
-                    new TemporalInduction.ImplInduction(2 /* AUTO-stochastic */, implDir)
-                    //new TemporalInduction.ImplTemporalInduction(0 /* AUTO */, implDir)
+                    new TemporalInduction.ImplInduction(2 , implDir)
                 );
             }
         }
@@ -1062,15 +967,12 @@ public class NARS {
 
         private void decomposers() {
 
-            /* may be necessary to be true for certain delta.goal.nal rules */
             var deltaDecompose =
                     true;
-                    //false;
 
             var special = new Op[] { INH, SIM, IMPL, CONJ };
 
             addAll(
-                //default compound decomposition
                 new Decompose1().taskIsNot(
                     deltaDecompose ? special : ArrayUtil.add(special, DELTA)
                 ),
@@ -1080,42 +982,19 @@ public class NARS {
                 new DecomposeStatement(INH, SIM)
             );
 
-            if (implTwoStep) {
-                addAll(
-                    //2-step IMPL decompose (progressive - less combinatorial explosion)
-                    new DecomposeImpl(false).bidi(AnyTaskResolver, when),
-                    new DecomposeCondSubterm(IMPL, true)//.bidi(AnyTaskResolver, when)
-                );
-            } else {
-                //1-step IMPL decompose (immediate)
-                //add(new DecomposeImpl(true).bidi());
-
-                addAll(
-                    //new DecomposeImpl(true)
-                    new DecomposeImpl(true).bidi(AnyTaskResolver, when)
-                    //new DecomposeImpl(false).bidi()
-                    //new DecomposeImpl(true), new DecomposeImpl(false).reverse()
-                );
-                //add(DecomposeTerm.either(
-            }
+            // Since implTwoStep is false, this block is always executed:
+            addAll(
+                new DecomposeImpl(true).bidi(AnyTaskResolver, when)
+            );
         }
 
         @Override
         public ReactionModel compile(NAR n) {
             var m = super.compile(n);
 
-            if (beliefResolveAuto) {
-                m.premisePreProcessor = (x, d) -> {
-                    if (x instanceof NALPremise.SingleTaskPremise s) {
-                        if (s.task.BELIEF_OR_GOAL()) {
-                            var y = beliefResolver.resolveBelief(s, d);
-                            if (y != null)
-                                return y;
-                        }
-                    }
-                    return x;
-                };
-            }
+            // Since beliefResolveAuto is false, this block is never executed.
+            // If it were true, the premisePreProcessor would be set.
+            // m.premisePreProcessor = ...;
             return m;
         }
 

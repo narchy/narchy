@@ -27,11 +27,6 @@ import static nars.Op.EQ;
 import static nars.Op.INH;
 import static nars.term.atom.Bool.*;
 
-/**
- * an evaluation plan
- * discovers functors within the provided target, or the target itself.
- * transformation results should not be interned, that is why DirectTermTransform used here
- */
 public sealed class Evaluator permits CachedEvaluator {
 
     private final Function<Atom, Functor> funcResolver;
@@ -96,7 +91,7 @@ public sealed class Evaluator permits CachedEvaluator {
     private static Term clauseRemap(Term y, UnifriedMap<Term, Term> remap, ArrayHashSet<Compound> e) {
         while (!remap.isEmpty()) {
             var t = Replace.replace(remap, Evaluator.B);
-            remap.clear(); //remap = null;
+            remap.clear();
             y = t.apply(y);
             if (!e.isEmpty())
                 clauses(e, remap, t);
@@ -122,47 +117,36 @@ public sealed class Evaluator permits CachedEvaluator {
         }
     }
 
-    /** resolves functor atoms, extracts evaluable sub-expressions, and returns possibly transformed compound */
     private Term clauseFind(final Compound X, Term superTerm, Set<Compound> e, UnifriedMap<Term, Term> remap) {
 
         if (X instanceof Neg)
             return clauseFindNeg(X, e, remap);
 
-        //        boolean xConj = xOp == CONJ;
 
         var xChanged = false;
         var yy = X.subtermsDirect();
         if (Functor.evalable(yy)) {
             var n = yy.subs();
-            //TODO only do this if there are actually >1 evalable subterms.
 
-            //TODO use Subterm.transformSubs
             TermList xy = null;
 
-            /* reverse direction, which visits simpler terms first according to the canonical sorting order */
             for (var i = n - 1; i >= 0; i--) {
                 var x = yy.sub(i);
                 if (Functor.evalable(x)) {
 
                     var z = clauseFind((Compound) x, X, e, remap);
                     if (z == Null)
-                        return Null; //CUT
+                        return Null;
 
                     if (z!=x) {
                         xChanged = true;
-//                        if (xConj && z instanceof Bool) {
-//                            if (z == False)
-//                                return False;
-//                            /*else if (xxx == True) { skip }*/
-//                            continue;
-//                        }
                         x = z;
                     }
                 }
 
                 if (xy == null) {
                     if (!xChanged)
-                        continue; //keep null
+                        continue;
 
                     xy = clone(yy, n, i);
                 }
@@ -171,10 +155,9 @@ public sealed class Evaluator permits CachedEvaluator {
             }
 
             if (xChanged) {
-                /* reverse since the subterms were iterated and added in descending order */
                 xy.reverseThis();
                 yy = xy;
-            } /*else assert(xy == null); */
+            }
         }
 
         return clauseFindResult(X, superTerm, e, remap, X.op(), yy, xChanged);
@@ -182,11 +165,10 @@ public sealed class Evaluator permits CachedEvaluator {
 
     private static TermList clone(Subterms x, int n, int i) {
         var y = new TermList(n);
-        for (var k = n - 1; k > i; k--) y.addFast(x.sub(k)); //copy first N
+        for (var k = n - 1; k > i; k--) y.addFast(x.sub(k));
         return y;
     }
 
-    /** add this after the children have recursed */
     private Term clauseFindResult(Compound x, Term superTerm, java.util.Set<Compound> e, UnifriedMap<Term, Term> remap, Op xOp, Subterms yy, boolean xChanged) {
         boolean evalable;
 
@@ -208,19 +190,14 @@ public sealed class Evaluator permits CachedEvaluator {
             case null, default -> evalable = false;
         }
 
-        Term y;
-        if (xChanged) {
-            y = xOp.build(B, x.dt(), yy);
-            if (evalable && !Functor.isFunc(y))
-                evalable = false;
-        } else {
-            y = x;
+        Term y = xChanged ? xOp.build(B, x.dt(), yy) : x;
+        if (xChanged && evalable && !Functor.isFunc(y)) {
+            evalable = false;
         }
 
 
         if (y.EQ()) {
             if (!(superTerm instanceof Neg)) {
-                //dont assign if the equality is wrapped in negation
                 var z = equalConstantReduce(y.subtermsDirect(), remap);
                 if (z != null)
                     return z;
@@ -259,7 +236,6 @@ public sealed class Evaluator permits CachedEvaluator {
 
     @Nullable
     private static Term equalConstantReduce(Compound a, Compound b, UnifriedMap<Term, Term> remap, int n) {
-        //try component-wise assignment
         var indeterminate = false;
         var eliminations = MetalBitSet.bits(n);
 
@@ -271,11 +247,9 @@ public sealed class Evaluator permits CachedEvaluator {
             }
         }
 
-        if (indeterminate) {
-            return eliminations.isEmpty() ? null :
-                equalConstantReduceIndeterminate(a, b, remap, eliminations);
-        } else
-            return True;
+        return indeterminate ?
+            (eliminations.isEmpty() ? null : equalConstantReduceIndeterminate(a, b, remap, eliminations)) :
+            True;
     }
 
     @Nullable private static Term inlineAssignReturn(Term a, Term b, UnifriedMap<Term, Term> remap) {
@@ -291,10 +265,9 @@ public sealed class Evaluator permits CachedEvaluator {
         var n = as.length;
         if (n!=bs.length)
             throw new UnsupportedOperationException();
-        //assert(as.length == bs.length);
 
         return (n == 1) ?
-            equalConstantReduce(as[0], bs[0], remap) //reduce 1-ary product to term
+            equalConstantReduce(as[0], bs[0], remap)
             :
             equalConstantReduce($.pFast(as), $.pFast(bs), remap, n);
     }
@@ -320,14 +293,11 @@ public sealed class Evaluator permits CachedEvaluator {
         if (v0 && aNeg) {
             a = a.unneg();
             b = b.neg();
-        } else {
-            if (v1 && bNeg) {
-                b = b.unneg();
-                a = a.neg();
-            }
+        } else if (v1 && bNeg) {
+            b = b.unneg();
+            a = a.neg();
         }
         if (v0 ^ v1) {
-            //pre-assign constant -> variable
             var v = v0 ? b : a;
             if (!Functor.evalable(v))
                 return inlineAssignConstant(v0 ? a : b, v, remap);
@@ -359,19 +329,5 @@ public sealed class Evaluator permits CachedEvaluator {
 
     static final TermBuilder B =
         SimpleTermBuilder.the;
-        //LightHeapTermBuilder.the;
-
-//    static final Comparator<? super Term> complexitySort = (a, b) -> {
-//        int vars = Integer.compare(a.vars(), b.vars());
-//        if (vars != 0)
-//            return vars;
-//        int vol = Integer.compare(a.volume(), b.volume());
-//        if (vol != 0)
-//            return vol;
-//
-//        return a.compareTo(b);
-//    };
-
-//    private final TermBuffer compoundBuilder = new TermBuffer(Op._terms);
 
 }
