@@ -41,12 +41,6 @@
         </dependency>
 
         <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-            <version>1.17.5</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.hipparchus</groupId>
             <artifactId>hipparchus-optim</artifactId>
             <version>${hipparchus.version}</version>

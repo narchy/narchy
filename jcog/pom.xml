@@ -30,6 +30,7 @@
         <module>rtree</module>
         <module>realtime</module>
         <module>evolve</module>
+        <module>parse</module>
     </modules>
     <!--
         generate wrapper:
