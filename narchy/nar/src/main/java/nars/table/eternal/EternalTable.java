@@ -9,10 +9,13 @@ import nars.action.memory.Remember;
 import nars.task.SerialTask;
 import nars.truth.Stamp;
 import nars.truth.proj.IntegralTruthProjection;
+import nars.utils.Profiler;
 import nars.truth.proj.MutableTruthProjection;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -24,6 +27,8 @@ import static nars.BeliefTable.eternalOriginality;
  * Created by me on 5/7/16.
  */
 public class EternalTable extends LockedFloatSortedArray<NALTask> implements BeliefTable {
+
+    private final Map<NALTask, NALTask> taskMap = new HashMap<>();
 
     /** initializes with zero capacity. */
     public EternalTable() {
@@ -133,10 +138,112 @@ public class EternalTable extends LockedFloatSortedArray<NALTask> implements Bel
 
     /** weakest to weakest, first valid is taken */
     private boolean compressFast(@Nullable Remember r) {
+        Profiler.startTime("EternalTable.compressFast");
+        try {
+            int s = size();
+
+            NAR nar = r != null ? r.nar() : null;
+            EternalReviser ar = new EternalReviser(nar != null ? nar.timeRes() : 1);
+
+            for (int a = s - 1; a >= 1; a--) {
+                NALTask A = get(a);
+                ar.set(A);
+                for (int b = a - 1; b >= 0; b--) {
+                    NALTask B = get(b);
+                    NALTask AB = ar.apply(B);
+                    if (AB != null) {
+                        //assert(a > b); //remove the higher index, A, first and B remains at same index
+                        removeFast(a);
+                        removeFast(b);
+                        if (!contains(AB)) {
+                            insert(AB);
+//                        if (r!=null)
+//                            r.focus.activate(new Remember(AB, r.concept));
+                        }
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } finally {
+            Profiler.recordTime("EternalTable.compressFast");
+        }
+    }
+
+    @Override
+    public boolean insert(NALTask x) {
+        long l = lock.writeLock();
+        try {
+            if (super.insert(x)) {
+                taskMap.put(x, x);
+                return true;
+            }
+            return false;
+        } finally {
+            lock.unlockWrite(l);
+        }
+    }
+
+    @Override
+    protected NALTask removeLast() {
+        long l = lock.writeLock();
+        try {
+            NALTask removed = super.removeLast();
+            if (removed != null) {
+                taskMap.remove(removed);
+            }
+            return removed;
+        } finally {
+            lock.unlockWrite(l);
+        }
+    }
+
+
+    @Override
+    protected boolean removeFast(int index) {
+        long l = lock.writeLock();
+        try {
+            NALTask item = get(index); // Get item before removing from array
+            if (super.removeFast(index)) {
+                if (item != null) {
+                    taskMap.remove(item);
+                }
+                return true;
+            }
+            return false;
+        } finally {
+            lock.unlockWrite(l);
+        }
+    }
+
+
+    @Override
+    public void clear() {
+        long l = lock.writeLock();
+        try {
+            super.clear();
+            taskMap.clear();
+        } finally {
+            lock.unlockWrite(l);
+        }
+    }
+
+    @Override
+    public void delete() {
+        long l = lock.writeLock();
+        try {
+            super.delete();
+            taskMap.clear();
+        } finally {
+            lock.unlockWrite(l);
+        }
+    }
+
+    private boolean old_compressFast(@Nullable Remember r) {
         int s = size();
 
-        NAR nar = r!=null ? r.nar() : null;
-        EternalReviser ar = new EternalReviser(nar!=null ? nar.timeRes() : 1);
+        NAR nar = r != null ? r.nar() : null;
+        EternalReviser ar = new EternalReviser(nar != null ? nar.timeRes() : 1);
 
         for (int a = s - 1; a >= 1; a--) {
             NALTask A = get(a);
@@ -146,10 +253,10 @@ public class EternalTable extends LockedFloatSortedArray<NALTask> implements Bel
                 NALTask AB = ar.apply(B);
                 if (AB != null) {
                     //assert(a > b); //remove the higher index, A, first and B remains at same index
-                    removeFast(a);
-                    removeFast(b);
-                    if (!contains(AB)) {
-                        insert(AB);
+                    removeFast(a); // Already handles taskMap removal
+                    removeFast(b); // Already handles taskMap removal
+                    if (!contains(AB)) { // contains might need to check taskMap too, or be consistent with super
+                        insert(AB); // Already handles taskMap addition
 //                        if (r!=null)
 //                            r.focus.activate(new Remember(AB, r.concept));
                     }
@@ -171,11 +278,22 @@ public class EternalTable extends LockedFloatSortedArray<NALTask> implements Bel
         if (cantContain(x))
             return false;
 
-        Task removed = remove(x);
+        // lock is handled by super.remove and taskMap removal is handled by overridden remove(NALTask)
+        NALTask removedTask = null;
+        long rl = lock.writeLock(); // remove(x) in superclass needs write lock potentially
+        try {
+            removedTask = super.remove(x); // Call super.remove to avoid recursive call to this method
+            if (removedTask != null) {
+                taskMap.remove(removedTask);
+            }
+        } finally {
+            lock.unlockWrite(rl);
+        }
 
-        if (removed != null) {
+
+        if (removedTask != null) {
             if (delete)
-                removed.delete();
+                removedTask.delete();
             return true;
         } else {
             return false;
@@ -191,13 +309,28 @@ public class EternalTable extends LockedFloatSortedArray<NALTask> implements Bel
 
         long l = lock.readLock();
         try {
+            // First, try to look up the task in taskMap
+            NALTask existingTask = taskMap.get(x);
+            if (existingTask != null) {
+                r.store(existingTask);
+                return;
+            }
+
+            //If not in map, proceed with original logic (linear scan, compress, insert)
+            //The linear scan is now a fallback or for verification if map gets out of sync (though it shouldn't)
             int s = size;
             if (s > 0) {
-                //scan list for existing equal task //TODO containment can be quickly tested by assuming the tasks are sorted by conf, and whether the conf is in the current range
                 NALTask[] ii = items;
-                int existing = ArrayUtil.indexOf(ii, x, 0, Math.min(s, ii.length));
-                if (existing!=-1) {
-                    r.store(ii[existing]);
+                // This indexOf is less critical now but kept for robustness / if map ever fails
+                int existingInArray = ArrayUtil.indexOf(ii, x, 0, Math.min(s, ii.length));
+                if (existingInArray != -1) {
+                    // Should have been found in taskMap. If not, map is inconsistent.
+                    // For now, trust the array result and update map.
+                    NALTask taskFromArray = ii[existingInArray];
+                    if (taskMap.put(taskFromArray, taskFromArray) == null) {
+                        // Log inconsistency if needed: task in array but not map
+                    }
+                    r.store(taskFromArray);
                     return;
                 }
             }
@@ -208,12 +341,12 @@ public class EternalTable extends LockedFloatSortedArray<NALTask> implements Bel
 
                 if (c == 0) {
                     if (s > 0)
-                        super.delete(); //clear();
+                        delete(); // calls super.delete() and taskMap.clear() via override
                     return;
                 }
 
                 if (s > 1)
-                    compressFast(r);
+                    old_compressFast(r); // Call the original compressFast logic, now renamed
                 int excess = 1 + size() - c;
                 if (excess > 0) {
                     //compression failed; evict
@@ -232,12 +365,27 @@ public class EternalTable extends LockedFloatSortedArray<NALTask> implements Bel
                 }
             }
 
-            l = Util.readToWrite(l, lock);
+            l = Util.readToWrite(l, lock); // Ensure we have a write lock for insertion
 
             if (capacity() > 0) { //check again in case it got deleted while waiting for lock
-                insert(x);
-                r.store(x);
+                // insert(x) already handles taskMap.put(x,x) and is synchronized
+                if (insert(x)) { // if insert succeeded
+                    r.store(x);
+                } else {
+                    // Task might already be there due to a race condition resolved by insert's internal check,
+                    // or insert failed for other reasons. If it's already there, try to get it from map.
+                    NALTask current = taskMap.get(x);
+                    if (current != null) {
+                        r.store(current);
+                    } else {
+                        // Insert failed and not in map, treat as unstore
+                        r.unstore(x);
+                    }
+                }
+            } else {
+                 r.unstore(x); // No capacity
             }
+
 
         } finally {
             if (l != 0)
