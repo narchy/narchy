@@ -7,6 +7,7 @@ import jcog.math.FloatMeanEwma;
 import jcog.pri.PLink;
 import jcog.random.RandomBits;
 import jcog.util.ArrayUtil;
+import nars.utils.Profiler;
 import nars.Deriver;
 import nars.Focus;
 import nars.NAR;
@@ -239,9 +240,14 @@ public class DeriverExec extends NARPart {
 
         private void _run() {
             try {
+                Profiler.startTime("DeriverThread.sampleFocus");
                 var f = sampler.next(rng);
-                if (f != null)
+                Profiler.recordTime("DeriverThread.sampleFocus");
+                if (f != null) {
+                    Profiler.startTime("DeriverThread.deriverNext");
                     d.next(f);
+                    Profiler.recordTime("DeriverThread.deriverNext");
+                }
             } catch (Throwable t) {
                 logger.error("run", t);
             }

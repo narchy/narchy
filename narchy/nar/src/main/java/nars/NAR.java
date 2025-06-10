@@ -1576,20 +1576,30 @@ public final class NAR extends NAL<NAR> implements Consumer<Task>, Cycled {
             long profilerStartTime = Profiler.startTime();
 
             long now = NAR.this.time.next(); // time is from NAL
+            Profiler.startTime("NARLoop.scheduledTasks");
             exe.run(now); // run scheduled tasks for this cycle
+            Profiler.recordTime("NARLoop.scheduledTasks");
 
             commitTime(now); // Update NAR's own cycle timing and novelty threshold
 
             // input.commit(); // Was from Focus, DirectTaskInput is no-op. If other inputs were used, this might be needed.
             if (narAttn != null) { // narAttn might be null if NAR is stopped/deleted during init
+                Profiler.startTime("NARLoop.attentionCommit");
                 narAttn.commit(); // Commit attention mechanism
+                Profiler.recordTime("NARLoop.attentionCommit");
             }
 
 
-			if (async)
+			if (async) {
+                Profiler.startTime("NARLoop.cycleEventsAsync");
 				eventCycle.emitAsync(NAR.this, exe, ready); // Standard cycle event
-			else
+                Profiler.recordTime("NARLoop.cycleEventsAsync");
+            }
+			else {
+                Profiler.startTime("NARLoop.cycleEventsSync");
 				eventCycle.accept(NAR.this);
+                Profiler.recordTime("NARLoop.cycleEventsSync");
+            }
 
 
             // Task sampling from attention, if it was part of Focus cycle (it was, via Focus.attn.sample in some derivations)
