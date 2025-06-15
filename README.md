@@ -56,6 +56,18 @@ Refer to the individual `README.md` files within each project directory for more
 ## VM Arguments
 ```-Xmx2g -da -dsa -XX:+UseNUMA -XX:MaxGCPauseMillis=1```
 
+# Build Infrastructure
+
+This project utilizes several Maven plugins to enhance the build process, enforce code quality, and identify potential issues.
+
+*   **`maven-enforcer-plugin`**: This plugin enforces certain rules and constraints during the build. It is configured to ensure dependency convergence, meaning that all transitive dependencies resolve to the same version, preventing potential conflicts and ensuring a stable build.
+*   **`pitest-maven`**: This plugin performs mutation testing to evaluate the effectiveness of unit tests. It introduces small changes (mutations) into the codebase and checks if the existing tests can detect these changes.
+    *   **Note**: The plugin is currently configured with placeholder values for `targetClasses` (`com.example.*`) and `targetTests` (`com.example.*Test`). These should be customized to match the actual package structure of your project for effective mutation testing.
+    *   To run mutation tests, you can typically execute: `mvn org.pitest:pitest-maven:mutationCoverage`
+*   **`dependency-check-maven`**: This plugin scans project dependencies for known published security vulnerabilities. It is configured to fail the build if any vulnerability with a CVSS score of 0 or higher is detected.
+    *   To run a vulnerability scan, execute: `mvn org.owasp:dependency-check-maven:check`
+*   **`maven-jar-plugin`**: This plugin is configured to create reproducible builds. It ensures that the generated JAR files have consistent content and metadata, regardless of when or where they are built, by setting a fixed output timestamp.
+
 # Maintenance
 
 ## Dependency Updates
