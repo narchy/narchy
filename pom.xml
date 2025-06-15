@@ -66,9 +66,13 @@
                 <configuration>
                     <targetClasses>
                         <param>jcog.*</param>
+                        <param>narchy.*</param>
+                        <param>spacegraph.*</param>
                     </targetClasses>
                     <targetTests>
                         <param>jcog.*Test</param>
+                        <param>narchy.*Test</param>
+                        <param>spacegraph.*Test</param>
                     </targetTests>
                     <outputFormats>
                         <outputFormat>XML</outputFormat>

@@ -28,7 +28,7 @@ These projects are designed to be complementary, fostering a synergistic environ
 Explore each project's respective `README.md` for more detailed information.
 
 # Install
-JDK-23+ http://jdk.java.net/23/
+JDK-25+ http://jdk.java.net/25/
 
 # Use
 To get started with these projects, follow these basic steps:
@@ -41,12 +41,10 @@ To get started with these projects, follow these basic steps:
     (Replace `your-username` with the actual username or organization if different)
 
 2.  **Build with Maven:**
-    Each project is structured as a Maven project. To build a specific project (e.g., `jcog`), navigate to its directory and run:
     ```bash
-    cd jcog
+    # Build all modules from the root directory
     mvn clean install
     ```
-    Repeat this process for `narchy` and `spacegraph` if you intend to use them. Ensure you have Apache Maven installed and configured in your environment.
 
 3.  **IDE Setup:**
     Import the projects into your preferred Java IDE (e.g., IntelliJ IDEA, Eclipse) as Maven projects. The IDE should automatically handle dependencies and project configurations.
@@ -63,6 +61,18 @@ This project utilizes several Maven plugins to enhance the build process, enforc
 *   **`maven-enforcer-plugin`**: This plugin enforces certain rules and constraints during the build. It is configured to ensure dependency convergence, meaning that all transitive dependencies resolve to the same version, preventing potential conflicts and ensuring a stable build.
 *   **`pitest-maven`**: This plugin performs mutation testing to evaluate the effectiveness of unit tests. It introduces small changes (mutations) into the codebase and checks if the existing tests can detect these changes.
     *   **Note**: The plugin is currently configured with placeholder values for `targetClasses` (`com.example.*`) and `targetTests` (`com.example.*Test`). These should be customized to match the actual package structure of your project for effective mutation testing.
+    ```
+    <targetClasses>
+        <param>jcog.*</param>
+        <param>narchy.*</param>
+        <param>spacegraph.*</param>
+    </targetClasses>
+    <targetTests>
+        <param>jcog.*Test</param>
+        <param>narchy.*Test</param>
+        <param>spacegraph.*Test</param>
+    </targetTests>
+    ```
     *   To run mutation tests, you can typically execute: `mvn org.pitest:pitest-maven:mutationCoverage`
 *   **`dependency-check-maven`**: This plugin scans project dependencies for known published security vulnerabilities. It is configured to fail the build if any vulnerability with a CVSS score of 0 or higher is detected.
     *   To run a vulnerability scan, execute: `mvn org.owasp:dependency-check-maven:check`
