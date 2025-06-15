@@ -60,7 +60,7 @@ Each submodule is structured as a separate Maven project. You can include them a
 Example (adding `jcog-graph`):
 ```xml
 <dependency>
-    <groupId>com.github.yourusername.jcog</groupId> <!-- Adjust groupID as per actual deployment -->
+    <groupId>dumb</groupId> <!-- Adjust groupID as per actual deployment -->
     <artifactId>jcog-graph</artifactId>
     <version>LATEST</version> <!-- Or specify a version -->
 </dependency>

@@ -23,6 +23,14 @@
     
     <build>
 		<plugins>
+            <plugin>
+                <groupId>io.takari</groupId>
+                <artifactId>maven-wrapper</artifactId>
+                <version>0.5.6</version>
+                <configuration>
+                    <mavenVersion>3.9.6</mavenVersion>
+                </configuration>
+            </plugin>
 <!--            <plugin>-->
 <!--                <groupId>org.openrewrite.maven</groupId>-->
 <!--                <artifactId>rewrite-maven-plugin</artifactId>-->
@@ -57,10 +65,10 @@
                 </dependencies>
                 <configuration>
                     <targetClasses>
-                        <param>com.example.*</param>
+                        <param>jcog.*</param>
                     </targetClasses>
                     <targetTests>
-                        <param>com.example.*Test</param>
+                        <param>jcog.*Test</param>
                     </targetTests>
                     <outputFormats>
                         <outputFormat>XML</outputFormat>
