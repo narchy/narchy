@@ -28,45 +28,121 @@ These projects are designed to be complementary, fostering a synergistic environ
 Explore each project's respective `README.md` for more detailed information.
 
 # Install
-JDK-23+ http://jdk.java.net/23/
+
+## Prerequisites
+*   **JDK 25 (or newer):** This project requires Java Development Kit version 25.
+    *   You can download OpenJDK 25 Early Access builds from [jdk.java.net/25](http://jdk.java.net/25/).
+    *   Alternatively, look for official JDK 25 releases from Oracle or other vendors like Adoptium as they become available.
+*   **Apache Maven:** Ensure Maven is installed to build the project.
 
 # Use
+
 To get started with these projects, follow these basic steps:
 
-1.  **Clone the repository:**
+1.  **Clone the Repository:**
     ```bash
-    git clone https://github.com/your-username/metanarchy.git
+    git clone https://github.com/actual-repository-url/metanarchy.git # TODO: Replace with the correct repository URL
     cd metanarchy
     ```
-    (Replace `your-username` with the actual username or organization if different)
+    **Note:** Please replace `https://github.com/actual-repository-url/metanarchy.git` with the actual URL of this repository.
 
 2.  **Build with Maven:**
-    Each project is structured as a Maven project. To build a specific project (e.g., `jcog`), navigate to its directory and run:
+    The standard way to build all modules in the project is:
     ```bash
-    cd jcog
+    # Clean the project and build all modules
     mvn clean install
     ```
-    Repeat this process for `narchy` and `spacegraph` if you intend to use them. Ensure you have Apache Maven installed and configured in your environment.
+
+    ### Building Specific Modules
+    You can also build specific modules and their dependencies:
+    ```bash
+    # Build a specific module (e.g., jcog) and its dependencies
+    mvn clean install -pl jcog -am
+    ```
+    ```bash
+    # Build only a specific module (e.g., jcog) without its upstream/downstream dependencies
+    # This is useful if other modules are already built and up-to-date.
+    mvn clean install -pl jcog
+    ```
+
+    ### Running Tests
+    ```bash
+    # Run all tests in the project
+    mvn test
+    ```
+    ```bash
+    # Run tests for a specific module (e.g., jcog)
+    mvn test -pl jcog
+    ```
 
 3.  **IDE Setup:**
-    Import the projects into your preferred Java IDE (e.g., IntelliJ IDEA, Eclipse) as Maven projects. The IDE should automatically handle dependencies and project configurations.
+    Import the projects into your preferred Java IDE (e.g., IntelliJ IDEA, Eclipse) as Maven projects. The IDE should automatically recognize the project structure and handle dependencies.
 
 Refer to the individual `README.md` files within each project directory for more specific setup instructions, dependencies, and usage examples.
 
-## VM Arguments
-```-Xmx2g -da -dsa -XX:+UseNUMA -XX:MaxGCPauseMillis=1```
+## Recommended VM Arguments
+The following are some recommended starting VM arguments. These may need adjustment based on your application's specific needs, your environment, and the garbage collector in use.
+```bash
+-Xmx2g -da -dsa -XX:+UseNUMA -XX:MaxGCPauseMillis=1
+```
+*   `-Xmx2g`: Sets the maximum heap size to 2 gigabytes.
+*   `-da` / `-dsa`: Disables assertions / Disables system assertions. (Often used as `-ea` to enable assertions during development).
+*   `-XX:+UseNUMA`: Enables NUMA (Non-Uniform Memory Access) interleaving, which can improve performance on NUMA hardware.
+*   `-XX:MaxGCPauseMillis=1`: Sets a target for maximum GC pause time to 1 millisecond.
+    *   **Caution**: This is a very aggressive target. Achieving such low pause times consistently depends heavily on the chosen GC algorithm (e.g., ZGC, Shenandoah), workload, and heap size. If not using a low-pause GC or if encountering performance issues, consider removing this option or adjusting its value to something more conservative (e.g., `100` or `200`).
 
-# Build Infrastructure
+# Code Quality, Testing, and Build Infrastructure
 
 This project utilizes several Maven plugins to enhance the build process, enforce code quality, and identify potential issues.
 
 *   **`maven-enforcer-plugin`**: This plugin enforces certain rules and constraints during the build. It is configured to ensure dependency convergence, meaning that all transitive dependencies resolve to the same version, preventing potential conflicts and ensuring a stable build.
-*   **`pitest-maven`**: This plugin performs mutation testing to evaluate the effectiveness of unit tests. It introduces small changes (mutations) into the codebase and checks if the existing tests can detect these changes.
-    *   **Note**: The plugin is currently configured with placeholder values for `targetClasses` (`com.example.*`) and `targetTests` (`com.example.*Test`). These should be customized to match the actual package structure of your project for effective mutation testing.
-    *   To run mutation tests, you can typically execute: `mvn org.pitest:pitest-maven:mutationCoverage`
-*   **`dependency-check-maven`**: This plugin scans project dependencies for known published security vulnerabilities. It is configured to fail the build if any vulnerability with a CVSS score of 0 or higher is detected.
-    *   To run a vulnerability scan, execute: `mvn org.owasp:dependency-check-maven:check`
-*   **`maven-jar-plugin`**: This plugin is configured to create reproducible builds. It ensures that the generated JAR files have consistent content and metadata, regardless of when or where they are built, by setting a fixed output timestamp.
+
+*   **Code Quality Checks (Linters & Static Analysis):**
+    ```bash
+    # Run Checkstyle
+    mvn checkstyle:check
+    ```
+    ```bash
+    # Run PMD
+    mvn pmd:check
+    ```
+    ```bash
+    # Run SpotBugs
+    mvn spotbugs:check
+    ```
+    ```bash
+    # Run all site generation phases, which usually include these checks and generates reports
+    mvn site
+    ```
+    (Note: `mvn site` often runs these checks if they are configured in the `reporting` section of the `pom.xml`.)
+
+*   **Mutation Testing (`pitest-maven`)**: This plugin performs mutation testing to evaluate the effectiveness of unit tests. It introduces small changes (mutations) into the codebase and checks if the existing tests can detect these changes.
+    *   The configuration in the root `pom.xml` targets classes and tests across `jcog`, `narchy`, and `spacegraph` modules:
+        ```xml
+        <targetClasses>
+            <param>jcog.*</param>
+            <param>narchy.*</param>
+            <param>spacegraph.*</param>
+        </targetClasses>
+        <targetTests>
+            <param>jcog.*Test</param>
+            <param>narchy.*Test</param>
+            <param>spacegraph.*Test</param>
+        </targetTests>
+        ```
+    *   To run mutation tests:
+        ```bash
+        mvn org.pitest:pitest-maven:mutationCoverage
+        ```
+    *   **Note**: Mutation testing can be very time-consuming, especially for large codebases.
+
+*   **Dependency Vulnerability Check (`dependency-check-maven`)**: This plugin scans project dependencies for known published security vulnerabilities. It is configured to fail the build if any vulnerability with a CVSS score of 0 or higher is detected.
+    *   To run a vulnerability scan:
+        ```bash
+        mvn org.owasp:dependency-check-maven:check
+        ```
+
+*   **Reproducible Builds (`maven-jar-plugin`)**: This plugin is configured to create reproducible builds. It ensures that the generated JAR files have consistent content and metadata, regardless of when or where they are built, by setting a fixed output timestamp.
 
 # Maintenance
 

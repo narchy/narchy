@@ -80,7 +80,7 @@ Future development of NARchy could focus on:
 
 ## Getting Started
 
-*   **Requirements**: JDK 23+ and Apache Maven.
+*   **Requirements**: JDK 25+ and Apache Maven.
 *   **Build**: Navigate to the NARchy project directory and use Maven to build the project:
     ```bash
     mvn clean install
