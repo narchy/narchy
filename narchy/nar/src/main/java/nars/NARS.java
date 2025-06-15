@@ -953,7 +953,7 @@ public class NARS {
                     "cond.decompose.nal",
 
                     /* X!,  C.  |- before(C,X)! */        "cond.decompose.must.nal",
-                    // /* X!,  C.  |- afterOrDuring(C,X)! */ "cond.decompose.might.nal",
+                    /* X!,  C.  |- afterOrDuring(C,X)! */ "cond.decompose.might.nal",
 
                     /* C!,  X.  |- afterOrDuring(C,X)! */ "cond.decompose.would.nal",
 
