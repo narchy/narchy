@@ -17,7 +17,7 @@
     <repositories>
         <repository>
             <id>jogamp</id>
-            <url>https://www.jogamp.org/deployment/maven/</url>
+            <url>https://jogamp.org/deployment/maven/</url>
         </repository>
     </repositories>
 

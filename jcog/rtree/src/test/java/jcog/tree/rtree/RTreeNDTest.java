@@ -492,24 +492,40 @@ class RTreeNDTest {
 
         RectDouble[] rect = new RectDouble[65];
         for (int i = 0; i < rect.length; i++) {
-            switch (i) {
-                case int j when j < 4 -> rect[i] = new RectDouble(0, 0, 1, 1);
-                case int j when j < 8 -> rect[i] = new RectDouble(2, 2, 4, 4);
-                case int j when j < 12 -> rect[i] = new RectDouble(4, 4, 5, 5);
-                case int j when j < 16 -> rect[i] = new RectDouble(5, 5, 6, 6);
-                case int j when j < 20 -> rect[i] = new RectDouble(6, 6, 7, 7);
-                case int j when j < 24 -> rect[i] = new RectDouble(7, 7, 8, 8);
-                case int j when j < 28 -> rect[i] = new RectDouble(8, 8, 9, 9);
-                case int j when j < 32 -> rect[i] = new RectDouble(9, 9, 10, 10);
-                case int j when j < 36 -> rect[i] = new RectDouble(2, 2, 4, 4);
-                case int j when j < 40 -> rect[i] = new RectDouble(4, 4, 5, 5);
-                case int j when j < 44 -> rect[i] = new RectDouble(5, 5, 6, 6);
-                case int j when j < 48 -> rect[i] = new RectDouble(6, 6, 7, 7);
-                case int j when j < 52 -> rect[i] = new RectDouble(7, 7, 8, 8);
-                case int j when j < 56 -> rect[i] = new RectDouble(8, 8, 9, 9);
-                case int j when j < 60 -> rect[i] = new RectDouble(9, 9, 10, 10);
-                case int j when j < 65 -> rect[i] = new RectDouble(1, 1, 2, 2);
-                default -> { }
+            if (i < 4) {
+                rect[i] = new RectDouble(0, 0, 1, 1);
+            } else if (i < 8) {
+                rect[i] = new RectDouble(2, 2, 4, 4);
+            } else if (i < 12) {
+                rect[i] = new RectDouble(4, 4, 5, 5);
+            } else if (i < 16) {
+                rect[i] = new RectDouble(5, 5, 6, 6);
+            } else if (i < 20) {
+                rect[i] = new RectDouble(6, 6, 7, 7);
+            } else if (i < 24) {
+                rect[i] = new RectDouble(7, 7, 8, 8);
+            } else if (i < 28) {
+                rect[i] = new RectDouble(8, 8, 9, 9);
+            } else if (i < 32) {
+                rect[i] = new RectDouble(9, 9, 10, 10);
+            } else if (i < 36) {
+                rect[i] = new RectDouble(2, 2, 4, 4);
+            } else if (i < 40) {
+                rect[i] = new RectDouble(4, 4, 5, 5);
+            } else if (i < 44) {
+                rect[i] = new RectDouble(5, 5, 6, 6);
+            } else if (i < 48) {
+                rect[i] = new RectDouble(6, 6, 7, 7);
+            } else if (i < 52) {
+                rect[i] = new RectDouble(7, 7, 8, 8);
+            } else if (i < 56) {
+                rect[i] = new RectDouble(8, 8, 9, 9);
+            } else if (i < 60) {
+                rect[i] = new RectDouble(9, 9, 10, 10);
+            } else if (i < 65) {
+                rect[i] = new RectDouble(1, 1, 2, 2);
+            } else {
+                // default case, do nothing
             }
         }
         for (int i = 0; i < rect.length; i++) {

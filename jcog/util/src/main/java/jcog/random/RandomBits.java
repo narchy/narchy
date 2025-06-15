@@ -112,12 +112,15 @@ public class RandomBits implements RandomGenerator {
 
     /** absolute special cases */
     private int nextBoolAbs(float probTrue) {
-        return switch (probTrue) {
-            case 0.5f -> nextBoolean() ? +1 : -1;
-            case float v when v <= MIN_NORMAL -> -1;
-            case float v when v >= 1 - MIN_NORMAL -> +1;
-            default -> 0;
-        };
+        if (probTrue == 0.5f) {
+            return nextBoolean() ? +1 : -1;
+        } else if (probTrue <= MIN_NORMAL) {
+            return -1;
+        } else if (probTrue >= 1.0f - MIN_NORMAL) {
+            return +1;
+        } else {
+            return 0;
+        }
     }
 
     public final int nextBooleanAsInt() {

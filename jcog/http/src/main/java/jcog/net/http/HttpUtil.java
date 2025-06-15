@@ -129,13 +129,20 @@ public enum HttpUtil {
         for (int a = 0; a < str.length(); ++a) {
             int codePoint = str.codePointAt(a);
 
-            switch (codePoint) {
-                case int i when i <= 0x7F -> bytes += 1;
-                case int i when i <= 0x7FF -> bytes += 2;
-                case int i when i <= 0xFFFF -> bytes += 3;
-                default -> {
-                    bytes += 4;
-                    a++;
+            if (codePoint <= 0x7F) {
+                bytes += 1;
+            } else if (codePoint <= 0x7FF) {
+                bytes += 2;
+            } else if (codePoint <= 0xFFFF) {
+                bytes += 3;
+            } else { // default case for codePoint > 0xFFFF
+                bytes += 4;
+                // If codePoint > 0xFFFF, it's a supplementary character.
+                // str.codePointAt(a) correctly reads the full code point.
+                // The loop's a++ will advance by one char. We need to advance
+                // an additional char if it was a supplementary character.
+                if (Character.charCount(codePoint) == 2) {
+                    a++; // This ensures the loop skips the low surrogate
                 }
             }
         }

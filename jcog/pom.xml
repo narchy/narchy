@@ -76,7 +76,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
                 <configuration>
-                    <argLine>${jvmArgs} -Djunit.jupiter.execution.parallel.mode.classes.default=CONCURRENT -Djunit.jupiter.execution.parallel.enabled=true</argLine>
+                    <argLine>${jvmArgs} --add-modules jdk.incubator.vector --enable-preview -Djunit.jupiter.execution.parallel.mode.classes.default=CONCURRENT -Djunit.jupiter.execution.parallel.enabled=true</argLine>
                     <testFailureIgnore>true</testFailureIgnore>
                     <skipTests>false</skipTests>
                     <!--<systemPropertyVariables>

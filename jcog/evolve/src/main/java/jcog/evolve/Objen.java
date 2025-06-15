@@ -304,8 +304,7 @@ public class Objen {
         }
 
         public DNA(DNA<T> d, Function<T, Double> score) {
-            var instance = d.get();
-            this(d, instance, score.apply(instance));
+            this(d, d.get(), score.apply(d.get()));
         }
 
         /** TODO decide whether to store instance */
