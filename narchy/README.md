@@ -34,25 +34,29 @@ NARchy is organized into the following primary Maven submodules:
 
 The broader NARchy ecosystem also relies heavily on `jcog` (utilities for cognitive software) and `spacegraph` (fractal GUI), which provide foundational utilities and visualization capabilities.
 
-## Key Features and Enhancements in NARchy
+## Key Features and Enhancements
 
-NARchy introduces several notable features and changes compared to earlier NARS versions:
+NARchy introduces several notable features and improvements over earlier NARS versions, focusing on advanced reasoning and performance:
 
-*   **Continuous-Time NAL7**: A redesigned temporal logic using numeric time differences for more expressive temporal reasoning.
-*   **Temporal Belief Tables with Microsphere Revection**: Advanced mechanisms for evaluating concept truth values over time.
-*   **Multithreaded Execution**: Support for parallel processing to improve scalability.
-*   **Full-Spectrum Negation**: Handles negation within concepts rather than as separate negated concepts.
-*   **Enhanced Deriver**: Incorporates features like inline term rewriting and advanced temporalization of derivations.
-*   **Virtual Disjunctions**: Converts disjunctions to negated conjunctions to preserve temporal information.
-*   **Optimized Data Structures**: Includes `HijackBag` (lock-free concurrent bag) and `CurveBag` (concurrent sorted bag).
-*   **Pressurized Auto-balanced Forgetting**: Dynamically adjusts forgetting rates based on memory pressure.
-*   **Concurrent Concept Index**: A cache for managing active and inactive concepts, supporting persistence.
-*   **Binary I/O Codec**: A compact format for serializing terms and tasks.
-*   **Concept Allocation Policies**: Adaptive management of concept data structure capacities.
-*   **NAgent Sensor/Motor API**: A framework for interfacing NARS with environments for reinforcement learning.
-*   **InterNARchy**: A P2P protocol for multi-agent communication.
+*   **Advanced Temporal Reasoning**:
+    *   **Continuous-Time NAL7**: Employs numeric time differences for more expressive and flexible temporal logic.
+    *   **Temporal Belief Tables & Microsphere Revection**: Sophisticated mechanisms for evaluating concept truth values over evolving time.
+*   **Performance and Scalability**:
+    *   **Multithreaded Execution**: Enables parallel processing for improved throughput.
+    *   **Optimized Data Structures**: Utilizes custom concurrent collections like `HijackBag` (lock-free) and `CurveBag` (sorted).
+    *   **Concurrent Concept Index**: Efficiently manages active and inactive concepts, with support for persistence.
+    *   **Pressurized Auto-balanced Forgetting**: Dynamically adjusts memory forgetting rates based on system load.
+    *   **Binary I/O Codec**: A compact serialization format for terms and tasks, reducing overhead.
+    *   **Adaptive Concept Allocation**: Policies for managing concept data structure capacities dynamically.
+*   **Core Logic Enhancements**:
+    *   **Full-Spectrum Negation**: Integrates negation directly within concepts, rather than treating them as separate entities.
+    *   **Enhanced Deriver**: Features inline term rewriting and advanced temporalization of derived knowledge.
+    *   **Virtual Disjunctions**: Transforms disjunctions into negated conjunctions to better preserve temporal information.
+*   **Agent and System Integration**:
+    *   **NAgent Sensor/Motor API**: A structured framework for connecting NARS to external environments, crucial for reinforcement learning and robotics.
+    *   **InterNARchy**: A peer-to-peer protocol designed for multi-agent communication and collaborative learning.
 
-(For more details on these features, the original README contained more specific descriptions which may be found in the project's history or further documentation if available.)
+These features collectively aim to provide a more powerful, flexible, and scalable NARS implementation.
 
 ## Application Possibilities
 
@@ -76,9 +80,12 @@ Future development of NARchy could focus on:
 
 ## Getting Started
 
-*   **Requirements**: Java 12+ and Gradle.
-*   **Build**: Use Gradle to build the project.
-*   **Running**: The `os` module likely contains the main entry points for running NARchy.
+*   **Requirements**: JDK 23+ and Apache Maven.
+*   **Build**: Navigate to the NARchy project directory and use Maven to build the project:
+    ```bash
+    mvn clean install
+    ```
+*   **Running**: The `os` submodule (`narchy/os`) typically contains the main entry points for executing NARchy (e.g., `NARchy.java`). Refer to that module for specific instructions on launching different interfaces (GUI, TUI, web).
 
 ## References and Further Reading
 
