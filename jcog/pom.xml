@@ -40,7 +40,7 @@
         see: https://github.com/takari/maven-wrapper#legacy-documentation
     -->
     <properties>
-        <jvmArgs>--illegal-access=permit --add-opens java.base/java.io=ALL-UNNAMED --enable-native-access=ALL-UNNAMED</jvmArgs>
+        <jvmArgs>--add-opens java.base/java.io=ALL-UNNAMED --enable-native-access=ALL-UNNAMED</jvmArgs>
 
         <hipparchus.version>4.0.1</hipparchus.version>
 
@@ -78,7 +78,7 @@
                 <configuration>
                     <argLine>${jvmArgs} -Djunit.jupiter.execution.parallel.mode.classes.default=CONCURRENT -Djunit.jupiter.execution.parallel.enabled=true</argLine>
                     <testFailureIgnore>true</testFailureIgnore>
-                    <skipTests>true</skipTests>
+                    <skipTests>false</skipTests>
                     <!--<systemPropertyVariables>
                       <gzoltar-agent.destfile>${project.build.directory}/gzoltar.ser</gzoltar-agent.destfile>
                     </systemPropertyVariables> -->
