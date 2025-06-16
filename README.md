@@ -35,6 +35,22 @@ Explore each project's respective `README.md` for more detailed information.
     *   Alternatively, look for official JDK 25 releases from Oracle or other vendors like Adoptium as they become available.
 *   **Apache Maven:** Ensure Maven is installed to build the project.
 
+## Build & JDK 25 Compatibility Status
+This project is configured to compile with JDK 25 and utilizes Java preview features.
+
+**Important JVM Arguments:**
+- The `jcog` module requires the following JVM argument for proper operation due to its use of reflection on JDK internal classes:
+  `--add-opens java.base/java.io=ALL-UNNAMED`
+- If native libraries are used (e.g., by the Prolog engine in `jcog`), the following argument is also necessary:
+  `--enable-native-access=ALL-UNNAMED` (This is generally included in the root POM's default `jvmArgs`).
+
+**Current Build Issues (as of [current date/last update]):**
+- The `jcog` module, which is a core dependency for other modules like `narchy`, is currently experiencing build timeouts in the automated environment. This prevents its artifacts from being installed locally.
+- Consequently, modules depending on `jcog` (e.g., `narchy`) will fail to build due to unresolved dependencies.
+- The root cause of the `jcog` build timeout needs further investigation in a more resource-rich or interactive environment.
+
+The Maven build is configured with `<source>25</source>`, `<target>25</target>`, and `<enablePreview>true</enablePreview>` in the main `pom.xml` to support JDK 25.
+
 # Use
 
 To get started with these projects, follow these basic steps:

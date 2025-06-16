@@ -40,7 +40,7 @@
         see: https://github.com/takari/maven-wrapper#legacy-documentation
     -->
     <properties>
-        <jvmArgs>--illegal-access=permit --add-opens java.base/java.io=ALL-UNNAMED --enable-native-access=ALL-UNNAMED</jvmArgs>
+        <jvmArgs>--add-opens java.base/java.io=ALL-UNNAMED --enable-native-access=ALL-UNNAMED</jvmArgs>
 
         <hipparchus.version>4.0.1</hipparchus.version>
 
