@@ -1,8 +1,11 @@
-package jcog.tensor;
+package jcog.tensor.model;
 
 import jcog.math.FloatSupplier;
 import jcog.random.XoRoShiRo128PlusRandom;
 import jcog.signal.FloatRange;
+import jcog.tensor.Models;
+import jcog.tensor.Optimizers;
+import jcog.tensor.Tensor;
 import jcog.util.ArrayUtil;
 import org.jetbrains.annotations.Nullable;
 

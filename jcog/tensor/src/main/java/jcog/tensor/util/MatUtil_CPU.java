@@ -1,4 +1,4 @@
-package jcog.tensor;
+package jcog.tensor.util;
 
 import jdk.incubator.vector.DoubleVector;
 import org.ejml.UtilEjml;

@@ -6,7 +6,7 @@ import jcog.data.iterator.ArrayIterator;
 import jcog.math.FloatCached;
 import jcog.math.FloatMeanWindow;
 import jcog.tensor.ClassicAutoencoder;
-import jcog.tensor.VanillaAutoencoder;
+import jcog.tensor.model.VanillaAutoencoder;
 import nars.NAR;
 import nars.game.Actions;
 import nars.game.Game;

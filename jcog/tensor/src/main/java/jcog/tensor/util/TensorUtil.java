@@ -1,6 +1,7 @@
-package jcog.tensor;
+package jcog.tensor.util;
 
 import jcog.Util;
+import jcog.tensor.Tensor;
 import jcog.util.KahanSum;
 import org.ejml.concurrency.EjmlConcurrency;
 import org.ejml.data.DMatrixRMaj;
@@ -41,33 +42,33 @@ public class TensorUtil {
     /**
      * x += y
      */
-    static SimpleMatrix _addTo(SimpleMatrix x, SimpleMatrix y) {
+    public static SimpleMatrix _addTo(SimpleMatrix x, SimpleMatrix y) {
         Util.addTo(Tensor.array(x), Tensor.array(y));
         return x;
     }
 
-    static SimpleMatrix newMatrix(SimpleMatrix d, DoubleUnaryOperator f) {
+    public static SimpleMatrix newMatrix(SimpleMatrix d, DoubleUnaryOperator f) {
         return d.elementOp((int r, int c, double x) -> f.applyAsDouble(x));
     }
 
-    static void assertSameShape(Tensor x, Tensor y) {
+    public static void assertSameShape(Tensor x, Tensor y) {
         if (!x.sameShape(y))
             throw new IllegalArgumentException("Tensors must have the same shape for binary operations: " + x.shapeStr() + " != " + y.shapeStr());
     }
 
-    static double sumAbs(SimpleMatrix m) {
+    public static double sumAbs(SimpleMatrix m) {
         return Util.sumAbs(Tensor.array(m));
     }
 
-    static double sumSqr(SimpleMatrix m) {
+    public static double sumSqr(SimpleMatrix m) {
         return Util.sumSqr(Tensor.array(m));
     }
 
-    static void eleMul(SimpleMatrix X, double y) {
+    public static void eleMul(SimpleMatrix X, double y) {
         Util.mul(Tensor.array(X), y);
     }
 
-    static void eleMul(SimpleMatrix O, SimpleMatrix X, double y) {
+    public static void eleMul(SimpleMatrix O, SimpleMatrix X, double y) {
         double[] o = Tensor.array(O), x = Tensor.array(X);
         var n = o.length;
         if (n!=x.length)
@@ -76,7 +77,7 @@ public class TensorUtil {
             o[i] = x[i] * y;
     }
 
-    static void eleMul(SimpleMatrix O, SimpleMatrix X, SimpleMatrix Y) {
+    public static void eleMul(SimpleMatrix O, SimpleMatrix X, SimpleMatrix Y) {
         double[] o = Tensor.array(O), x = Tensor.array(X), y = Tensor.array(Y);
         if (o.length!=x.length || o.length!=y.length)
             throw new UnsupportedOperationException();
@@ -85,7 +86,7 @@ public class TensorUtil {
             o[i] = x[i] * y[i];
     }
 
-    static double eleSum(SimpleMatrix d) {
+    public static double eleSum(SimpleMatrix d) {
         return Util.sum(Tensor.array(d));
     }
 
@@ -104,7 +105,7 @@ public class TensorUtil {
     }
 
     /** elementSum(g.elementMult(data)) */
-    static double sumEleMult(SimpleMatrix D, SimpleMatrix G) {
+    public static double sumEleMult(SimpleMatrix D, SimpleMatrix G) {
         var d = Tensor.array(D);
         var g = Tensor.array(G);
         var n = d.length;
@@ -115,12 +116,12 @@ public class TensorUtil {
         return s.value();
     }
 
-    static void assertClippable(double min, double max) {
+    public static void assertClippable(double min, double max) {
         if (max <= min)
             throw new IllegalArgumentException();
     }
 
-    static boolean clipDisabled(double min, double max) {
+    public static boolean clipDisabled(double min, double max) {
         return min == Double.NEGATIVE_INFINITY && max == Double.POSITIVE_INFINITY;
     }
 
@@ -133,7 +134,7 @@ public class TensorUtil {
         return true;
     }
 
-    static void matmul(DMatrixRMaj A, DMatrixRMaj B, DMatrixRMaj AB) {
+    public static void matmul(DMatrixRMaj A, DMatrixRMaj B, DMatrixRMaj AB) {
         if (EjmlConcurrency.useConcurrent(AB))
             CommonOps_MT_DDRM.mult(A, B, AB);
         else if (Math.max(A.getNumElements(), B.getNumElements()) > MatUtil_OpenCL.ELEMENT_THRESHOLD)
@@ -142,14 +143,14 @@ public class TensorUtil {
             MatUtil_CPU.mult(A, B, AB);
     }
 
-    static void matmulTransA(DMatrixRMaj A, DMatrixRMaj B, DMatrixRMaj AtB) {
+    public static void matmulTransA(DMatrixRMaj A, DMatrixRMaj B, DMatrixRMaj AtB) {
         if (EjmlConcurrency.useConcurrent(AtB))
             CommonOps_MT_DDRM.multTransA(A, B, AtB);
         else
             MatUtil_CPU.multTransA(A, B, AtB); //CommonOps_DDRM.multTransA(dd, gg, gg1);
     }
 
-    static void matmulTransB(DMatrixRMaj A, DMatrixRMaj B, DMatrixRMaj ABt) {
+    public static void matmulTransB(DMatrixRMaj A, DMatrixRMaj B, DMatrixRMaj ABt) {
         if (EjmlConcurrency.useConcurrent(ABt))
             CommonOps_MT_DDRM.multTransB(A, B, ABt);
         else

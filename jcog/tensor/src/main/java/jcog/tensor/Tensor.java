@@ -7,6 +7,8 @@ import jcog.data.bit.MetalBitSet;
 import jcog.data.list.Lst;
 import jcog.func.TriConsumer;
 import jcog.random.XoRoShiRo128PlusRandom;
+import jcog.tensor.util.ParallelBackward;
+import jcog.tensor.util.TensorUtil;
 import jcog.util.Reflect;
 import org.eclipse.collections.api.block.function.primitive.DoubleDoubleToDoubleFunction;
 import org.ejml.concurrency.EjmlConcurrency;
@@ -29,7 +31,6 @@ import java.util.function.*;
 import java.util.stream.Stream;
 
 import static jcog.Util.*;
-import static jcog.tensor.TensorUtil.assertClippable;
 
 public class Tensor {
 
@@ -404,7 +405,7 @@ public class Tensor {
         return y;
     }
 
-    String shapeStr() {
+    public String shapeStr() {
         return rows() + "x" + cols();
     }
 
@@ -1649,10 +1650,10 @@ public class Tensor {
 
     /** TODO optimize */
     public Tensor clip(double min, double max) {
-        assertClippable(min, max); if (TensorUtil.clipDisabled(min, max)) return this;
+        TensorUtil.assertClippable(min, max); if (TensorUtil.clipDisabled(min, max)) return this;
 
         return unaryOp(
-            d -> TensorUtil.newMatrix(d, x -> clampSafe(x, min, max)),
+            d -> TensorUtil.newMatrix(d, x -> Util.clampSafe(x, min, max)),
             g -> {
                 var y = new SimpleMatrix(g.getNumRows(), g.getNumCols());
                 double[] cc = array(y), dd = array(), gg = array(g);
@@ -1669,7 +1670,7 @@ public class Tensor {
     }
 
     public Tensor clipGrad(double min, double max) {
-        assertClippable(min, max); if (TensorUtil.clipDisabled(min, max)) return this;
+        TensorUtil.assertClippable(min, max); if (TensorUtil.clipDisabled(min, max)) return this;
 
         return unaryOp(
                 d -> d,
@@ -2214,9 +2215,9 @@ public class Tensor {
 
     abstract public static class TensorOp {
         private static final BiFunction<SimpleMatrix, SimpleMatrix, SimpleMatrix> tensorGradMerge = TensorUtil::_addTo;
-        protected final Tensor[] parents;
-        final int generation;
-        int color = -1;
+        public final Tensor[] parents;
+        public final int generation;
+        public int color = -1;
 
         public TensorOp(Tensor... parents) {
             if (parents.length < 1)
@@ -2225,7 +2226,7 @@ public class Tensor {
             this.generation = ((int) Util.max(Tensor::generation, parents)) + 1;
         }
 
-        final SimpleMatrix[] allocateParentGrads() {
+        public final SimpleMatrix[] allocateParentGrads() {
             return map(p -> p.hasGrad() ? new SimpleMatrix(p.rows(), p.cols()) : null, new SimpleMatrix[parents.length], parents);
         }
 
@@ -2241,8 +2242,7 @@ public class Tensor {
             for (var i = 0; i < n; i++) {
                 var pg = parentGrads[i];
                 if (pg != null) {
-//                    if (isZero(gi))
-//                        continue;
+//                    if (isZero(gi)) continue;
                     var p = parents[i];
                     if (p.op != null) {
                         if (!grads.containsKey(p))

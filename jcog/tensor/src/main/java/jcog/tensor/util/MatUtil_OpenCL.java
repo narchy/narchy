@@ -1,4 +1,4 @@
-package jcog.tensor;
+package jcog.tensor.util;
 
 import com.jogamp.opencl.*;
 import jcog.Log;

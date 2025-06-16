@@ -1,5 +1,6 @@
 package jcog.tensor.experimental;
 
+import jcog.tensor.model.DNCMemory;
 import jcog.tensor.Tensor;
 import jcog.tensor.rl.pg.Reinforce;
 

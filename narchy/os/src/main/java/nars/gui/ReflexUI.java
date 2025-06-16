@@ -8,7 +8,7 @@ import jcog.nn.MLP;
 import jcog.nn.RecurrentNetwork;
 import jcog.nn.ntm.NTM;
 import jcog.nn.spiking0.critterding.CritterdingBrain;
-import jcog.tensor.experimental.DNCMemory;
+import jcog.tensor.model.DNCMemory;
 import jcog.tensor.rl.blackbox.BlackboxPolicy;
 import jcog.tensor.rl.blackbox.CMAESZeroPolicy;
 import jcog.tensor.rl.pg.*;

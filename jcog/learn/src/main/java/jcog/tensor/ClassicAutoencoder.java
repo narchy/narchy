@@ -7,6 +7,7 @@ import jcog.math.FloatSupplier;
 import jcog.random.RandomBits;
 import jcog.random.XoRoShiRo128PlusRandom;
 import jcog.signal.FloatRange;
+import jcog.tensor.model.AbstractAutoencoder;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;

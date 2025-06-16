@@ -1,6 +1,5 @@
-package jcog.tensor.experimental;
+package jcog.tensor.model;
 
-import jcog.tensor.ODEIntegration;
 import jcog.tensor.Tensor;
 
 import java.util.function.IntSupplier;

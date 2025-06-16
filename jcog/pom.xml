@@ -19,6 +19,7 @@
     <modules>
         <module>util</module>
         <module>prolog</module>
+        <module>tensor</module>
         <module>learn</module>
         <module>http</module>
         <module>db</module>

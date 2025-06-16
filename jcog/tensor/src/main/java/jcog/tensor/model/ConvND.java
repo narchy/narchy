@@ -1,4 +1,6 @@
-package jcog.tensor;
+package jcog.tensor.model;
+
+import jcog.tensor.Tensor;
 
 import java.util.function.UnaryOperator;
 

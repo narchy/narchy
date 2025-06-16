@@ -40,7 +40,7 @@ NARchy introduces several notable features and improvements over earlier NARS ve
 
 *   **Advanced Temporal Reasoning**:
     *   **Continuous-Time NAL7**: Employs numeric time differences for more expressive and flexible temporal logic.
-    *   **Temporal Belief Tables & Microsphere Revection**: Sophisticated mechanisms for evaluating concept truth values over evolving time.
+    *   **Temporal Belief Tables**: Sophisticated mechanisms for evaluating concept truth values changing over time.
 *   **Performance and Scalability**:
     *   **Multithreaded Execution**: Enables parallel processing for improved throughput.
     *   **Optimized Data Structures**: Utilizes custom concurrent collections like `HijackBag` (lock-free) and `CurveBag` (sorted).

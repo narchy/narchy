@@ -2,7 +2,7 @@ package jcog.tensor.rl.pg;
 
 import jcog.signal.FloatRange;
 import jcog.tensor.Tensor;
-import jcog.tensor.TensorUtil;
+import jcog.tensor.util.TensorUtil;
 
 public class A2C extends VPG {
 

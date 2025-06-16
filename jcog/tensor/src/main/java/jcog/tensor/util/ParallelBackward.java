@@ -1,6 +1,7 @@
-package jcog.tensor;
+package jcog.tensor.util;
 
 import jcog.data.list.Lst;
+import jcog.tensor.Tensor;
 import jcog.tensor.Tensor.GradQueue;
 import org.ejml.simple.SimpleMatrix;
 import org.jetbrains.annotations.Nullable;

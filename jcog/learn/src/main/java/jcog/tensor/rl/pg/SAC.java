@@ -6,7 +6,7 @@ import jcog.tensor.Models;
 import jcog.tensor.Optimizers;
 import jcog.tensor.Tensor;
 import jcog.tensor.Tensor.GradQueue;
-import jcog.tensor.TensorUtil;
+import jcog.tensor.util.TensorUtil;
 
 import java.util.ArrayList;
 import java.util.List;

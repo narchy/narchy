@@ -5,7 +5,7 @@ import jcog.signal.FloatRange;
 import jcog.signal.IntRange;
 import jcog.tensor.Optimizers;
 import jcog.tensor.Tensor;
-import jcog.tensor.TensorUtil;
+import jcog.tensor.util.TensorUtil;
 import jcog.util.ArrayUtil;
 
 import java.util.List;

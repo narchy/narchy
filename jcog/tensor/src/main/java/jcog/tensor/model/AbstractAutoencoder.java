@@ -1,4 +1,4 @@
-package jcog.tensor;
+package jcog.tensor.model;
 
 import jcog.Fuzzy;
 import jcog.random.RandomBits;

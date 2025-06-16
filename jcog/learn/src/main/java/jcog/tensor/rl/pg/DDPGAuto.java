@@ -9,7 +9,7 @@ import jcog.signal.IntRange;
 import jcog.tensor.Models;
 import jcog.tensor.Optimizers;
 import jcog.tensor.Tensor;
-import jcog.tensor.TensorUtil;
+import jcog.tensor.util.TensorUtil;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 
 import java.util.Arrays;

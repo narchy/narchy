@@ -1,4 +1,4 @@
-package jcog.tensor.experimental;
+package jcog.tensor.model;
 
 import jcog.tensor.Tensor;
 import jcog.util.ArrayUtil;

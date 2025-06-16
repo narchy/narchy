@@ -4,7 +4,7 @@ import jcog.signal.IntRange;
 import jcog.tensor.Models;
 import jcog.tensor.Optimizers;
 import jcog.tensor.Tensor;
-import jcog.tensor.experimental.ODELayer;
+import jcog.tensor.model.ODELayer;
 
 import java.util.function.UnaryOperator;
 
