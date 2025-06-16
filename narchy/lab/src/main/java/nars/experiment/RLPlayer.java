@@ -116,7 +116,8 @@ public class RLPlayer {
             //Agents::SAC
             //Agents::DDPG
             //Agents::A2C
-            Agents::ReinforceODE //<--- !!!!!
+            Agents::ReinforceDNC
+            //Agents::ReinforceODE //<--- !!!!!
             //Agents::ReinforceLiquid
             //Agents::Random
             //Agents::DQmlp

@@ -388,8 +388,12 @@ public class Agents {
 
     public static Agent REINFORCE(int i, int o) {
         float s = 3;
-        //return new Reinforce(i, o, round(i * s), 6).agent();
-        return new ReinforceDNC(i, o, round(i * s), 6, 4, 8, 1, DNCMemory.EraseMode.SCALAR).agent();
+        return new Reinforce(i, o, round(i * s), 6).agent();
+    }
+
+    public static Agent ReinforceDNC(int i, int o) {
+        float s = 3;
+        return new ReinforceDNC(i, o, round(i * s), 12, 16, 12, 1, DNCMemory.EraseMode.SCALAR).agent();
     }
 
     public static Agent VPG(int i, int o) {
