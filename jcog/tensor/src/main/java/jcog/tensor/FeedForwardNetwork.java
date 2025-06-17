@@ -1,6 +1,6 @@
 package jcog.tensor;
 
-import jcog.linear.Linear; // Assuming Models.Linear -> jcog.linear.Linear
+import jcog.tensor.Models.Linear; // Using Models.Linear
 import jcog.model.Dropout; // Assuming Models.Dropout -> jcog.model.Dropout
 import java.util.function.UnaryOperator;
 
@@ -24,14 +24,21 @@ public class FeedForwardNetwork {
     public FeedForwardNetwork(int dModel, int dff, UnaryOperator<Tensor> activationFunction,
                               float dropoutRate, boolean biasLinear, boolean requiresGrad) {
 
-        // Initialize linear1: dModel -> dff. Pass null for internal activation.
+        // Initialize linear1: dModel -> dff.
+        // Models.Linear constructor is (inFeatures: int, outFeatures: int, activation: UnaryOperator<Tensor>, bias: boolean)
+        // Passing null for activation means no activation function will be applied by the Linear layer itself,
+        // as the main activation is applied externally in this class.
         this.linear1 = new Linear(dModel, dff, null, biasLinear);
 
         this.activation = activationFunction;
 
-        // Initialize linear2: dff -> dModel. Pass null for internal activation.
+        // Initialize linear2: dff -> dModel.
         this.linear2 = new Linear(dff, dModel, null, biasLinear);
 
+        // As with MultiHeadAttention, the .weight and .bias fields are directly accessible.
+        // Models.Linear already calls .grad(true).parameter() on weight and bias internally.
+        // Explicitly setting them here based on requiresGrad is somewhat redundant but harmless
+        // and makes the logic clear.
         if (dropoutRate > 0) {
             this.dropout = new Dropout(dropoutRate);
         } else {

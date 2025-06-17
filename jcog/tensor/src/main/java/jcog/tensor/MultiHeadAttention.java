@@ -1,7 +1,8 @@
 package jcog.tensor;
 
 import org.jetbrains.annotations.Nullable;
-import jcog.linear.Linear; // Assuming Models.Linear is jcog.linear.Linear
+import jcog.tensor.Models.Linear; // Using Models.Linear
+import jcog.tensor.RotaryPositionalEncoding;
 
 public class MultiHeadAttention {
 
@@ -11,25 +12,37 @@ public class MultiHeadAttention {
     public final Linear wq, wk, wv; // Input projection layers
     public final Linear wo;         // Output projection layer
     private final boolean debugPrinting;
+    private final RotaryPositionalEncoding rope;
 
-    public MultiHeadAttention(int dModel, int numHeads, boolean biasForProjections, boolean requiresGrad, boolean debugPrinting) {
+    public MultiHeadAttention(int dModel, int numHeads, boolean biasForProjections, boolean requiresGrad, boolean debugPrinting, @Nullable RotaryPositionalEncoding rope) {
         if (dModel % numHeads != 0) {
             throw new IllegalArgumentException("dModel (" + dModel + ") must be divisible by numHeads (" + numHeads + ").");
+        }
+        if (rope != null && rope.dim != (dModel/numHeads)) {
+            throw new IllegalArgumentException("RoPE dimension (" + rope.dim + ") must match head dimension d_k (" + (dModel/numHeads) + ").");
         }
         this.dModel = dModel;
         this.numHeads = numHeads;
         this.d_k = dModel / numHeads;
         this.debugPrinting = debugPrinting;
+        this.rope = rope;
 
         // Initialize projection layers
-        // Assuming Models.Linear is equivalent to jcog.linear.Linear
-        // The constructor for Linear is (in: int, out: int, init: Tensor, bias: boolean)
-        // We'll pass null for init tensor, which means it will be initialized internally (e.g. randGaussian)
+        // Models.Linear constructor is (inFeatures: int, outFeatures: int, activation: UnaryOperator<Tensor>, bias: boolean)
+        // Passing null for activation means no activation function will be applied, which is the desired behavior here.
         wq = new Linear(dModel, dModel, null, biasForProjections);
         wk = new Linear(dModel, dModel, null, biasForProjections);
         wv = new Linear(dModel, dModel, null, biasForProjections);
         wo = new Linear(dModel, dModel, null, biasForProjections);
 
+        // The .weight and .bias fields are directly accessible and grad can be set.
+        // Models.Linear already calls .grad(true).parameter() on weight and bias internally if bias is enabled.
+        // However, explicitly setting them here ensures the intent if requiresGrad is true,
+        // and handles the case where internal initialization might change.
+        // For Models.Linear, weight is initialized with .grad(true).parameter()
+        // and bias (if true) is also initialized with .grad(true).parameter().
+        // So, these lines are somewhat redundant if requiresGrad is always true when layers are made,
+        // but they don't hurt and make the requiresGrad logic explicit.
         if (requiresGrad) {
             wq.weight.grad(true).parameter();
             wk.weight.grad(true).parameter();
@@ -79,6 +92,21 @@ public class MultiHeadAttention {
             Tensor q_h = q_projected.slice(0, seq_len_q, startCol, endCol); // Shape [seq_len_q, d_k]
             Tensor k_h = k_projected.slice(0, seq_len_k, startCol, endCol); // Shape [seq_len_k, d_k]
             Tensor v_h = v_projected.slice(0, seq_len_v, startCol, endCol); // Shape [seq_len_v, d_k] (as d_v per head is d_k)
+
+            if (this.rope != null) {
+                int seq_len_q_actual = q_h.rows(); // Assuming q_h is [seq_len_q_actual, d_k]
+                int seq_len_k_actual = k_h.rows(); // Assuming k_h is [seq_len_k_actual, d_k]
+
+                // Apply RoPE. position_offset = 0 for standard application.
+                // RoPE expects dim to be d_k, which was checked in the constructor.
+                q_h = this.rope.apply_rotary_pos_emb(q_h, seq_len_q_actual, 0);
+                k_h = this.rope.apply_rotary_pos_emb(k_h, seq_len_k_actual, 0);
+
+                if (debugPrinting) {
+                    System.out.println("MHA Head " + h + ": q_h shape after RoPE: " + q_h.shapeStr());
+                    System.out.println("MHA Head " + h + ": k_h shape after RoPE: " + k_h.shapeStr());
+                }
+            }
 
             if (debugPrinting) {
                 System.out.println("MHA Head " + h + ": q_h shape: " + q_h.shapeStr());

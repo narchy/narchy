@@ -267,7 +267,13 @@ public class Models {
 
     /**
      * Universal Linear Transformer
+     * @deprecated This class is deprecated. Use {@link jcog.tensor.MultiHeadAttention}
+     * (in conjunction with {@link jcog.tensor.AttentionMechanisms#scaledDotProductAttention}
+     * and {@link jcog.tensor.Models.Linear} for projections) as the preferred, more modular,
+     * and flexible alternative for implementing multi-head attention mechanisms.
+     * {@code MultiHeadAttention} offers better support for features like attention masking.
      */
+    @Deprecated
     public static class ULT extends BiasActivation {
         public final Tensor Wq, Wk, Wv, Wo;
         protected final int dHead;
@@ -422,7 +428,10 @@ public class Models {
 
     /**
      * Winograd's minimal filtering algorithm for reduced multiply-adds.
+     * @deprecated Suggest using {@link jcog.tensor.Models.Linear} for general linear transformations.
+     * The benefits of Winograd algorithm are typically for convolutional layers and may not be generally applicable here.
      */
+    @Deprecated
     public static class WinogradLinear extends BiasActivation {
         private final Tensor W1, W2, W3;
         private final int actualOutputs;
@@ -455,7 +464,11 @@ public class Models {
 
     /**
      * Low rank matrix approximation via UV decomposition. Memory efficient for redundant features.
+     * @deprecated Suggest using {@link jcog.tensor.Models.Linear}. While parameter efficiency is important,
+     * it can often be achieved via architectural choices (e.g., parameter sharing, factorized embeddings)
+     * or model compression techniques applied to standard layers.
      */
+    @Deprecated
     public static class LowRankLinear extends BiasActivation {
         public final Tensor U, V;
 
@@ -475,7 +488,11 @@ public class Models {
 
     /**
      * Diagonal-only weights for efficient feature-wise scaling.
+     * @deprecated Suggest using {@link jcog.tensor.Models.Linear} for general linear operations.
+     * For learnable feature-wise scaling, {@link jcog.tensor.Models.LayerNorm} (specifically its {@code gamma} parameter)
+     * provides this, or direct element-wise multiplication with a learnable parameter tensor can be used.
      */
+    @Deprecated
     public static class DiagonalLinear extends BiasActivation {
         private final Tensor diagonal;
 
