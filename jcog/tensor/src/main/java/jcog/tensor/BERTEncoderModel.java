@@ -54,7 +54,8 @@ public class BERTEncoderModel {
                 0.0f, // MHA dropout rate - currently not used by MHA constructor
                 ffnDropoutRate,
                 biasInProjections,
-                requiresGrad
+                requiresGrad,
+                null // Pass null for RoPE
             );
             this.transformerBlocks.layer.add(block);
         }

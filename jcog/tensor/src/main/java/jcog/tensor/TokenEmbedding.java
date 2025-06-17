@@ -3,6 +3,20 @@ package jcog.tensor;
 import org.ejml.simple.SimpleMatrix;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Implements a standard token embedding layer.
+ * <p>
+ * This layer maps each token ID to a dense vector of a specified embedding dimension.
+ * It is suitable for models where the vocabulary size and model dimension do not result
+ * in an excessively large embedding matrix, or where the parameter efficiency of
+ * factorized embeddings is not a primary requirement.
+ * <p>
+ * For models requiring greater parameter efficiency in the embedding layer, especially
+ * with large vocabularies and hidden dimensions, consider using
+ * {@link jcog.tensor.FactorizedTokenEmbedding}.
+ *
+ * @see jcog.tensor.FactorizedTokenEmbedding
+ */
 public class TokenEmbedding {
 
     public final Tensor weight;

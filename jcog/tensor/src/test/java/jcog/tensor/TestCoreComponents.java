@@ -1,5 +1,6 @@
 package jcog.tensor;
 
+import jcog.model.LayerNorm;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -120,6 +121,126 @@ public class TestCoreComponents {
         assertArrayApproximatelyEquals(expectedGradW1, emb.weight.grad().slice(1,2,0,2).array(), "Grad for token 1 (row 1)");
         assertArrayApproximatelyEquals(expectedGradW2, emb.weight.grad().slice(2,3,0,2).array(), "Grad for token 2 (row 2)");
     }
+
+    // --- FactorizedTokenEmbedding Tests ---
+    @Test
+    void testFactorizedTokenEmbeddingInitialization() {
+        int vocabSize = 10, embeddingDimE = 4, hiddenDimH = 6;
+
+        FactorizedTokenEmbedding fte1 = new FactorizedTokenEmbedding(vocabSize, embeddingDimE, hiddenDimH, true);
+        assertNotNull(fte1.embeddingLayerE.weights, "fte1.embeddingLayerE.weights should not be null");
+        assertTensorShape(fte1.embeddingLayerE.weights, vocabSize, embeddingDimE, "fte1.embeddingLayerE.weights shape");
+        assertTrue(fte1.embeddingLayerE.weights.hasGrad(), "fte1.embeddingLayerE.weights should require grad");
+        assertTrue(fte1.embeddingLayerE.weights.isParameter(), "fte1.embeddingLayerE.weights should be a parameter");
+
+        assertNotNull(fte1.projectionLayerH.weight, "fte1.projectionLayerH.weight should not be null");
+        assertTensorShape(fte1.projectionLayerH.weight, embeddingDimE, hiddenDimH, "fte1.projectionLayerH.weight shape");
+        assertTrue(fte1.projectionLayerH.weight.hasGrad(), "fte1.projectionLayerH.weight should require grad");
+        assertTrue(fte1.projectionLayerH.weight.isParameter(), "fte1.projectionLayerH.weight should be a parameter");
+        assertNotNull(fte1.projectionLayerH.bias, "fte1.projectionLayerH.bias should not be null");
+        assertTensorShape(fte1.projectionLayerH.bias, 1, hiddenDimH, "fte1.projectionLayerH.bias shape");
+        assertTrue(fte1.projectionLayerH.bias.hasGrad(), "fte1.projectionLayerH.bias should require grad");
+        assertTrue(fte1.projectionLayerH.bias.isParameter(), "fte1.projectionLayerH.bias should be a parameter");
+
+        FactorizedTokenEmbedding fte2 = new FactorizedTokenEmbedding(vocabSize, embeddingDimE, hiddenDimH, false);
+        assertNotNull(fte2.embeddingLayerE.weights, "fte2.embeddingLayerE.weights should not be null");
+        assertFalse(fte2.embeddingLayerE.weights.hasGrad(), "fte2.embeddingLayerE.weights should not require grad");
+        assertFalse(fte2.embeddingLayerE.weights.isParameter(), "fte2.embeddingLayerE.weights should not be a parameter");
+
+        assertNotNull(fte2.projectionLayerH.weight, "fte2.projectionLayerH.weight should not be null");
+        assertFalse(fte2.projectionLayerH.weight.hasGrad(), "fte2.projectionLayerH.weight should not require grad (inherited from Linear)");
+        // projectionLayerH is a Models.Linear, which initializes its parameters as grad(true) by default if not specified otherwise.
+        // The 'requiresGrad' in FactorizedTokenEmbedding is only passed to TokenEmbedding_E.
+        // This is a slight inconsistency. For this test, we'll assume Models.Linear defaults to grad=true for its params.
+        // If FactorizedTokenEmbedding is meant to control projectionLayerH's grad status, its constructor needs modification.
+        // For now, asserting based on current Models.Linear behavior.
+        assertTrue(fte2.projectionLayerH.weight.isParameter(), "fte2.projectionLayerH.weight should be parameter by default in Linear");
+        assertTrue(fte2.projectionLayerH.bias.isParameter(), "fte2.projectionLayerH.bias should be parameter by default in Linear");
+    }
+
+    @Test
+    void testFactorizedTokenEmbeddingForward() {
+        int vocabSize = 3, embeddingDimE = 2, hiddenDimH = 2;
+        FactorizedTokenEmbedding fte = new FactorizedTokenEmbedding(vocabSize, embeddingDimE, hiddenDimH, false);
+
+        // Manually set weights for TokenEmbedding_E
+        // E_weights: [vocabSize, embeddingDimE] = [3, 2]
+        fte.embeddingLayerE.weights.data = Tensor.getDoubles(new double[][]{{0.1, 0.2}, {0.3, 0.4}, {0.5, 0.6}}, fte.embeddingLayerE.weights.data);
+
+        // Manually set weights for projectionLayerH (Models.Linear)
+        // H_weight: [embeddingDimE, hiddenDimH] = [2, 2]
+        fte.projectionLayerH.weight.data = Tensor.getDoubles(new double[][]{{1.0, 2.0}, {3.0, 4.0}}, fte.projectionLayerH.weight.data);
+        // H_bias: [1, hiddenDimH] = [1, 2]
+        fte.projectionLayerH.bias.data = Tensor.getDoubles(new double[]{0.5, -0.5}, fte.projectionLayerH.bias.data);
+
+        Tensor tokenIds = Tensor.matrix(new double[][]{{0}, {2}}); // Use token 0 and token 2
+        // Expected intermediate embeddings (output of embeddingLayerE):
+        // Token 0: [0.1, 0.2]
+        // Token 2: [0.5, 0.6]
+        // So, embeddedE = [[0.1, 0.2], [0.5, 0.6]]
+
+        // Expected final output (output of projectionLayerH.apply(embeddedE)):
+        // For [0.1, 0.2]:
+        // matmul: [0.1, 0.2] @ [[1,2],[3,4]].T = [0.1, 0.2] @ [[1,3],[2,4]]
+        //         = [0.1*1 + 0.2*3, 0.1*2 + 0.2*4] = [0.1+0.6, 0.2+0.8] = [0.7, 1.0]
+        // add bias: [0.7, 1.0] + [0.5, -0.5] = [1.2, 0.5]
+        // For [0.5, 0.6]:
+        // matmul: [0.5, 0.6] @ [[1,3],[2,4]]
+        //         = [0.5*1 + 0.6*3, 0.5*2 + 0.6*4] = [0.5+1.8, 1.0+2.4] = [2.3, 3.4]
+        // add bias: [2.3, 3.4] + [0.5, -0.5] = [2.8, 2.9]
+        double[][] expectedOutputData = {{1.2, 0.5}, {2.8, 2.9}};
+
+        Tensor output = fte.forward(tokenIds);
+        assertTensorShape(output, 2, hiddenDimH, "FTE Forward: Output shape");
+        assertTensorDataEquals(expectedOutputData, output, "FTE Forward: Output data");
+    }
+
+    @Test
+    void testFactorizedTokenEmbeddingForwardEmpty() {
+        FactorizedTokenEmbedding fte = new FactorizedTokenEmbedding(3, 2, 2, false);
+        Tensor tokenIdsEmpty = Tensor.zeros(0, 1); // Or Tensor.vector() if that makes an empty tensor
+        Tensor outputEmpty = fte.forward(tokenIdsEmpty);
+        assertTensorShape(outputEmpty, 0, fte.hiddenDimH, "FTE ForwardEmpty: outputEmpty shape");
+    }
+
+    @Test
+    void testFactorizedTokenEmbeddingOutOfBounds() {
+        FactorizedTokenEmbedding fte = new FactorizedTokenEmbedding(3, 2, 2, false);
+        Tensor tokenIdsInvalidUpper = Tensor.scalar(3); // Vocab is 0, 1, 2
+        assertThrows(IllegalArgumentException.class, () -> fte.forward(tokenIdsInvalidUpper), "FTE OutOfBounds: Upper bound check");
+
+        Tensor tokenIdsInvalidLower = Tensor.scalar(-1);
+        assertThrows(IllegalArgumentException.class, () -> fte.forward(tokenIdsInvalidLower), "FTE OutOfBounds: Lower bound check");
+    }
+
+    @Test
+    void testFactorizedTokenEmbeddingGradient() {
+        int vocabSize = 3, embeddingDimE = 2, hiddenDimH = 2;
+        FactorizedTokenEmbedding fte = new FactorizedTokenEmbedding(vocabSize, embeddingDimE, hiddenDimH, true);
+        // Weights are randomly initialized and require grad.
+
+        Tensor tokenIds = Tensor.matrix(new double[][]{{0}, {1}});
+        Tensor output = fte.forward(tokenIds);
+        assertTensorShape(output, 2, hiddenDimH, "FTE Gradient: Output shape");
+        assertTrue(output.hasGrad(), "FTE Gradient: Output should require grad");
+
+        Tensor loss = output.sum();
+        loss.minimize();
+
+        assertNotNull(fte.embeddingLayerE.weights.grad(), "FTE embeddingLayerE.weights.grad should not be null");
+        assertTensorShape(fte.embeddingLayerE.weights.grad(), vocabSize, embeddingDimE, "FTE embeddingLayerE.weights.grad shape");
+
+        assertNotNull(fte.projectionLayerH.weight.grad(), "FTE projectionLayerH.weight.grad should not be null");
+        assertTensorShape(fte.projectionLayerH.weight.grad(), embeddingDimE, hiddenDimH, "FTE projectionLayerH.weight.grad shape");
+        assertNotNull(fte.projectionLayerH.bias.grad(), "FTE projectionLayerH.bias.grad should not be null");
+        assertTensorShape(fte.projectionLayerH.bias.grad(), 1, hiddenDimH, "FTE projectionLayerH.bias.grad shape");
+
+        // Check if gradients are non-zero (sum of abs values)
+        assertTrue(fte.embeddingLayerE.weights.grad().abs().sum().scalar() > EPS, "FTE embeddingLayerE.weights.grad has non-zero values");
+        assertTrue(fte.projectionLayerH.weight.grad().abs().sum().scalar() > EPS, "FTE projectionLayerH.weight.grad has non-zero values");
+        assertTrue(fte.projectionLayerH.bias.grad().abs().sum().scalar() > EPS, "FTE projectionLayerH.bias.grad has non-zero values");
+    }
+
 
     // --- PositionalEncoding Tests ---
     @Test
@@ -252,6 +373,75 @@ public class TestCoreComponents {
         }
     }
 
+    // --- RotaryPositionalEncoding Tests ---
+    @Test
+    void testRotaryPositionalEncodingPos0Identity() {
+        int dim = 4, max_seq_len = 10;
+        double theta_base = 10000.0;
+        RotaryPositionalEncoding rope = new RotaryPositionalEncoding(dim, max_seq_len, theta_base);
+
+        int seq_len = 5;
+        Tensor q_or_k = Tensor.randGaussian(seq_len, dim, 0.1);
+        Tensor q_or_k_copy = q_or_k.copy();
+
+        // Apply RoPE with position_offset = 0
+        // For position 0, the rotation should be an identity transformation.
+        // However, apply_rotary_pos_emb applies it for positions [offset, offset + seq_len -1]
+        // So, if seq_len > 1 and offset = 0, only the first row (pos 0) will be identity.
+        // The test asks to assert that `rotated` is element-wise equal to `q_or_k_copy`.
+        // This will only be true if all positions processed by RoPE are effectively 0.
+        // Let's test for a single token at position 0.
+        Tensor single_token_at_pos0 = q_or_k.slice(0, 1, 0, dim); // seq_len = 1
+        Tensor single_token_copy = single_token_at_pos0.copy();
+        Tensor rotated_single_token = rope.apply_rotary_pos_emb(single_token_at_pos0, 1, 0);
+
+        assertTensorDataEquals(single_token_copy.data2D(), rotated_single_token, "RoPE at pos 0 should be identity for that token");
+
+        // If we apply to the whole sequence with offset 0, only the first row should match original.
+        Tensor rotated_full = rope.apply_rotary_pos_emb(q_or_k.copy(), seq_len, 0);
+        assertTensorDataEquals(q_or_k.slice(0,1,0,dim).data2D(), rotated_full.slice(0,1,0,dim), "First row (pos 0) of RoPE'd tensor should be identity");
+
+        // If seq_len > 1, the other rows should differ from original if RoPE is working.
+        if (seq_len > 1 && dim > 0) {
+            boolean otherRowsDiffer = false;
+            for (int i = 1; i < seq_len; i++) {
+                Tensor original_row = q_or_k.slice(i, i + 1, 0, dim);
+                Tensor rotated_row = rotated_full.slice(i, i + 1, 0, dim);
+                for(int j=0; j < original_row.volume(); j++) {
+                    if (Math.abs(original_row.array()[j] - rotated_row.array()[j]) > EPS) {
+                        otherRowsDiffer = true;
+                        break;
+                    }
+                }
+                if (otherRowsDiffer) break;
+            }
+            assertTrue(otherRowsDiffer, "RoPE at subsequent positions ( > 0) should change the input values.");
+        }
+    }
+
+    @Test
+    void testRotaryPositionalEncodingKnownValues() {
+        // Based on example in RotaryPositionalEncoding.main()
+        // For pos=1, inv_freq[0] = 1.0 / (10000^(0/2)) = 1.0 -> this seems wrong calculation in comment.
+        // inv_freq[i] = 1.0 / Math.pow(theta_base, (double) (2 * i) / dim);
+        // For dim=2, i=0: inv_freq[0] = 1.0 / Math.pow(10000, 0/2) = 1.0 / 1.0 = 1.0
+        // t (positions) = [[1]] (for position_offset=1, seq_len=1)
+        // freqs = t.matmul(inv_freq) = [[1]] @ [[1.0]] = [[1.0]] (shape [1,1])
+        // emb_val_for_pair = freqs.slice(0,1,0,1) = [[1.0]]
+        // cos(1.0) = 0.54030230586
+        // sin(1.0) = 0.8414709848
+        // x_j = [1], x_j_plus_1 = [2]
+        // out_col_j = x_j * cos_val - x_j_plus_1 * sin_val = 1*0.5403 - 2*0.8414 = 0.5403 - 1.6829 = -1.1426
+        // out_col_j_plus_1 = x_j * sin_val + x_j_plus_1 * cos_val = 1*0.8414 + 2*0.5403 = 0.8414 + 1.0806 = 1.9220
+        RotaryPositionalEncoding rope = new RotaryPositionalEncoding(2, 10, 10000.0);
+        Tensor input = Tensor.matrix(new double[][]{{1, 2}}); // seq_len=1, dim=2
+        Tensor output = rope.apply_rotary_pos_emb(input, 1, 1); // position_offset=1 to test position 1
+
+        double[][] expectedOutputData = {{-1.1426046117, 1.922041939}}; // More precise values
+        assertTensorDataEquals(expectedOutputData, output, "RoPE known values (dim=2, pos=1)");
+    }
+
+
     // --- AttentionMechanisms.scaledDotProductAttention Tests ---
     @Test
     void testSDPAttentionBasic() {
@@ -361,7 +551,7 @@ public class TestCoreComponents {
     @Test
     void testMHAGradient() {
         int dModel = 2, numHeads = 1, seqLen = 1; // Simplest case: 1 head, 1 item in sequence
-        MultiHeadAttention mha = new MultiHeadAttention(dModel, numHeads, true, true, false);
+        MultiHeadAttention mha = new MultiHeadAttention(dModel, numHeads, true, true, false, null); // No RoPE
 
         Tensor query = Tensor.matrix(new double[][]{{0.1, 0.2}}).grad(true);
         Tensor key = Tensor.matrix(new double[][]{{0.3, 0.4}}).grad(true);
@@ -393,6 +583,95 @@ public class TestCoreComponents {
         // assertTrue(key.grad().abs().sum().scalar() > EPS, "MHA key.grad has non-zero values");
         assertTrue(value.grad().abs().sum().scalar() > EPS, "MHA value.grad has non-zero values");
     }
+
+    @Test
+    void testMHAForwardWithRoPE() {
+        int dModel = 4, numHeads = 2, seqLen = 3;
+        boolean bias = true, grad = false, debug = false;
+        int d_k = dModel / numHeads; // Should be 2
+
+        RotaryPositionalEncoding rope = new RotaryPositionalEncoding(d_k, seqLen, 10000.0);
+        MultiHeadAttention mhaWithRope = new MultiHeadAttention(dModel, numHeads, bias, grad, debug, rope);
+        MultiHeadAttention mhaWithoutRope = new MultiHeadAttention(dModel, numHeads, bias, grad, debug, null);
+
+        // Ensure weights are identical for a fair comparison
+        mhaWithRope.wq.weight.data = mhaWithoutRope.wq.weight.data.clone();
+        mhaWithRope.wk.weight.data = mhaWithoutRope.wk.weight.data.clone();
+        mhaWithRope.wv.weight.data = mhaWithoutRope.wv.weight.data.clone();
+        mhaWithRope.wo.weight.data = mhaWithoutRope.wo.weight.data.clone();
+        if (bias) {
+            mhaWithRope.wq.bias.data = mhaWithoutRope.wq.bias.data.clone();
+            mhaWithRope.wk.bias.data = mhaWithoutRope.wk.bias.data.clone();
+            mhaWithRope.wv.bias.data = mhaWithoutRope.wv.bias.data.clone();
+            mhaWithRope.wo.bias.data = mhaWithoutRope.wo.bias.data.clone();
+        }
+
+
+        Tensor query = Tensor.randGaussian(seqLen, dModel, 0.1);
+        Tensor key = Tensor.randGaussian(seqLen, dModel, 0.1);
+        Tensor value = Tensor.randGaussian(seqLen, dModel, 0.1);
+
+        Tensor outputWithRope = mhaWithRope.forward(query.copy(), key.copy(), value.copy(), null);
+        Tensor outputWithoutRope = mhaWithoutRope.forward(query.copy(), key.copy(), value.copy(), null);
+
+        assertTensorShape(outputWithRope, seqLen, dModel, "MHA with RoPE: Output shape");
+        assertTensorShape(outputWithoutRope, seqLen, dModel, "MHA without RoPE: Output shape");
+
+        // If RoPE had an effect, the outputs should differ (unless all weights are zero, or by sheer chance)
+        // RoPE at pos 0 is identity, so if seqLen=1, outputs should be same.
+        // If seqLen > 1, RoPE is applied with offset 0, so pos 0 is identity, others are rotated.
+        // Thus, if seqLen > 1, outputs should differ.
+        boolean outputsDiffer = false;
+        for (int i = 0; i < outputWithRope.volume(); i++) {
+            if (Math.abs(outputWithRope.array()[i] - outputWithoutRope.array()[i]) > EPS) {
+                outputsDiffer = true;
+                break;
+            }
+        }
+        if (seqLen > 1 && d_k > 0) {
+             assertTrue(outputsDiffer, "MHA outputs with and without RoPE should differ for seqLen > 1");
+        } else if (seqLen == 1 && d_k > 0) {
+            assertFalse(outputsDiffer, "MHA outputs with and without RoPE should be identical for seqLen == 1 (RoPE is identity at pos 0)");
+        }
+    }
+
+     @Test
+    void testMHAForwardWithRoPE_Pos0IdentityEffect() {
+        int seqLen = 1;
+        int dModel = 4;
+        int numHeads = 2;
+        int d_k = dModel / numHeads; // 2
+        boolean bias = true, grad = false, debug = false;
+
+        RotaryPositionalEncoding rope = new RotaryPositionalEncoding(d_k, seqLen, 10000.0);
+        MultiHeadAttention mhaWithRope = new MultiHeadAttention(dModel, numHeads, bias, grad, debug, rope);
+        MultiHeadAttention mhaWithoutRope = new MultiHeadAttention(dModel, numHeads, bias, grad, debug, null);
+
+        // Critical: Ensure weights are IDENTICAL for this test.
+        // Simplest: copy from one to the other after random initialization.
+        mhaWithRope.wq.weight.data = mhaWithoutRope.wq.weight.data.clone();
+        mhaWithRope.wk.weight.data = mhaWithoutRope.wk.weight.data.clone();
+        mhaWithRope.wv.weight.data = mhaWithoutRope.wv.weight.data.clone();
+        mhaWithRope.wo.weight.data = mhaWithoutRope.wo.weight.data.clone();
+        if (bias) {
+            mhaWithRope.wq.bias.data = mhaWithoutRope.wq.bias.data.clone();
+            mhaWithRope.wk.bias.data = mhaWithoutRope.wk.bias.data.clone();
+            mhaWithRope.wv.bias.data = mhaWithoutRope.wv.bias.data.clone();
+            mhaWithRope.wo.bias.data = mhaWithoutRope.wo.bias.data.clone();
+        }
+
+
+        Tensor query = Tensor.randGaussian(seqLen, dModel, 0.1);
+        Tensor key = Tensor.randGaussian(seqLen, dModel, 0.1);
+        Tensor value = Tensor.randGaussian(seqLen, dModel, 0.1);
+
+        Tensor outputWithRope = mhaWithRope.forward(query.copy(), key.copy(), value.copy(), null);
+        Tensor outputWithoutRope = mhaWithoutRope.forward(query.copy(), key.copy(), value.copy(), null);
+
+        assertTensorDataEquals(outputWithoutRope.data2D(), outputWithRope,
+                "MHA output with RoPE should be identical to without RoPE for seqLen=1 (pos 0 RoPE is identity)");
+    }
+
 
     // --- FeedForwardNetwork Tests ---
     @Test
@@ -498,5 +777,102 @@ public class TestCoreComponents {
         assertTrue(ffn.linear2.weight.grad().abs().sum().scalar() > EPS, "FFN linear2.weight.grad has non-zero values");
         assertTrue(input.grad().abs().sum().scalar() > EPS, "FFN input.grad has non-zero values");
 
+    }
+
+    // --- jcog.model.LayerNorm Tests ---
+    @Test
+    void testLayerNormInitialization() {
+        int dim = 4;
+        double epsilon = 1e-5;
+        LayerNorm ln = new LayerNorm(dim, epsilon);
+
+        assertNotNull(ln.gamma, "LayerNorm gamma should not be null");
+        assertNotNull(ln.beta, "LayerNorm beta should not be null");
+
+        assertTensorShape(ln.gamma, 1, dim, "LayerNorm gamma shape");
+        assertTensorShape(ln.beta, 1, dim, "LayerNorm beta shape");
+
+        // Check initialization values (gamma=1, beta=0 by default in jcog.model.LayerNorm)
+        double[] expectedGammaData = new double[dim];
+        double[] expectedBetaData = new double[dim];
+        for (int i = 0; i < dim; i++) {
+            expectedGammaData[i] = 1.0;
+            expectedBetaData[i] = 0.0;
+        }
+        assertArrayApproximatelyEquals(expectedGammaData, ln.gamma.array(), "LayerNorm gamma initial data");
+        assertArrayApproximatelyEquals(expectedBetaData, ln.beta.array(), "LayerNorm beta initial data");
+
+        assertTrue(ln.gamma.hasGrad(), "LayerNorm gamma should require grad by default");
+        assertTrue(ln.gamma.isParameter(), "LayerNorm gamma should be a parameter by default");
+        assertTrue(ln.beta.hasGrad(), "LayerNorm beta should require grad by default");
+        assertTrue(ln.beta.isParameter(), "LayerNorm beta should be a parameter by default");
+    }
+
+    @Test
+    void testLayerNormForwardPassKnownValues() {
+        int dim = 2;
+        double epsilon = 1e-5; // LayerNorm uses 1e-5f, which is float.
+        LayerNorm ln = new LayerNorm(dim, epsilon);
+
+        // Default gamma = [1,1], beta = [0,0]
+        // ln.gamma.data = Tensor.getDoubles(new double[][]{{1.0, 1.0}}, ln.gamma.data); // Ensure defaults if needed
+        // ln.beta.data = Tensor.getDoubles(new double[][]{{0.0, 0.0}}, ln.beta.data);
+
+        Tensor input = Tensor.matrix(new double[][]{{1, 3}, {5, 7}});
+        // Row 0: x1 = [1, 3]. Mean = 2. Var = ((1-2)^2 + (3-2)^2)/2 = 1. Std = sqrt(1+eps) approx 1.
+        //        Norm = [(1-2)/1, (3-2)/1] = [-1, 1]. Output = 1*[-1,1] + 0 = [-1, 1]
+        // Row 1: x2 = [5, 7]. Mean = 6. Var = ((5-6)^2 + (7-6)^2)/2 = 1. Std = sqrt(1+eps) approx 1.
+        //        Norm = [(5-6)/1, (7-6)/1] = [-1, 1]. Output = 1*[-1,1] + 0 = [-1, 1]
+        double[][] expectedOutputData = {{-1.0, 1.0}, {-1.0, 1.0}};
+
+        Tensor output = ln.apply(input);
+        assertTensorShape(output, 2, dim, "LayerNorm KnownValues: Output shape");
+        assertTensorDataEquals(expectedOutputData, output, "LayerNorm KnownValues: Output data");
+    }
+
+    @Test
+    void testLayerNormForwardPassDifferentGammaBeta() {
+        int dim = 2;
+        double epsilon = 1e-5;
+        LayerNorm ln = new LayerNorm(dim, epsilon);
+
+        ln.gamma.data = Tensor.getDoubles(new double[][]{{0.5, 2.0}}, ln.gamma.data);
+        ln.beta.data = Tensor.getDoubles(new double[][]{{0.1, 0.2}}, ln.beta.data);
+
+        Tensor input = Tensor.matrix(new double[][]{{1, 3}}); // Mean=2, Var=1, Norm=[-1,1]
+        // Expected: gamma * norm + beta = [0.5, 2.0] * [-1, 1] + [0.1, 0.2]
+        //         = [-0.5, 2.0] + [0.1, 0.2] = [-0.4, 2.2]
+        double[][] expectedOutputData = {{-0.4, 2.2}};
+
+        Tensor output = ln.apply(input);
+        assertTensorShape(output, 1, dim, "LayerNorm DiffGammaBeta: Output shape");
+        assertTensorDataEquals(expectedOutputData, output, "LayerNorm DiffGammaBeta: Output data");
+    }
+
+    @Test
+    void testLayerNormGradient() {
+        int dim = 2;
+        double epsilon = 1e-5;
+        LayerNorm ln = new LayerNorm(dim, epsilon); // gamma and beta are params by default
+
+        Tensor input = Tensor.matrix(new double[][]{{1, 3}}).grad(true);
+        Tensor output = ln.apply(input);
+        Tensor loss = output.sum();
+        loss.minimize();
+
+        assertNotNull(ln.gamma.grad(), "LayerNorm gamma.grad should not be null");
+        assertTensorShape(ln.gamma.grad(), 1, dim, "LayerNorm gamma.grad shape");
+        assertTrue(ln.gamma.grad().abs().sum().scalar() > EPS, "LayerNorm gamma.grad has non-zero values");
+
+        assertNotNull(ln.beta.grad(), "LayerNorm beta.grad should not be null");
+        assertTensorShape(ln.beta.grad(), 1, dim, "LayerNorm beta.grad shape");
+        assertTrue(ln.beta.grad().abs().sum().scalar() > EPS, "LayerNorm beta.grad has non-zero values");
+
+        assertNotNull(input.grad(), "LayerNorm input.grad should not be null");
+        assertTensorShape(input.grad(), 1, dim, "LayerNorm input.grad shape");
+        // Input grad can be zero if its change doesn't affect the loss, e.g. if all inputs are same.
+        // Here, for {{1,3}}, mean is 2, normalized is [-1,1]. If input changes slightly, output changes.
+        // So input grad should be non-zero.
+        assertTrue(input.grad().abs().sum().scalar() > EPS, "LayerNorm input.grad has non-zero values");
     }
 }

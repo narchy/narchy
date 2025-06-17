@@ -44,7 +44,8 @@ public class TransformerEncoder implements UnaryOperator<Tensor> {
                 (float) dropoutRate,   // attentionDropoutRate
                 (float) dropoutRate,   // ffnDropoutRate
                 biasForProjections,    // biasForProjections
-                requiresGrad           // requiresGrad
+                requiresGrad,           // requiresGrad
+                null // Pass null for RoPE
             ));
         }
     }

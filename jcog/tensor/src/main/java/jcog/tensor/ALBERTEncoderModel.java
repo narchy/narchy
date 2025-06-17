@@ -1,5 +1,6 @@
 package jcog.tensor;
 
+import jcog.model.LayerNorm;
 import org.jetbrains.annotations.Nullable;
 import java.util.function.UnaryOperator;
 

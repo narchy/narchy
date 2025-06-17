@@ -3,6 +3,18 @@ package jcog.tensor;
 import org.ejml.simple.SimpleMatrix;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Provides absolute positional encoding for sequences, either fixed (sinusoidal) or learned.
+ * <p>
+ * These encodings are typically added directly to the input token embeddings to provide the model
+ * with information about the position of tokens in the sequence.
+ * <p>
+ * This method is common in classic Transformer architectures like BERT and the original GPT.
+ * For newer Transformer models, {@link jcog.tensor.RotaryPositionalEncoding} (RoPE)
+ * is often preferred as it applies relative positional information by modifying query and key vectors.
+ *
+ * @see jcog.tensor.RotaryPositionalEncoding
+ */
 public class PositionalEncoding {
 
     private final int maxSequenceLength;

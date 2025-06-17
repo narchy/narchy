@@ -3,6 +3,24 @@ package jcog.tensor;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implements a factorized token embedding layer, as used in models like ALBERT.
+ * <p>
+ * This layer reduces the number of parameters compared to a standard {@link TokenEmbedding}
+ * by first projecting token IDs to a lower-dimensional intermediate embedding space (E)
+ * and then projecting these intermediate embeddings to the final hidden dimension (H, or dModel).
+ * The total parameters become (vocabSize * E) + (E * H) instead of (vocabSize * H).
+ * <p>
+ * This approach is particularly beneficial for models with very large vocabularies
+ * and/or large hidden dimensions, where a standard embedding layer would be
+ * prohibitively large in terms of parameter count and memory.
+ * <p>
+ * If parameter efficiency in the embedding layer is not a critical concern,
+ * or if the vocabulary/hidden sizes are modest, a simpler {@link TokenEmbedding}
+ * might be sufficient.
+ *
+ * @see jcog.tensor.TokenEmbedding
+ */
 public class FactorizedTokenEmbedding {
 
     private final TokenEmbedding_E embeddingLayerE;

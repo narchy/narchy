@@ -29,12 +29,13 @@ public class TransformerBlock {
                             @SuppressWarnings("unused") float attentionDropoutRate, // Marked as unused for now
                             float ffnDropoutRate,
                             boolean biasForProjections,
-                            boolean requiresGrad) {
+                            boolean requiresGrad,
+                            @Nullable RotaryPositionalEncoding rope) { // New parameter
         this.dModel = dModel;
 
         // Initialize Multi-Head Attention
         // The 'debugPrinting' argument for MHA is set to false by default here.
-        this.mha = new MultiHeadAttention(dModel, numHeads, biasForProjections, requiresGrad, false);
+        this.mha = new MultiHeadAttention(dModel, numHeads, biasForProjections, requiresGrad, false, rope);
 
         // Initialize Feed-Forward Network
         this.ffn = new FeedForwardNetwork(dModel, dff, ffnActivation, ffnDropoutRate, biasForProjections, requiresGrad);

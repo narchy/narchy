@@ -2,6 +2,24 @@ package jcog.tensor;
 
 import java.util.stream.IntStream;
 
+/**
+ * Implements Rotary Positional Encoding (RoPE), a method for injecting relative positional
+ * information into Transformer models.
+ * <p>
+ * RoPE works by rotating pairs of input features in the query (Q) and key (K) vectors
+ * based on their absolute position. This effectively allows the attention mechanism to
+ * capture relative positional dependencies.
+ * <p>
+ * It is often preferred in modern Transformer architectures (e.g., LLaMA, PaLM) due to its
+ * strong performance, ability to handle variable sequence lengths naturally, and tendency
+ * to provide good long-range dependency modeling.
+ * <p>
+ * This component is designed to be used typically within the attention mechanism, applied
+ * to Q and K tensors before attention scores are computed.
+ *
+ * @see jcog.tensor.PositionalEncoding for additive absolute positional encodings.
+ * @see jcog.tensor.MultiHeadAttention for an example of its integration.
+ */
 public class RotaryPositionalEncoding {
 
     private final int dim;
