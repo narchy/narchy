@@ -1,6 +1,7 @@
 package jcog.tensor;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestLosses {
@@ -90,8 +91,8 @@ public class TestLosses {
         Tensor loss = Losses.crossEntropyLoss(logits, targets);
         loss.minimize();
 
-        assertNotNull(logits.grad(), "Logits gradient should not be null");
-        assertTensorShape(logits.grad(), 2, 3, "Logits gradient shape");
+        assertNotNull(logits.grad, "Logits gradient should not be null");
+        assertTensorShape(logits.grad, 2, 3, "Logits gradient shape");
 
         // Expected gradients: (softmax_output - one_hot_target) / N
         // N = 2 (batch size)
@@ -111,8 +112,8 @@ public class TestLosses {
         //             = [-0.1065, 0.05325, 0.05325]
         double[] expectedGradRow1 = {-0.1065, 0.05325, 0.05325};
 
-        assertArrayApproximatelyEquals(expectedGradRow0, logits.grad().slice(0,1,0,3).array(), "Gradient row 0");
-        assertArrayApproximatelyEquals(expectedGradRow1, logits.grad().slice(1,2,0,3).array(), "Gradient row 1");
+        assertArrayApproximatelyEquals(expectedGradRow0, logits.grad.slice(0,1,0,3).array(), "Gradient row 0");
+        assertArrayApproximatelyEquals(expectedGradRow1, logits.grad.slice(1,2,0,3).array(), "Gradient row 1");
     }
 
     // --- Tests for Losses.maskedCrossEntropyLoss ---
@@ -179,16 +180,16 @@ public class TestLosses {
         Tensor loss = Losses.maskedCrossEntropyLoss(logits, targets, lossMask);
         loss.minimize();
 
-        assertNotNull(logits.grad(), "Logits gradient should not be null");
-        assertTensorShape(logits.grad(), 3, 3, "Logits gradient shape");
+        assertNotNull(logits.grad, "Logits gradient should not be null");
+        assertTensorShape(logits.grad, 3, 3, "Logits gradient shape");
 
         // Expected gradients for row 0 (same as crossEntropyLoss but scaled by 1/num_active=1/2)
         double[] expectedGradRow0 = {0.18633/2.0, (0.50651-1)/2.0, 0.30716/2.0};
-        assertArrayApproximatelyEquals(expectedGradRow0, logits.grad().slice(0,1,0,3).array(), "Gradient row 0 (masked)");
+        assertArrayApproximatelyEquals(expectedGradRow0, logits.grad.slice(0,1,0,3).array(), "Gradient row 0 (masked)");
 
         // Expected gradients for row 1 (masked item) should be all zeros
         double[] expectedGradRow1_masked = {0.0, 0.0, 0.0};
-        assertArrayApproximatelyEquals(expectedGradRow1_masked, logits.grad().slice(1,2,0,3).array(), "Gradient row 1 (masked)");
+        assertArrayApproximatelyEquals(expectedGradRow1_masked, logits.grad.slice(1,2,0,3).array(), "Gradient row 1 (masked)");
 
         // Expected gradients for row 2 (Item 2: target 2)
         // probs2 = [0.15428, 0.15428, 0.69144]
@@ -197,6 +198,6 @@ public class TestLosses {
         //           = [0.15428/2, 0.15428/2, (0.69144-1)/2]
         //           = [0.07714, 0.07714, -0.15428]
         double[] expectedGradRow2 = {0.07714, 0.07714, -0.15428};
-        assertArrayApproximatelyEquals(expectedGradRow2, logits.grad().slice(2,3,0,3).array(), "Gradient row 2 (masked)");
+        assertArrayApproximatelyEquals(expectedGradRow2, logits.grad.slice(2,3,0,3).array(), "Gradient row 2 (masked)");
     }
 }

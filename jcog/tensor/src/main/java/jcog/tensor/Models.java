@@ -1,11 +1,11 @@
 package jcog.tensor;
 
 import jcog.data.bit.MetalBitSet;
-import jcog.model.LayerNorm;
 import jcog.data.list.Lst;
 import jcog.random.RandomBits;
 import jcog.random.XoRoShiRo128PlusRandom;
 import jcog.signal.FloatRange;
+import jcog.tensor.model.AttentionMechanisms;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.ejml.simple.SimpleMatrix;
 import org.jetbrains.annotations.Nullable;
@@ -148,7 +148,7 @@ public class Models {
 
                 if (layerNorm && O > 2)
                     layer.add(
-                            new jcog.model.LayerNorm(O, layerNormRate)
+                            new LayerNorm(O, layerNormRate)
                             //new PowerNorm(O, layerNormRate)
                     );
 
@@ -218,7 +218,7 @@ public class Models {
 
     public static class Dropout implements UnaryOperator<Tensor> {
         public final FloatRange dropoutRate;
-        private boolean training = true;
+        public boolean training = true;
 
         public Dropout(float dropoutRate) {
             this.dropoutRate = FloatRange.unit(dropoutRate);
@@ -268,8 +268,8 @@ public class Models {
 
     /**
      * Universal Linear Transformer
-     * @deprecated This class is deprecated. Use {@link jcog.tensor.MultiHeadAttention}
-     * (in conjunction with {@link jcog.tensor.AttentionMechanisms#scaledDotProductAttention}
+     * @deprecated This class is deprecated. Use {@link MultiHeadAttention}
+     * (in conjunction with {@link AttentionMechanisms#scaledDotProductAttention}
      * and {@link jcog.tensor.Models.Linear} for projections) as the preferred, more modular,
      * and flexible alternative for implementing multi-head attention mechanisms.
      * {@code MultiHeadAttention} offers better support for features like attention masking.

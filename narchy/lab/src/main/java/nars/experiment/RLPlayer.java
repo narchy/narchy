@@ -109,14 +109,14 @@ public class RLPlayer {
         };
 
         IntIntToObjectFunction<Agent> policy =
-            //Agents::PPO
+            Agents::PPO
             //Agents::StreamAC
             //Agents::VPG
             //Agents::REINFORCE
             //Agents::SAC
             //Agents::DDPG
             //Agents::A2C
-            Agents::ReinforceDNC
+            //Agents::ReinforceDNC
             //Agents::ReinforceODE //<--- !!!!!
             //Agents::ReinforceLiquid
             //Agents::Random

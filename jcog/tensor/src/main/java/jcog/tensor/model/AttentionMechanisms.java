@@ -1,5 +1,6 @@
-package jcog.tensor;
+package jcog.tensor.model;
 
+import jcog.tensor.Tensor;
 import org.jetbrains.annotations.Nullable;
 
 public class AttentionMechanisms {

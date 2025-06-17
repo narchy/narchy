@@ -1,7 +1,9 @@
-package jcog.tensor;
+package jcog.tensor.model;
 
-import jcog.tensor.Models.Linear; // Using Models.Linear
-import jcog.model.Dropout; // Assuming Models.Dropout -> jcog.model.Dropout
+import jcog.tensor.Models.Dropout;
+import jcog.tensor.Models.Linear;
+import jcog.tensor.Tensor;
+
 import java.util.function.UnaryOperator;
 
 public class FeedForwardNetwork {

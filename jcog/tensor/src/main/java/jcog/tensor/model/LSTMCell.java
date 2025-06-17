@@ -1,8 +1,6 @@
 package jcog.tensor.model;
 
 import jcog.tensor.Tensor;
-import jcog.tensor.TensorOp; // Assuming this exists for custom ops
-import org.ejml.simple.SimpleMatrix; // From existing files
 
 import java.util.Arrays;
 import java.util.List;

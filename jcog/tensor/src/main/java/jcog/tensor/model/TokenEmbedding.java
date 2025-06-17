@@ -1,5 +1,6 @@
-package jcog.tensor;
+package jcog.tensor.model;
 
+import jcog.tensor.Tensor;
 import org.ejml.simple.SimpleMatrix;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,9 +14,9 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * For models requiring greater parameter efficiency in the embedding layer, especially
  * with large vocabularies and hidden dimensions, consider using
- * {@link jcog.tensor.FactorizedTokenEmbedding}.
+ * {@link FactorizedTokenEmbedding}.
  *
- * @see jcog.tensor.FactorizedTokenEmbedding
+ * @see FactorizedTokenEmbedding
  */
 public class TokenEmbedding {
 
@@ -70,7 +71,7 @@ public class TokenEmbedding {
 
         if (result.hasGrad()) {
             // Set up the operation for gradient propagation
-            result.op = new TensorOp(this.weight) { // The weight Tensor is the parent
+            result.op = new Tensor.TensorOp(this.weight) { // The weight Tensor is the parent
                 @Override
                 public void backward(SimpleMatrix grad, SimpleMatrix[] gradOut) {
                     // grad: gradient of the loss with respect to the output of this forward method (shape [numTokens, embeddingDim])

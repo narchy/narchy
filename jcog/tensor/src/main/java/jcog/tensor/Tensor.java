@@ -141,6 +141,10 @@ public class Tensor {
                 y[i][j] = x[i][j] * b;
     }
 
+    public static Tensor randGaussian(int rows, int cols) {
+        return randGaussian(rows, cols, 1);
+    }
+
     public static Tensor randGaussian(int rows, int cols, double stddev) {
         var rng = new XoRoShiRo128PlusRandom();
         var n = rows * cols;
@@ -2395,15 +2399,6 @@ public class Tensor {
         return variance(axis, true).sqrt();
     }
 
-    /**
-     * Computes the standard deviation of tensor elements.
-     * This computes standard deviation across all elements.
-     *
-     * @return Tensor containing the standard deviation (scalar)
-     */
-    public Tensor std() {
-        return variance().sqrt();
-    }
 
     /**
      * Finds the indices of the maximum values along a specified axis.
@@ -2424,17 +2419,18 @@ public class Tensor {
         int C = cols();
 
         if (R == 0 || C == 0) {
-            // Handle empty tensor case: return an empty tensor of the expected shape.
-            if (axis == 0) return new Tensor(0, C, false); // Shape (0,C) or (1,C) with 0 rows? Let's do (1,C) filled with 0 or NaN if C > 0.
-            else return new Tensor(R, 0, false); // Shape (R,0) or (R,1) with 0 cols? Let's do (R,1) filled with 0 or NaN if R > 0.
-            // For simplicity, if tensor is empty (R=0 or C=0), the result is also "empty" in a sense.
-            // If R=0, axis=0 -> (1,C) is problematic. Let's return (1,C) if C>0, else (0,0).
-            // If C=0, axis=1 -> (R,1) is problematic. Let's return (R,1) if R>0, else (0,0).
-            // Simplest for now: if R or C is 0, output is zeros of target shape, which might be (0,C) or (R,0).
-            // Or more concretely, if axis = 0, output is (1,C). If R=0, values are undefined.
-            // If axis = 1, output is (R,1). If C=0, values are undefined.
-             if (axis == 0) return zeros(1,C); // if R=0, this is still (1,C) - indices are effectively 0.
-             else return zeros(R,1); // if C=0, this is still (R,1) - indices are effectively 0.
+            throw new IllegalArgumentException();
+//            // Handle empty tensor case: return an empty tensor of the expected shape.
+//            if (axis == 0) return new Tensor(0, C, false); // Shape (0,C) or (1,C) with 0 rows? Let's do (1,C) filled with 0 or NaN if C > 0.
+//            else return new Tensor(R, 0, false); // Shape (R,0) or (R,1) with 0 cols? Let's do (R,1) filled with 0 or NaN if R > 0.
+//            // For simplicity, if tensor is empty (R=0 or C=0), the result is also "empty" in a sense.
+//            // If R=0, axis=0 -> (1,C) is problematic. Let's return (1,C) if C>0, else (0,0).
+//            // If C=0, axis=1 -> (R,1) is problematic. Let's return (R,1) if R>0, else (0,0).
+//            // Simplest for now: if R or C is 0, output is zeros of target shape, which might be (0,C) or (R,0).
+//            // Or more concretely, if axis = 0, output is (1,C). If R=0, values are undefined.
+//            // If axis = 1, output is (R,1). If C=0, values are undefined.
+//            // if (axis == 0) return zeros(1,C); // if R=0, this is still (1,C) - indices are effectively 0.
+//            //else return zeros(R,1); // if C=0, this is still (R,1) - indices are effectively 0.
         }
 
         Tensor result;
