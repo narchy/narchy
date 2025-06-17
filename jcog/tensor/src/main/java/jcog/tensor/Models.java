@@ -1,6 +1,7 @@
 package jcog.tensor;
 
 import jcog.data.bit.MetalBitSet;
+import jcog.model.LayerNorm;
 import jcog.data.list.Lst;
 import jcog.random.RandomBits;
 import jcog.random.XoRoShiRo128PlusRandom;
@@ -147,7 +148,7 @@ public class Models {
 
                 if (layerNorm && O > 2)
                     layer.add(
-                            new LayerNorm(O, layerNormRate)
+                            new jcog.model.LayerNorm(O, layerNormRate)
                             //new PowerNorm(O, layerNormRate)
                     );
 
@@ -267,7 +268,13 @@ public class Models {
 
     /**
      * Universal Linear Transformer
+     * @deprecated This class is deprecated. Use {@link jcog.tensor.MultiHeadAttention}
+     * (in conjunction with {@link jcog.tensor.AttentionMechanisms#scaledDotProductAttention}
+     * and {@link jcog.tensor.Models.Linear} for projections) as the preferred, more modular,
+     * and flexible alternative for implementing multi-head attention mechanisms.
+     * {@code MultiHeadAttention} offers better support for features like attention masking.
      */
+    @Deprecated
     public static class ULT extends BiasActivation {
         public final Tensor Wq, Wk, Wv, Wo;
         protected final int dHead;
@@ -339,6 +346,10 @@ public class Models {
      * Reduced sensitivity to initialization: The normalization helps mitigate issues that can arise from poor weight initialization.
      * Works well with different activation functions: LayerNorm is compatible with various activation functions and can be used in different types of neural network architectures.
      */
+    /**
+     * @deprecated This class is deprecated. Use {@link jcog.model.LayerNorm} instead.
+     */
+    @Deprecated
     public static class LayerNorm implements UnaryOperator<Tensor> {
         protected final double epsilon;
 
@@ -366,14 +377,30 @@ public class Models {
         }
     }
 
+    /**
+     * Implements a Mixture of Experts (MoE) layer.
+     * <p>
+     * This layer uses multiple "expert" sub-networks and a gating network to determine
+     * how to combine the outputs of these experts.
+     * <p>
+     * This implementation uses a "dense" approach where all experts are evaluated for each input,
+     * and their outputs are combined using weights from a gating network. The gating network
+     * uses a softmax activation to produce a probability distribution over the experts for each input token.
+     * It does not currently implement sparse top-K routing (where only a subset of experts are chosen).
+     * </p>
+     * <p>
+     * The 'gatingSimple' constructor parameter is currently a no-op and input-dependent gating is always used.
+     * The main activation function and bias (if any) are applied after mixing the expert outputs.
+     * </p>
+     */
     public static class MixtureOfExperts extends BiasActivation {
         public final List<UnaryOperator<Tensor>> experts;
         public final Linear gating;
         private final int inputs, outputs;
 
+        // Use softmax for gating to get a probability distribution over experts.
         private final static UnaryOperator<Tensor> gatingActivaton =
-                Tensor::sigmoid;
-        //Tensor::softmax;
+                Tensor::softmax;
 
         private final boolean gatingSimple;
 
@@ -398,10 +425,13 @@ public class Models {
         }
 
         private Tensor gating(Tensor x) {
-            return gatingSimple ?
-                gating.apply(gating.weight) //directly use the parameters
-                :
-                gating.apply(x); //determine gating as a function of 'x'
+            // TODO: Review the 'gatingSimple' flag. For now, ensuring input-dependent gating.
+            // if (gatingSimple) {
+            //     return gating.apply(gating.weight); // Original problematic path
+            // } else {
+            //     return gating.apply(x);
+            // }
+            return gating.apply(x); // Always use input-dependent gating
         }
 
         /**
@@ -422,7 +452,10 @@ public class Models {
 
     /**
      * Winograd's minimal filtering algorithm for reduced multiply-adds.
+     * @deprecated Suggest using {@link jcog.tensor.Models.Linear} for general linear transformations.
+     * The benefits of Winograd algorithm are typically for convolutional layers and may not be generally applicable here.
      */
+    @Deprecated
     public static class WinogradLinear extends BiasActivation {
         private final Tensor W1, W2, W3;
         private final int actualOutputs;
@@ -455,7 +488,11 @@ public class Models {
 
     /**
      * Low rank matrix approximation via UV decomposition. Memory efficient for redundant features.
+     * @deprecated Suggest using {@link jcog.tensor.Models.Linear}. While parameter efficiency is important,
+     * it can often be achieved via architectural choices (e.g., parameter sharing, factorized embeddings)
+     * or model compression techniques applied to standard layers.
      */
+    @Deprecated
     public static class LowRankLinear extends BiasActivation {
         public final Tensor U, V;
 
@@ -475,7 +512,11 @@ public class Models {
 
     /**
      * Diagonal-only weights for efficient feature-wise scaling.
+     * @deprecated Suggest using {@link jcog.tensor.Models.Linear} for general linear operations.
+     * For learnable feature-wise scaling, {@link jcog.tensor.Models.LayerNorm} (specifically its {@code gamma} parameter)
+     * provides this, or direct element-wise multiplication with a learnable parameter tensor can be used.
      */
+    @Deprecated
     public static class DiagonalLinear extends BiasActivation {
         private final Tensor diagonal;
 

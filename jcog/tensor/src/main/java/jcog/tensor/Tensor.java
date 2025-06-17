@@ -778,12 +778,155 @@ public class Tensor {
 
     public Tensor sub(Tensor other) {
         if (other.isScalar())
-            return addScalar(other.neg());
+            return addScalar(other.neg()); // neg() correctly handles gradients
 
-        return binaryOp(other,
-            (a, b) -> a - b,
-            (grad, _) -> grad
-        );
+        // Check for broadcasting conditions similar to add()
+        if (this.rows() != other.rows() && (this.rows() == 1 || other.rows() == 1)) {
+            return broadcastSub(other);
+        }
+
+        if (!sameShape(other))
+            throw new IllegalArgumentException("Tensors dimensions are incompatible for subtraction.");
+
+        double[] d = array(), o = other.array();
+        var yy = new double[d.length];
+        for (var i = 0; i < d.length; i++)
+            yy[i] = d[i] - o[i];
+
+        var y = new Tensor(yy, rows(), cols(), this.hasGrad() || other.hasGrad());
+        if (y.hasGrad()) {
+            y.op = new TensorOp(this, other) {
+                @Override
+                public void backward(SimpleMatrix g, SimpleMatrix[] gradOut) {
+                    var G = array(g);
+                    if (gradOut[0] != null) { // Gradient for 'this'
+                        System.arraycopy(G, 0, array(gradOut[0]), 0, G.length);
+                    }
+                    if (gradOut[1] != null) { // Gradient for 'other'
+                        var go1 = array(gradOut[1]);
+                        for (int i = 0; i < G.length; i++) {
+                            go1[i] = -G[i];
+                        }
+                    }
+                }
+            };
+        }
+        return y;
+    }
+
+    private Tensor broadcastSub(Tensor other) {
+        var Rt = this.rows();
+        var Ct = this.cols();
+        var Ro = other.rows();
+        var Co = other.cols();
+
+        boolean thisLargerRows = Rt > Ro;
+        boolean thisLargerCols = Ct > Co; // Though current broadcastAdd only handles row broadcasting
+
+        Tensor larger, smaller;
+        boolean largerIsThis;
+
+        if (Rt != Ro) { // Row broadcasting: one has 1 row, the other has R rows
+            if (! ( (Rt == 1 && Ro > 1 && Ct == Co) || (Ro == 1 && Rt > 1 && Ct == Co) ) ) {
+                 throw new IllegalArgumentException("Invalid shapes for broadcast subtraction: " + this.shapeStr() + ", " + other.shapeStr());
+            }
+            larger = Rt > Ro ? this : other;
+            smaller = Rt > Ro ? other : this;
+            largerIsThis = Rt > Ro;
+        } else if (Ct != Co) { // Column broadcasting: one has 1 col, the other has C cols
+             if (! ( (Ct == 1 && Co > 1 && Rt == Ro) || (Co == 1 && Ct > 1 && Rt == Ro) ) ) {
+                 throw new IllegalArgumentException("Invalid shapes for broadcast subtraction: " + this.shapeStr() + ", " + other.shapeStr());
+            }
+            larger = Ct > Co ? this : other; // e.g. (R, C) and (R, 1)
+            smaller = Ct > Co ? other : this;
+            largerIsThis = Ct > Co;
+        } else {
+            throw new IllegalArgumentException("Broadcast subtraction called with incompatible shapes or same shapes: " + this.shapeStr() + ", " + other.shapeStr());
+        }
+
+
+        var lr = larger.rows();
+        var lc = larger.cols();
+
+        var y = new Tensor(lr, lc, this.hasGrad() || other.hasGrad());
+
+        if (Rt != Ro) { // Row broadcasting (e.g. (R,C) and (1,C) )
+            double[] smallerRow = smaller.array();
+            for (var i = 0; i < lr; i++) { // Iterate through rows of larger tensor
+                for (var j = 0; j < lc; j++) { // Iterate through columns
+                    y.data.set(i, j, larger.data(i, j) - smallerRow[j]);
+                }
+            }
+        } else { // Column broadcasting (e.g. (R,C) and (R,1) )
+            double[] smallerCol = smaller.array();
+             for (var i = 0; i < lr; i++) { // Iterate through rows
+                for (var j = 0; j < lc; j++) { // Iterate through columns of larger tensor
+                    y.data.set(i, j, larger.data(i, j) - smallerCol[i]);
+                }
+            }
+        }
+        // If !largerIsThis, it means y = smaller_broadcasted - larger_actual, so we negate y.
+        if (!largerIsThis) {
+            y.mulThis(-1.0); // In-place multiplication
+        }
+
+
+        if (y.hasGrad()) {
+            y.op = new TensorOp(this, other) {
+                @Override
+                public void backward(SimpleMatrix grad, SimpleMatrix[] gradOut) {
+                    SimpleMatrix gThis = gradOut[0];
+                    SimpleMatrix gOther = gradOut[1];
+
+                    if (Rt != Ro) { // Row broadcasting
+                        if (largerIsThis) { // this(larger) - other(smaller_broadcasted)
+                            if (gThis != null) gThis.setTo(grad);
+                            if (gOther != null) { // sum grad along rows for other
+                                for (var j = 0; j < lc; j++) {
+                                    double sum = 0;
+                                    for (var i = 0; i < lr; i++) sum += grad.get(i, j);
+                                    gOther.set(0, j, -sum);
+                                }
+                            }
+                        } else { // this(smaller_broadcasted) - other(larger)
+                            if (gThis != null) { // sum grad along rows for this
+                                for (var j = 0; j < lc; j++) {
+                                    double sum = 0;
+                                    for (var i = 0; i < lr; i++) sum += grad.get(i, j);
+                                    gThis.set(0, j, sum);
+                                }
+                            }
+                            if (gOther != null) {
+                                TensorUtil.eleMul(gOther, grad, -1.0); // gOther.setTo(grad.scale(-1));
+                            }
+                        }
+                    } else { // Column broadcasting
+                        if (largerIsThis) { // this(larger) - other(smaller_broadcasted)
+                            if (gThis != null) gThis.setTo(grad);
+                            if (gOther != null) { // sum grad along columns for other
+                                for (var i = 0; i < lr; i++) {
+                                    double sum = 0;
+                                    for (var j = 0; j < lc; j++) sum += grad.get(i, j);
+                                    gOther.set(i, 0, -sum);
+                                }
+                            }
+                        } else { // this(smaller_broadcasted) - other(larger)
+                             if (gThis != null) { // sum grad along columns for this
+                                for (var i = 0; i < lr; i++) {
+                                    double sum = 0;
+                                    for (var j = 0; j < lc; j++) sum += grad.get(i, j);
+                                    gThis.set(i, 0, sum);
+                                }
+                            }
+                            if (gOther != null) {
+                                TensorUtil.eleMul(gOther, grad, -1.0);
+                            }
+                        }
+                    }
+                }
+            };
+        }
+        return y;
     }
 
     public Tensor mul(Tensor other) {
@@ -1348,7 +1491,86 @@ public class Tensor {
         return y;
     }
 
+    /**
+     * Computes the sum of tensor elements along a specified axis.
+     *
+     * @param axis Axis along which to compute the sum (0 for columns, 1 for rows).
+     *             If axis is 0, sums along columns, output is a row vector (1, C).
+     *             If axis is 1, sums along rows, output is a column vector (R, 1).
+     * @return Tensor containing the summed values.
+     */
+    public Tensor sum(int axis) {
+        if (axis != 0 && axis != 1) {
+            throw new IllegalArgumentException("Axis must be 0 (columns) or 1 (rows).");
+        }
+
+        Tensor result;
+        if (axis == 0) { // Sum along columns
+            result = this.sumCols();
+        } else { // Sum along rows
+            result = this.sumRows();
+        }
+
+        // Replace the TensorOp from sumCols/sumRows with one specific to sum(axis)
+        // to ensure the backward pass logic matches the sum(axis) definition precisely.
+        if (result.hasGrad()) { // Check if original operation requires grad
+             // Keep original parents if any, or just 'this' if sumCols/sumRows was the first op
+            Tensor[] parents = result.op != null ? result.op.parents : new Tensor[]{this};
+            if (parents.length == 0 || parents[0] != this) { // Ensure 'this' is the parent
+                parents = new Tensor[]{this};
+            }
+
+            result.op = new TensorOp(parents) { // parents should be just 'this'
+                @Override
+                public void backward(SimpleMatrix grad, SimpleMatrix[] gradOut) {
+                    if (gradOut[0] != null) {
+                        SimpleMatrix parentGrad = gradOut[0]; // Gradient for 'this' tensor
+                        int R_parent = Tensor.this.rows(); // Rows of the original tensor
+                        int C_parent = Tensor.this.cols(); // Cols of the original tensor
+
+                        parentGrad.reshape(R_parent, C_parent); // Ensure correct shape
+
+                        if (axis == 0) { // Summed over columns (dimension 0), grad is (1, C_parent), parentGrad is (R_parent, C_parent)
+                            if (grad.getNumRows() != 1 || grad.getNumCols() != C_parent) {
+                                throw new IllegalArgumentException("Gradient shape mismatch for axis 0 sum. Expected (1, " + C_parent + "), got (" + grad.getNumRows() + ", " + grad.getNumCols() + ")");
+                            }
+                            for (int c = 0; c < C_parent; c++) {
+                                double g_c = grad.get(0, c);
+                                for (int r = 0; r < R_parent; r++) {
+                                    parentGrad.set(r, c, g_c);
+                                }
+                            }
+                        } else { // axis == 1, summed over rows (dimension 1), grad is (R_parent, 1), parentGrad is (R_parent, C_parent)
+                            if (grad.getNumRows() != R_parent || grad.getNumCols() != 1) {
+                                throw new IllegalArgumentException("Gradient shape mismatch for axis 1 sum. Expected (" + R_parent + ", 1), got (" + grad.getNumRows() + ", " + grad.getNumCols() + ")");
+                            }
+                            for (int r = 0; r < R_parent; r++) {
+                                double g_r = grad.get(r, 0);
+                                for (int c = 0; c < C_parent; c++) {
+                                    parentGrad.set(r, c, g_r);
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+        return result;
+    }
+
+    /**
+     * @deprecated Prefer {@link #sum(int axis)} where axis=0 for sum over columns (like sumRows in old logic, which was confusing)
+     * or axis=1 for sum over rows (like sumCols in old logic).
+     * Note: The boolean logic was (true=rowsOrCols -> sumCols -> sum over rows -> output R,1),
+     * (false=rowsOrCols -> sumRows -> sum over columns -> output 1,C)
+     * sum(0) = sum over columns (axis 0 / R dimension), output (1,C) -> like old sumRows() or sum(false)
+     * sum(1) = sum over rows (axis 1 / C dimension), output (R,1) -> like old sumCols() or sum(true)
+     */
+    @Deprecated
     public final Tensor sum(boolean rowsOrCols) {
+        // True for sumCols (sum over rows, R,1), False for sumRows (sum over columns, 1,C)
+        // sum(1) -> sum over rows -> sumCols()
+        // sum(0) -> sum over columns -> sumRows()
         return rowsOrCols ? sumCols() : sumRows();
     }
 
@@ -1711,6 +1933,47 @@ public class Tensor {
         return sum().div(volume());
     }
 
+    /**
+     * Computes the mean of tensor elements along a specified axis.
+     *
+     * @param axis Axis along which to compute the mean (0 for columns, 1 for rows)
+     * @return Tensor containing the mean values
+     */
+    public Tensor mean(int axis) {
+        if (axis != 0 && axis != 1) {
+            throw new IllegalArgumentException("Axis must be 0 (columns) or 1 (rows)");
+        }
+
+        int R = rows();
+        int C = cols();
+        Tensor summed;
+        int N; // Number of elements summed over
+
+        if (axis == 0) { // Mean along columns (output is row vector)
+            if (R == 1) return this; // Already a row vector or scalar
+            summed = sumCols();
+            N = R;
+        } else { // Mean along rows (output is column vector)
+            if (C == 1) return this; // Already a column vector or scalar
+            summed = sumRows();
+            N = C;
+        }
+
+        if (N == 0) { // Avoid division by zero if a dimension is zero
+            return zerosShaped(summed); // Or handle as an error
+        }
+
+        Tensor result = summed.div(N); // div by scalar N
+
+        // Adjust gradient propagation for the division by N
+        // The 'div(double)' operation already handles this if N is treated as a constant (no grad for N)
+        // The backward pass for 'summed.div(N)' will be:
+        // grad_summed = incoming_grad / N
+        // This grad_summed then flows back through the sum operation.
+
+        return result;
+    }
+
     public Tensor clipData(double min, double max) {
         clamp(array(), min, max);
         return this;
@@ -2031,6 +2294,237 @@ public class Tensor {
         }
 
         return y;
+    }
+
+    /**
+     * Computes the variance of tensor elements along a specified axis.
+     * Uses an unbiased estimator (divides by N-1).
+     *
+     * @param axis Axis along which to compute the variance (0 for columns, 1 for rows)
+     * @return Tensor containing the variance values
+     */
+    public Tensor variance(int axis) {
+        return variance(axis, true);
+    }
+
+    /**
+     * Computes the variance of tensor elements along a specified axis.
+     *
+     * @param axis Axis along which to compute the variance (0 for columns, 1 for rows)
+     * @param unbiased If true, uses unbiased estimator (N-1 divisor), otherwise N.
+     * @return Tensor containing the variance values
+     */
+    public Tensor variance(int axis, boolean unbiased) {
+        if (axis != 0 && axis != 1) {
+            throw new IllegalArgumentException("Axis must be 0 (columns) or 1 (rows)");
+        }
+
+        int R = rows();
+        int C = cols();
+        int N;
+        Tensor expectedShapeZeros; // Used for returning early with zeros
+
+        if (axis == 0) { // Variance along columns (operates on each column), output is (1,C)
+            N = R; // Number of elements in each column
+            expectedShapeZeros = zeros(1, C);
+        } else { // Variance along rows (operates on each row), output is (R,1)
+            N = C; // Number of elements in each row
+            expectedShapeZeros = zeros(R, 1);
+        }
+
+        if (N == 0) {
+            return expectedShapeZeros.fill(Double.NaN); // Variance of zero elements is undefined
+        }
+
+        if (unbiased) {
+            if (N == 1) {
+                // Unbiased variance for N=1 (X-X_mean)^2 / (1-1) is undefined (div by 0)
+                // Common practice is to return 0 or NaN. NaN is more informative.
+                return expectedShapeZeros.fill(Double.NaN);
+            }
+        } else { // Biased variance
+            if (N == 1) {
+                // Biased variance for N=1 (X-X_mean)^2 / 1 is 0, since X_mean = X
+                return expectedShapeZeros.fill(0.0);
+            }
+        }
+        // At this point, N > 1 for unbiased, or N >= 1 for biased (N=1 case for biased handled)
+        // N cannot be 0.
+
+        Tensor mean_ax = this.mean(axis); // (1,C) if axis=0, or (R,1) if axis=1
+                                         // 'this' is (R,C)
+                                         // mean_ax will be broadcast correctly by sub
+
+        Tensor diff = this.sub(mean_ax);  // Broadcasting sub: (R,C) - (1,C) -> (R,C)
+                                         // or (R,C) - (R,1) -> (R,C)
+        Tensor diff_sq = diff.sqr();      // (R,C), element-wise square
+
+        Tensor sum_sq_diff;
+        if (axis == 0) { // sum down columns
+            sum_sq_diff = diff_sq.sumCols(); // Result is (1,C)
+        } else { // sum across rows
+            sum_sq_diff = diff_sq.sumRows(); // Result is (R,1)
+        }
+
+        double divisor = unbiased ? (double)(N - 1) : (double)N;
+        // This divisor should not be zero based on the checks above (N > 1 for unbiased, N >=1 for biased)
+
+        return sum_sq_diff.div(divisor);
+    }
+
+    /**
+     * Computes the standard deviation of tensor elements.
+     * This computes standard deviation across all elements, using unbiased variance.
+     *
+     * @return Tensor containing the standard deviation (scalar)
+     */
+    public Tensor std() {
+        // variance() already uses (n-1) for all elements
+        return variance().sqrt();
+    }
+
+    /**
+     * Computes the standard deviation of tensor elements along a specified axis.
+     * Uses an unbiased estimator for variance (N-1).
+     *
+     * @param axis Axis along which to compute the standard deviation (0 for columns, 1 for rows)
+     * @return Tensor containing the standard deviation values
+     */
+    public Tensor std(int axis) {
+        // variance(axis, true) uses unbiased estimator
+        return variance(axis, true).sqrt();
+    }
+
+    /**
+     * Computes the standard deviation of tensor elements.
+     * This computes standard deviation across all elements.
+     *
+     * @return Tensor containing the standard deviation (scalar)
+     */
+    public Tensor std() {
+        return variance().sqrt();
+    }
+
+    /**
+     * Finds the indices of the maximum values along a specified axis.
+     * This operation is not differentiable and will throw an error if grads are required.
+     *
+     * @param axis Axis along which to find the maximum values (0 for columns, 1 for rows).
+     * @return Tensor containing the indices of the maximum values. Shape will be (1, C) if axis=0, or (R, 1) if axis=1.
+     */
+    public Tensor argmax(int axis) {
+        if (hasGrad()) {
+            throw new UnsupportedOperationException("argmax is not differentiable and cannot be used if gradients are required.");
+        }
+        if (axis != 0 && axis != 1) {
+            throw new IllegalArgumentException("Axis must be 0 (columns) or 1 (rows).");
+        }
+
+        int R = rows();
+        int C = cols();
+
+        if (R == 0 || C == 0) {
+            // Handle empty tensor case: return an empty tensor of the expected shape.
+            if (axis == 0) return new Tensor(0, C, false); // Shape (0,C) or (1,C) with 0 rows? Let's do (1,C) filled with 0 or NaN if C > 0.
+            else return new Tensor(R, 0, false); // Shape (R,0) or (R,1) with 0 cols? Let's do (R,1) filled with 0 or NaN if R > 0.
+            // For simplicity, if tensor is empty (R=0 or C=0), the result is also "empty" in a sense.
+            // If R=0, axis=0 -> (1,C) is problematic. Let's return (1,C) if C>0, else (0,0).
+            // If C=0, axis=1 -> (R,1) is problematic. Let's return (R,1) if R>0, else (0,0).
+            // Simplest for now: if R or C is 0, output is zeros of target shape, which might be (0,C) or (R,0).
+            // Or more concretely, if axis = 0, output is (1,C). If R=0, values are undefined.
+            // If axis = 1, output is (R,1). If C=0, values are undefined.
+             if (axis == 0) return zeros(1,C); // if R=0, this is still (1,C) - indices are effectively 0.
+             else return zeros(R,1); // if C=0, this is still (R,1) - indices are effectively 0.
+        }
+
+        Tensor result;
+        if (axis == 0) { // Along columns, output is (1, C)
+            result = new Tensor(1, C, false);
+            for (int j = 0; j < C; j++) { // Iterate through each column
+                double maxVal = Double.NEGATIVE_INFINITY;
+                int maxIdx = 0; // Default to 0 if all are -INF or column is empty (though caught by R=0)
+                for (int i = 0; i < R; i++) { // Iterate through rows of current column
+                    double val = data(i, j);
+                    if (val > maxVal) {
+                        maxVal = val;
+                        maxIdx = i;
+                    }
+                }
+                result.data.set(0, j, maxIdx);
+            }
+        } else { // Along rows, output is (R, 1)
+            result = new Tensor(R, 1, false);
+            for (int i = 0; i < R; i++) { // Iterate through each row
+                double maxVal = Double.NEGATIVE_INFINITY;
+                int maxIdx = 0; // Default to 0 if all are -INF or row is empty (though caught by C=0)
+                for (int j = 0; j < C; j++) { // Iterate through columns of current row
+                    double val = data(i, j);
+                    if (val > maxVal) {
+                        maxVal = val;
+                        maxIdx = j;
+                    }
+                }
+                result.data.set(i, 0, maxIdx);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Finds the indices of the minimum values along a specified axis.
+     * This operation is not differentiable and will throw an error if grads are required.
+     *
+     * @param axis Axis along which to find the minimum values (0 for columns, 1 for rows).
+     * @return Tensor containing the indices of the minimum values. Shape will be (1, C) if axis=0, or (R, 1) if axis=1.
+     */
+    public Tensor argmin(int axis) {
+        if (hasGrad()) {
+            throw new UnsupportedOperationException("argmin is not differentiable and cannot be used if gradients are required.");
+        }
+        if (axis != 0 && axis != 1) {
+            throw new IllegalArgumentException("Axis must be 0 (columns) or 1 (rows).");
+        }
+
+        int R = rows();
+        int C = cols();
+
+        if (R == 0 || C == 0) {
+            // Consistent with argmax: if R or C is 0, output is zeros of target shape.
+             if (axis == 0) return zeros(1,C);
+             else return zeros(R,1);
+        }
+
+        Tensor result;
+        if (axis == 0) { // Along columns, output is (1, C)
+            result = new Tensor(1, C, false);
+            for (int j = 0; j < C; j++) { // Iterate through each column
+                double minVal = Double.POSITIVE_INFINITY;
+                int minIdx = 0;
+                for (int i = 0; i < R; i++) { // Iterate through rows of current column
+                    double val = data(i, j);
+                    if (val < minVal) {
+                        minVal = val;
+                        minIdx = i;
+                    }
+                }
+                result.data.set(0, j, minIdx);
+            }
+        } else { // Along rows, output is (R, 1)
+            result = new Tensor(R, 1, false);
+            for (int i = 0; i < R; i++) { // Iterate through each row
+                double minVal = Double.POSITIVE_INFINITY;
+                int minIdx = 0;
+                for (int j = 0; j < C; j++) { // Iterate through columns of current row
+                    double val = data(i, j);
+                    if (val < minVal) {
+                        minVal = val;
+                        minIdx = j;
+                    }
+                }
+                result.data.set(i, 0, minIdx);
+            }
+        }
+        return result;
     }
 
     /**
