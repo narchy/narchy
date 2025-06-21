@@ -1,9 +1,9 @@
 package jcog.learn;
 
 import jcog.Util;
-import jcog.nn.ntm.NTM;
-import jcog.nn.ntm.learn.IWeightUpdater;
-import jcog.nn.ntm.learn.RMSPropWeightUpdater;
+import jcog.nndepr.ntm.NTM;
+import jcog.nndepr.ntm.learn.IWeightUpdater;
+import jcog.nndepr.ntm.learn.RMSPropWeightUpdater;
 import jcog.random.XorShift128PlusRandom;
 
 import java.util.Arrays;

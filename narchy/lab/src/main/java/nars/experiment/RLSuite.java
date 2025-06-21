@@ -1,7 +1,6 @@
 package nars.experiment;
 
 import jcog.data.list.Lst;
-import jcog.tensor.Agents;
 import nars.$;
 import nars.NAR;
 import nars.NARS;
@@ -30,8 +29,8 @@ public class RLSuite {
 //            new ReflexBuilder("DQNmlp_big", PolicyAgent::DQNbig, 1),
 //            new ReflexBuilder("DQNmlp_big", PolicyAgent::DQNbig, 1, 2),
             //new ReflexBuilder("DQNmlp_min", ValuePredictAgent::DQNmini, 1, 2, 4),
-            new ReflexBuilder("DQNmlp_med", Agents::DQmlp, true, true, 1),
-            new ReflexBuilder("DQNmlp_med", Agents::DQmlp, true, true, 1, 2),
+//            new ReflexBuilder("DQNmlp_med", Agents::DQmlp, true, true, 1),
+//            new ReflexBuilder("DQNmlp_med", Agents::DQmlp, true, true, 1, 2),
 
             //new ReflexBuilder("DQNmlp_munch", ValuePredictAgent::DQNmunch, 1),
             //new ReflexBuilder("DQNmlp_munch", ValuePredictAgent::DQNmunch, 1, 2),

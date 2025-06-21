@@ -3,7 +3,7 @@ package jcog.learn;
 import com.google.common.math.PairedStatsAccumulator;
 import jcog.activation.ReluActivation;
 import jcog.lstm.LSTM;
-import jcog.nn.MLP;
+import jcog.nndepr.MLP;
 import jcog.random.XoRoShiRo128PlusRandom;
 import jcog.tensor.LivePredictor;
 import jcog.tensor.Predictor;

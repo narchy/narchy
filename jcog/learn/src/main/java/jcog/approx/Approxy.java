@@ -6,7 +6,7 @@ import jcog.Util;
 import jcog.activation.SigmoidActivation;
 import jcog.data.list.Lst;
 import jcog.io.BinTxt;
-import jcog.nn.MLP;
+import jcog.nndepr.MLP;
 import jcog.pri.UnitPri;
 import jcog.pri.bag.Bag;
 import jcog.pri.bag.impl.hijack.PriPriHijackBag;

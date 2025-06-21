@@ -1,11 +1,11 @@
 package nars.gui;
 
 import jcog.lstm.LSTM;
-import jcog.nn.BackpropRecurrentNetwork;
-import jcog.nn.RecurrentNetwork;
-import jcog.nn.ntm.NTM;
-import jcog.nn.ntm.control.UMatrix;
-import jcog.nn.spiking0.critterding.CritterdingBrain;
+import jcog.nndepr.BackpropRecurrentNetwork;
+import jcog.nndepr.RecurrentNetwork;
+import jcog.nndepr.ntm.NTM;
+import jcog.nndepr.ntm.control.UMatrix;
+import jcog.nndepr.spiking0.critterding.CritterdingBrain;
 import jcog.tensor.ClassicAutoencoder;
 import spacegraph.space2d.container.grid.Gridding;
 import spacegraph.space2d.widget.meter.BitmapMatrixView;

@@ -2,13 +2,13 @@ package codi;
 
 import com.jogamp.opengl.GL2;
 import jcog.exe.Loop;
-import jcog.nn.spiking0.ca.CodiCA;
+import jcog.nndepr.spiking0.ca.CodiCA;
 import spacegraph.SpaceGraph;
 import spacegraph.space2d.ReSurface;
 import spacegraph.space2d.container.PaintSurface;
 import spacegraph.video.Draw;
 
-import static jcog.nn.spiking0.ca.CodiCA.*;
+import static jcog.nndepr.spiking0.ca.CodiCA.*;
 
 
 public class CodiDemo {

@@ -3,8 +3,8 @@ package jcog.learn;
 import jcog.activation.LeakyReluActivation;
 import jcog.activation.SigLinearActivation;
 import jcog.activation.SigmoidActivation;
-import jcog.nn.BackpropRecurrentNetwork;
-import jcog.nn.NEAT;
+import jcog.nndepr.BackpropRecurrentNetwork;
+import jcog.nndepr.NEAT;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

@@ -1,20 +1,20 @@
 package nars.gui;
 
 import jcog.data.list.Lst;
-import jcog.nn.layer.LinearLayer;
+import jcog.nndepr.layer.LinearLayer;
 import jcog.optimize.BayesOptimizer;
 import jcog.tensor.Models;
 import jcog.tensor.Tensor;
 import jcog.tensor.deprtensor.Tens0r;
 import jcog.tensor.experimental.CellularAutomataLinear;
-import jcog.tensor.model.DNCMemory;
 import jcog.tensor.experimental.ModelsExperimental;
+import jcog.tensor.model.DNCMemory;
 import jcog.tensor.model.ODELayer;
 import jcog.tensor.rl.blackbox.BayesZeroPolicy;
 import jcog.tensor.rl.blackbox.BlackboxPolicy;
-import jcog.tensor.rl.misc.PopulationPolicy;
-import jcog.tensor.rl.streamx.StreamAC;
-import jcog.tensor.rl.streamx.StreamXUtil;
+import jcog.tensor.rl.blackbox.PopulationPolicy;
+import jcog.tensor.rl.pg.StreamAC;
+import jcog.tensor.rl.pg.util.StreamXUtil;
 import org.jetbrains.annotations.Nullable;
 import spacegraph.space2d.Surface;
 import spacegraph.space2d.container.ContainerSurface;

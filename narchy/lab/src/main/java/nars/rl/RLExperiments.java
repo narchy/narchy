@@ -31,10 +31,10 @@ public class RLExperiments {
                 Agents::RandomGaussian,
                 Agents::VPG,
                 Agents::PPO,
-                Agents::SAC,
+                Agents::SAC
                 //Agents::DQmlp,
                 //Agents::CMAES,
-                Agents::DQrecurrent
+                //Agents::DQrecurrent
         }) {
             for (int i = 0; i < repeats; i++) {
                 experiments.add(()-> {

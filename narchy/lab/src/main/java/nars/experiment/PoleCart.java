@@ -1,6 +1,5 @@
 package nars.experiment;
 
-import jcog.Fuzzy;
 import jcog.Is;
 import jcog.TODO;
 import jcog.Util;
@@ -9,11 +8,10 @@ import jcog.activation.SigLinearActivation;
 import jcog.lstm.LSTM;
 import jcog.math.FloatSupplier;
 import jcog.math.normalize.FloatNormalized;
-import jcog.nn.MLP;
-import jcog.nn.RecurrentNetwork;
-import jcog.nn.optimizer.SGDOptimizer;
+import jcog.nndepr.MLP;
+import jcog.nndepr.RecurrentNetwork;
+import jcog.nndepr.optimizer.SGDOptimizer;
 import jcog.signal.FloatRange;
-import jcog.tensor.Agents;
 import jcog.tensor.LivePredictor;
 import jcog.tensor.Predictor;
 import nars.NAR;
@@ -589,9 +587,9 @@ import static spacegraph.SpaceGraph.window;
         return (i, o) -> new LivePredictor.NTMPredictor(i, o, 2);
     }
 
-    private static IntIntToObjectFunction<Predictor> recurrentPredictor() {
-        return (i, o) -> Agents.recurrentBrain(i, o, Fuzzy.mean(i, o), 4);
-    }
+//    private static IntIntToObjectFunction<Predictor> recurrentPredictor() {
+//        return (i, o) -> Agents.recurrentBrain(i, o, Fuzzy.mean(i, o), 4);
+//    }
 
     private static IntIntToObjectFunction<Predictor> mlpPredictor() {
         return (i, o) -> {

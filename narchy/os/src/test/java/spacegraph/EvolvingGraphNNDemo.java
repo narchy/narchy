@@ -2,7 +2,7 @@ package spacegraph;
 
 import jcog.Util;
 import jcog.activation.SigmoidActivation;
-import jcog.nn.EvolvingGraphNN;
+import jcog.nndepr.EvolvingGraphNN;
 import jcog.table.ARFF;
 import jcog.table.DataTable;
 import jcog.tensor.Tensor;

@@ -1,7 +1,7 @@
 package jcog.deep;
 
-import jcog.tensor.RecurrentAutoencoder;
-import jcog.tensor.RecurrentAutoencoder.LSTMRecurrentAutoencoder;
+import jcog.tensor.experimental.RecurrentAutoencoder;
+import jcog.tensor.experimental.RecurrentAutoencoder.LSTMRecurrentAutoencoder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

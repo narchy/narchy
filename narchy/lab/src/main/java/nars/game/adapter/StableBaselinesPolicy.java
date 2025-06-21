@@ -1,7 +1,7 @@
 package nars.game.adapter;
 
 import jcog.TODO;
-import jcog.tensor.rl.dqn.Policy;
+import jcog.agent.Policy;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;

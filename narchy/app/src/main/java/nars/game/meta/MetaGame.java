@@ -10,7 +10,6 @@ import jcog.math.FloatSupplier;
 import jcog.math.normalize.FloatNormalized;
 import jcog.signal.FloatRange;
 import jcog.tensor.rl.pg.*;
-import jcog.tensor.rl.streamx.StreamAC;
 import nars.$;
 import nars.Op;
 import nars.Term;
