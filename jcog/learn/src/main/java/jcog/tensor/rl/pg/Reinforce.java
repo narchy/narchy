@@ -78,8 +78,8 @@ public class Reinforce extends AbstractReinforce {
 
             @Override
             protected void afterLayer(int O, int l, int maxLayers) {
-                if (l < maxLayers-1 && O > 10)
-                    layer.add(new Models.Dropout(0.1f));
+//                if (l < maxLayers-1 && O > 10)
+//                    layer.add(new Models.Dropout(0.1f));
 
                 //layer.add(t -> t.clipGrad(-1, +1));
 

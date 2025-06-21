@@ -402,8 +402,8 @@ public class Agents {
     }
 
     public static Agent PPO(int i, int o) {
-        var s = 4;
-        var episodes = 16;
+        var s = 2;
+        var episodes = 32;
         return new PPO(i, o, round(i * s), round(i * s), episodes).agent();
     }
 

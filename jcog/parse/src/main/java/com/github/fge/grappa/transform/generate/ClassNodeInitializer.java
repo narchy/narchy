@@ -53,8 +53,7 @@ public final class ClassNodeInitializer
 
     private ParserClassNode classNode;
     private Class<?> ownerClass;
-    private final Set<ParserAnnotation> annotations
-            = EnumSet.noneOf(ParserAnnotation.class);
+    private final Set<ParserAnnotation> annotations = EnumSet.noneOf(ParserAnnotation.class);
 
     public ClassNodeInitializer() {
         super(ASM9);

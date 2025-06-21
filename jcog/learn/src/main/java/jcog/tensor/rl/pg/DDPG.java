@@ -435,12 +435,12 @@ public class DDPG extends AbstractPG {
         }
     }
 
-    private static class OUNoise {
+    static class OUNoise {
         final RandomGenerator rng = new XoRoShiRo128PlusRandom();
         private final double[] X;
         private final double mu = 0;
-        private final double theta = 0.15;
-        private final double sigma = 0.4;
+        double theta = 0.15;
+        double sigma = 0.4;
         private final double dt = 1;
 
         /** dist from -1..+1 */

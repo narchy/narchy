@@ -20,6 +20,7 @@ import org.ejml.ops.MatrixIO;
 import org.ejml.simple.ConstMatrix;
 import org.ejml.simple.SimpleMatrix;
 import org.ejml.simple.SimpleOperations;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
@@ -35,6 +36,7 @@ import static jcog.Util.*;
 public class Tensor {
 
     public static final Tensor[] EMPTY_ARRAY = new Tensor[0];
+    public static final UnaryOperator<Tensor> TANH = Tensor::tanh;
     public static final UnaryOperator<Tensor> RELU = Tensor::relu;
     public static final UnaryOperator<Tensor> RELU_LEAKY = Tensor::reluLeaky;
     public static final UnaryOperator<Tensor> SIGMOID = Tensor::sigmoid;
@@ -46,8 +48,7 @@ public class Tensor {
     }
 
     public SimpleMatrix data;
-    @Nullable
-    public Tensor grad;
+    @Nullable public Tensor grad;
     public boolean parameter;
     public TensorOp op;
 
@@ -103,6 +104,16 @@ public class Tensor {
         return new Tensor(SimpleMatrix.ones(rows, cols), false);
     }
 
+    @Deprecated public static Tensor ones(int[] rowsCols) {
+        if (rowsCols.length!=2) throw new UnsupportedOperationException();
+        return ones(rowsCols[0], rowsCols[1]);
+    }
+
+    @Deprecated public static Tensor zeros(int[] rowsCols) {
+        if (rowsCols.length!=2) throw new UnsupportedOperationException();
+        return zeros(rowsCols[0], rowsCols[1]);
+    }
+
     public static Tensor ones(int cols) {
         return ones(1, cols);
     }
@@ -139,6 +150,11 @@ public class Tensor {
         for (var i = 0; i < n; i++)
             for (var j = 0; j < x[0].length; j++)
                 y[i][j] = x[i][j] * b;
+    }
+
+    public static Tensor randGaussian(int... shape) {
+        if (shape.length!=2) throw new UnsupportedOperationException();
+        return randGaussian(shape[0], shape[1]);
     }
 
     public static Tensor randGaussian(int rows, int cols) {
@@ -285,9 +301,17 @@ public class Tensor {
     }
 
     public static Stream<Tensor> parameters(Object x) {
+        if (x instanceof Models.Layers l) {
+            return Stream.concat(l.layer.stream().flatMap(Tensor::parameters), parametersReflect(x));
+        }
+
+        return parametersReflect(x);
+    }
+
+    private static @NotNull Stream<Tensor> parametersReflect(Object x) {
         return Reflect.on(x).fieldsRecursive(true, false, false,
-            (fieldName, obj, parent)-> obj instanceof Tensor t && t.parameter)
-            .stream().map(y -> (Tensor)((Reflect)y).object);
+                        (fieldName, obj, parent) -> obj instanceof Tensor t && t.parameter)
+                .stream().map(y -> (Tensor) ((Reflect) y).object);
     }
 
     public static Tensor stack(Tensor[] tensors, int dim) {
@@ -362,6 +386,13 @@ public class Tensor {
         return zeros(rows, cols).fill(val);
     }
 
+    public static Tensor concat(Stream<Tensor> stream) {
+        return concat(stream.toArray(Tensor[]::new));
+    }
+
+    public static NoGrad noGrad() {
+        return new NoGrad();
+    }
 
     /** TODO optional Kahan summing? */
     private void addToThis(Queue<double[]> v) {
@@ -779,44 +810,52 @@ public class Tensor {
 
         return y;
     }
-
     public Tensor sub(Tensor other) {
         if (other.isScalar())
-            return addScalar(other.neg()); // neg() correctly handles gradients
+            return addScalar(other.neg());
 
-        // Check for broadcasting conditions similar to add()
-        if (this.rows() != other.rows() && (this.rows() == 1 || other.rows() == 1)) {
-            return broadcastSub(other);
-        }
-
-        if (!sameShape(other))
-            throw new IllegalArgumentException("Tensors dimensions are incompatible for subtraction.");
-
-        double[] d = array(), o = other.array();
-        var yy = new double[d.length];
-        for (var i = 0; i < d.length; i++)
-            yy[i] = d[i] - o[i];
-
-        var y = new Tensor(yy, rows(), cols(), this.hasGrad() || other.hasGrad());
-        if (y.hasGrad()) {
-            y.op = new TensorOp(this, other) {
-                @Override
-                public void backward(SimpleMatrix g, SimpleMatrix[] gradOut) {
-                    var G = array(g);
-                    if (gradOut[0] != null) { // Gradient for 'this'
-                        System.arraycopy(G, 0, array(gradOut[0]), 0, G.length);
-                    }
-                    if (gradOut[1] != null) { // Gradient for 'other'
-                        var go1 = array(gradOut[1]);
-                        for (int i = 0; i < G.length; i++) {
-                            go1[i] = -G[i];
-                        }
-                    }
-                }
-            };
-        }
-        return y;
+        return binaryOp(other,
+                (a, b) -> a - b,
+                (grad, _) -> grad
+        );
     }
+//    public Tensor sub(Tensor other) {
+//        if (other.isScalar())
+//            return addScalar(other.neg()); // neg() correctly handles gradients
+//
+//        // Check for broadcasting conditions similar to add()
+//        if (this.rows() != other.rows() && (this.rows() == 1 || other.rows() == 1)) {
+//            return broadcastSub(other);
+//        }
+//
+//        if (!sameShape(other))
+//            throw new IllegalArgumentException("Tensors dimensions are incompatible for subtraction.");
+//
+//        double[] d = array(), o = other.array();
+//        var yy = new double[d.length];
+//        for (var i = 0; i < d.length; i++)
+//            yy[i] = d[i] - o[i];
+//
+//        var y = new Tensor(yy, rows(), cols(), this.hasGrad() || other.hasGrad());
+//        if (y.hasGrad()) {
+//            y.op = new TensorOp(this, other) {
+//                @Override
+//                public void backward(SimpleMatrix g, SimpleMatrix[] gradOut) {
+//                    var G = array(g);
+//                    if (gradOut[0] != null) { // Gradient for 'this'
+//                        System.arraycopy(G, 0, array(gradOut[0]), 0, G.length);
+//                    }
+//                    if (gradOut[1] != null) { // Gradient for 'other'
+//                        var go1 = array(gradOut[1]);
+//                        for (int i = 0; i < G.length; i++) {
+//                            go1[i] = -G[i];
+//                        }
+//                    }
+//                }
+//            };
+//        }
+//        return y;
+//    }
 
     private Tensor broadcastSub(Tensor other) {
         var Rt = this.rows();
@@ -824,8 +863,8 @@ public class Tensor {
         var Ro = other.rows();
         var Co = other.cols();
 
-        boolean thisLargerRows = Rt > Ro;
-        boolean thisLargerCols = Ct > Co; // Though current broadcastAdd only handles row broadcasting
+        var thisLargerRows = Rt > Ro;
+        var thisLargerCols = Ct > Co; // Though current broadcastAdd only handles row broadcasting
 
         Tensor larger, smaller;
         boolean largerIsThis;
@@ -855,14 +894,14 @@ public class Tensor {
         var y = new Tensor(lr, lc, this.hasGrad() || other.hasGrad());
 
         if (Rt != Ro) { // Row broadcasting (e.g. (R,C) and (1,C) )
-            double[] smallerRow = smaller.array();
+            var smallerRow = smaller.array();
             for (var i = 0; i < lr; i++) { // Iterate through rows of larger tensor
                 for (var j = 0; j < lc; j++) { // Iterate through columns
                     y.data.set(i, j, larger.data(i, j) - smallerRow[j]);
                 }
             }
         } else { // Column broadcasting (e.g. (R,C) and (R,1) )
-            double[] smallerCol = smaller.array();
+            var smallerCol = smaller.array();
              for (var i = 0; i < lr; i++) { // Iterate through rows
                 for (var j = 0; j < lc; j++) { // Iterate through columns of larger tensor
                     y.data.set(i, j, larger.data(i, j) - smallerCol[i]);
@@ -879,8 +918,8 @@ public class Tensor {
             y.op = new TensorOp(this, other) {
                 @Override
                 public void backward(SimpleMatrix grad, SimpleMatrix[] gradOut) {
-                    SimpleMatrix gThis = gradOut[0];
-                    SimpleMatrix gOther = gradOut[1];
+                    var gThis = gradOut[0];
+                    var gOther = gradOut[1];
 
                     if (Rt != Ro) { // Row broadcasting
                         if (largerIsThis) { // this(larger) - other(smaller_broadcasted)
@@ -1068,7 +1107,7 @@ public class Tensor {
 
         DMatrixRMaj A = data.getDDRM(), B = weight.data.getDDRM();
         if (A.getNumCols() != B.getNumRows())
-            throw new IllegalArgumentException("The 'A' and 'B' matrices do not have compatible dimensions");
+            throw new IllegalArgumentException("'A' and 'B' matrices need A.cols==B.rows: " + Arrays.toString(shape()) + " | " + Arrays.toString(weight.shape()));
 
         // Perform fused matmul and bias addition
         var yy = new SimpleMatrix(rows(), weight.cols());
@@ -1480,6 +1519,62 @@ public class Tensor {
         return x;
     }
 
+    /**
+     * Stacks a list of tensors vertically (concatenates along rows).
+     * All tensors must have the same number of columns.
+     *
+     * @param tensors A list of Tensors to stack.
+     * @return A new Tensor containing the vertically stacked data.
+     */
+    public static Tensor concatRows(List<Tensor> tensors) {
+        if (tensors == null || tensors.isEmpty()) {
+            throw new IllegalArgumentException("Input tensor list cannot be null or empty.");
+        }
+
+        var first = tensors.getFirst();
+        var cols = first.cols();
+        var requiresGrad = tensors.stream().anyMatch(Tensor::hasGrad);
+
+        // Validate that all tensors have the same number of columns.
+        for (var i = 1; i < tensors.size(); i++) {
+            if (tensors.get(i).cols() != cols) {
+                throw new IllegalArgumentException("All tensors must have the same number of columns for row concatenation. " +
+                        "Tensor 0 has " + cols + ", but tensor " + i + " has " + tensors.get(i).cols());
+            }
+        }
+
+        // Calculate total rows and create the new matrix
+        var totalRows = tensors.stream().mapToInt(Tensor::rows).sum();
+        var resultMatrix = new SimpleMatrix(totalRows, cols);
+
+        // Forward pass: copy data from each tensor into the result matrix
+        var currentRow = 0;
+        for (var t : tensors) {
+            resultMatrix.insertIntoThis(currentRow, 0, t.data);
+            currentRow += t.rows();
+        }
+
+        var y = new Tensor(resultMatrix, requiresGrad);
+        if (requiresGrad) {
+            y.op = new TensorOp(tensors.toArray(Tensor.EMPTY_ARRAY)) {
+                @Override
+                public void backward(SimpleMatrix g, SimpleMatrix[] gradOut) {
+                    var runningRow = 0;
+                    for (var i = 0; i < parents.length; i++) {
+                        var parent = parents[i];
+                        if (gradOut[i] != null) {
+                            // Extract the corresponding slice of the gradient for this parent
+                            var gradSlice = g.extractMatrix(runningRow, runningRow + parent.rows(), 0, cols);
+                            gradOut[i].plus(gradSlice);
+                        }
+                        runningRow += parent.rows();
+                    }
+                }
+            };
+        }
+        return y;
+    }
+
     public Tensor sum() {
         if (isScalar()) return this;
 
@@ -1519,7 +1614,7 @@ public class Tensor {
         // to ensure the backward pass logic matches the sum(axis) definition precisely.
         if (result.hasGrad()) { // Check if original operation requires grad
              // Keep original parents if any, or just 'this' if sumCols/sumRows was the first op
-            Tensor[] parents = result.op != null ? result.op.parents : new Tensor[]{this};
+            var parents = result.op != null ? result.op.parents : new Tensor[]{this};
             if (parents.length == 0 || parents[0] != this) { // Ensure 'this' is the parent
                 parents = new Tensor[]{this};
             }
@@ -1528,9 +1623,9 @@ public class Tensor {
                 @Override
                 public void backward(SimpleMatrix grad, SimpleMatrix[] gradOut) {
                     if (gradOut[0] != null) {
-                        SimpleMatrix parentGrad = gradOut[0]; // Gradient for 'this' tensor
-                        int R_parent = Tensor.this.rows(); // Rows of the original tensor
-                        int C_parent = Tensor.this.cols(); // Cols of the original tensor
+                        var parentGrad = gradOut[0]; // Gradient for 'this' tensor
+                        var R_parent = Tensor.this.rows(); // Rows of the original tensor
+                        var C_parent = Tensor.this.cols(); // Cols of the original tensor
 
                         parentGrad.reshape(R_parent, C_parent); // Ensure correct shape
 
@@ -1538,9 +1633,9 @@ public class Tensor {
                             if (grad.getNumRows() != 1 || grad.getNumCols() != C_parent) {
                                 throw new IllegalArgumentException("Gradient shape mismatch for axis 0 sum. Expected (1, " + C_parent + "), got (" + grad.getNumRows() + ", " + grad.getNumCols() + ")");
                             }
-                            for (int c = 0; c < C_parent; c++) {
-                                double g_c = grad.get(0, c);
-                                for (int r = 0; r < R_parent; r++) {
+                            for (var c = 0; c < C_parent; c++) {
+                                var g_c = grad.get(0, c);
+                                for (var r = 0; r < R_parent; r++) {
                                     parentGrad.set(r, c, g_c);
                                 }
                             }
@@ -1548,9 +1643,9 @@ public class Tensor {
                             if (grad.getNumRows() != R_parent || grad.getNumCols() != 1) {
                                 throw new IllegalArgumentException("Gradient shape mismatch for axis 1 sum. Expected (" + R_parent + ", 1), got (" + grad.getNumRows() + ", " + grad.getNumCols() + ")");
                             }
-                            for (int r = 0; r < R_parent; r++) {
-                                double g_r = grad.get(r, 0);
-                                for (int c = 0; c < C_parent; c++) {
+                            for (var r = 0; r < R_parent; r++) {
+                                var g_r = grad.get(r, 0);
+                                for (var c = 0; c < C_parent; c++) {
                                     parentGrad.set(r, c, g_r);
                                 }
                             }
@@ -1948,8 +2043,8 @@ public class Tensor {
             throw new IllegalArgumentException("Axis must be 0 (columns) or 1 (rows)");
         }
 
-        int R = rows();
-        int C = cols();
+        var R = rows();
+        var C = cols();
         Tensor summed;
         int N; // Number of elements summed over
 
@@ -1967,7 +2062,7 @@ public class Tensor {
             return zerosShaped(summed); // Or handle as an error
         }
 
-        Tensor result = summed.div(N); // div by scalar N
+        var result = summed.div(N); // div by scalar N
 
         // Adjust gradient propagation for the division by N
         // The 'div(double)' operation already handles this if N is treated as a constant (no grad for N)
@@ -2323,8 +2418,8 @@ public class Tensor {
             throw new IllegalArgumentException("Axis must be 0 (columns) or 1 (rows)");
         }
 
-        int R = rows();
-        int C = cols();
+        var R = rows();
+        var C = cols();
         int N;
         Tensor expectedShapeZeros; // Used for returning early with zeros
 
@@ -2355,13 +2450,13 @@ public class Tensor {
         // At this point, N > 1 for unbiased, or N >= 1 for biased (N=1 case for biased handled)
         // N cannot be 0.
 
-        Tensor mean_ax = this.mean(axis); // (1,C) if axis=0, or (R,1) if axis=1
+        var mean_ax = this.mean(axis); // (1,C) if axis=0, or (R,1) if axis=1
                                          // 'this' is (R,C)
                                          // mean_ax will be broadcast correctly by sub
 
-        Tensor diff = this.sub(mean_ax);  // Broadcasting sub: (R,C) - (1,C) -> (R,C)
+        var diff = this.sub(mean_ax);  // Broadcasting sub: (R,C) - (1,C) -> (R,C)
                                          // or (R,C) - (R,1) -> (R,C)
-        Tensor diff_sq = diff.sqr();      // (R,C), element-wise square
+        var diff_sq = diff.sqr();      // (R,C), element-wise square
 
         Tensor sum_sq_diff;
         if (axis == 0) { // sum down columns
@@ -2370,7 +2465,7 @@ public class Tensor {
             sum_sq_diff = diff_sq.sumRows(); // Result is (R,1)
         }
 
-        double divisor = unbiased ? (double)(N - 1) : (double)N;
+        var divisor = unbiased ? (double)(N - 1) : (double)N;
         // This divisor should not be zero based on the checks above (N > 1 for unbiased, N >=1 for biased)
 
         return sum_sq_diff.div(divisor);
@@ -2415,8 +2510,8 @@ public class Tensor {
             throw new IllegalArgumentException("Axis must be 0 (columns) or 1 (rows).");
         }
 
-        int R = rows();
-        int C = cols();
+        var R = rows();
+        var C = cols();
 
         if (R == 0 || C == 0) {
             throw new IllegalArgumentException();
@@ -2436,11 +2531,11 @@ public class Tensor {
         Tensor result;
         if (axis == 0) { // Along columns, output is (1, C)
             result = new Tensor(1, C, false);
-            for (int j = 0; j < C; j++) { // Iterate through each column
-                double maxVal = Double.NEGATIVE_INFINITY;
-                int maxIdx = 0; // Default to 0 if all are -INF or column is empty (though caught by R=0)
-                for (int i = 0; i < R; i++) { // Iterate through rows of current column
-                    double val = data(i, j);
+            for (var j = 0; j < C; j++) { // Iterate through each column
+                var maxVal = Double.NEGATIVE_INFINITY;
+                var maxIdx = 0; // Default to 0 if all are -INF or column is empty (though caught by R=0)
+                for (var i = 0; i < R; i++) { // Iterate through rows of current column
+                    var val = data(i, j);
                     if (val > maxVal) {
                         maxVal = val;
                         maxIdx = i;
@@ -2450,11 +2545,11 @@ public class Tensor {
             }
         } else { // Along rows, output is (R, 1)
             result = new Tensor(R, 1, false);
-            for (int i = 0; i < R; i++) { // Iterate through each row
-                double maxVal = Double.NEGATIVE_INFINITY;
-                int maxIdx = 0; // Default to 0 if all are -INF or row is empty (though caught by C=0)
-                for (int j = 0; j < C; j++) { // Iterate through columns of current row
-                    double val = data(i, j);
+            for (var i = 0; i < R; i++) { // Iterate through each row
+                var maxVal = Double.NEGATIVE_INFINITY;
+                var maxIdx = 0; // Default to 0 if all are -INF or row is empty (though caught by C=0)
+                for (var j = 0; j < C; j++) { // Iterate through columns of current row
+                    var val = data(i, j);
                     if (val > maxVal) {
                         maxVal = val;
                         maxIdx = j;
@@ -2481,8 +2576,8 @@ public class Tensor {
             throw new IllegalArgumentException("Axis must be 0 (columns) or 1 (rows).");
         }
 
-        int R = rows();
-        int C = cols();
+        var R = rows();
+        var C = cols();
 
         if (R == 0 || C == 0) {
             // Consistent with argmax: if R or C is 0, output is zeros of target shape.
@@ -2493,11 +2588,11 @@ public class Tensor {
         Tensor result;
         if (axis == 0) { // Along columns, output is (1, C)
             result = new Tensor(1, C, false);
-            for (int j = 0; j < C; j++) { // Iterate through each column
-                double minVal = Double.POSITIVE_INFINITY;
-                int minIdx = 0;
-                for (int i = 0; i < R; i++) { // Iterate through rows of current column
-                    double val = data(i, j);
+            for (var j = 0; j < C; j++) { // Iterate through each column
+                var minVal = Double.POSITIVE_INFINITY;
+                var minIdx = 0;
+                for (var i = 0; i < R; i++) { // Iterate through rows of current column
+                    var val = data(i, j);
                     if (val < minVal) {
                         minVal = val;
                         minIdx = i;
@@ -2507,11 +2602,11 @@ public class Tensor {
             }
         } else { // Along rows, output is (R, 1)
             result = new Tensor(R, 1, false);
-            for (int i = 0; i < R; i++) { // Iterate through each row
-                double minVal = Double.POSITIVE_INFINITY;
-                int minIdx = 0;
-                for (int j = 0; j < C; j++) { // Iterate through columns of current row
-                    double val = data(i, j);
+            for (var i = 0; i < R; i++) { // Iterate through each row
+                var minVal = Double.POSITIVE_INFINITY;
+                var minIdx = 0;
+                for (var j = 0; j < C; j++) { // Iterate through columns of current row
+                    var val = data(i, j);
                     if (val < minVal) {
                         minVal = val;
                         minIdx = j;
@@ -2627,6 +2722,10 @@ public class Tensor {
         return reshape(volume(), 1);
     }
 
+    public int[] shape() {
+        return new int[] { rows(), cols() };
+    }
+
     public enum Loss {
         Huber, MeanSquared /* L2 */, SubAbs /* L1 */
     }
@@ -2665,6 +2764,10 @@ public class Tensor {
 
         private double factor = 1;
 
+        public void clear() {
+            grads.clear();
+        }
+
         public void addGrad(Tensor x, double[] y) {
             grads.computeIfAbsent(x, _x -> new ConcurrentLinkedQueue<>()).add(y);
         }
@@ -2684,7 +2787,7 @@ public class Tensor {
                 if (o != null)
                     o.run(grads.keySet().stream());
 
-                grads.clear();
+                clear();
             }
         }
 
@@ -2745,4 +2848,116 @@ public class Tensor {
             }
         }
     }
+
+
+    /** TODO */
+    public static class NoGrad implements AutoCloseable {
+        @Override
+        public void close() {
+            //TODO
+        }
+    }
+
+    // Add this method to your Tensor class, or a Tensor utility class.
+
+    /**
+     * Initializes the weight tensor with an orthogonal matrix, scaled by a gain factor.
+     * <p>
+     * Orthogonal initialization is a common technique for training deep neural networks,
+     * as it helps prevent gradients from exploding or vanishing by preserving the norm
+     * of activations and gradients during backpropagation.
+     * <p>
+     * This implementation uses the Modified Gram-Schmidt process on a random Gaussian
+     * matrix to generate the orthogonal matrix, which is more numerically stable than
+     * the classical version.
+     *
+     * @param W    The tensor (matrix) to initialize. Its data will be overwritten.
+     * @param gain The scaling factor (gain) to apply to the orthogonal matrix. A gain of
+     *             sqrt(2.0) is common for layers followed by a ReLU activation.
+     */
+    public static void orthoInit(Tensor W, double gain) {
+        var R = W.rows();
+        var C = W.cols();
+        if (R * C == 0) {
+            return; // Nothing to initialize
+        }
+
+        if (R < C) {
+            // For wide matrices (rows < cols), it's more straightforward to initialize
+            // the transpose and then copy the result back.
+            var WT = new Tensor(C, R, false);
+            _orthoInit(WT, gain);
+
+            // Copy the transposed result back to W
+            var wData = W.array();
+            var wtData = WT.array();
+            for (var r = 0; r < R; r++) {
+                for (var c = 0; c < C; c++) {
+                    wData[r * C + c] = wtData[c * R + r];
+                }
+            }
+        } else {
+            // For tall or square matrices (rows >= cols)
+            _orthoInit(W, gain);
+        }
+    }
+
+    /**
+     * Internal implementation of orthogonal initialization for tall matrices (rows >= cols).
+     * This method performs the Modified Gram-Schmidt process.
+     *
+     * @param Q    The tensor to fill with orthogonal columns.
+     * @param gain The scaling factor.
+     */
+    private static void _orthoInit(Tensor Q, double gain) {
+        var rows = Q.rows();
+        var cols = Q.cols();
+
+        // 1. Create a temporary matrix with random data from a standard normal distribution.
+        // We will perform the orthogonalization in-place on this data.
+        var temp = Tensor.randGaussian(rows, cols, 1.0);
+        var qData = temp.array();
+
+        // 2. Perform Modified Gram-Schmidt on the columns of the temporary matrix.
+        for (var j = 0; j < cols; j++) {
+            // a) Calculate the L2 norm of the j-th column vector.
+            var normSq = 0.0;
+            for (var i = 0; i < rows; i++) {
+                var val = qData[i * cols + j];
+                normSq += val * val;
+            }
+            var norm = Math.sqrt(normSq);
+
+            // b) Normalize the j-th column vector (it is now an orthonormal vector q_j).
+            // A small epsilon is used to prevent division by zero, although this is
+            // extremely unlikely with random data.
+            if (norm > 1e-12) {
+                var invNorm = 1.0 / norm;
+                for (var i = 0; i < rows; i++) {
+                    qData[i * cols + j] *= invNorm;
+                }
+            }
+            // If norm is zero, the column is already zero, and projections onto it will be zero.
+
+            // c) Make all subsequent column vectors (v_k) orthogonal to q_j.
+            for (var k = j + 1; k < cols; k++) {
+                // Project v_k onto q_j: dot_product = q_j^T * v_k
+                var dotProduct = 0.0;
+                for (var i = 0; i < rows; i++) {
+                    dotProduct += qData[i * cols + j] * qData[i * cols + k];
+                }
+
+                // Subtract the projection from v_k: v_k = v_k - dot_product * q_j
+                for (var i = 0; i < rows; i++) {
+                    qData[i * cols + k] -= dotProduct * qData[i * cols + j];
+                }
+            }
+        }
+
+        // 3. Copy the resulting orthogonal matrix data to the target tensor and apply the gain.
+        var wData = Q.array();
+        for (var i = 0; i < wData.length; i++)
+            wData[i] = qData[i] * gain;
+    }
+
 }

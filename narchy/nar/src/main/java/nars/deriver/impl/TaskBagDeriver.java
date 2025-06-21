@@ -19,7 +19,9 @@ import org.eclipse.collections.api.block.function.primitive.FloatFunction;
 public class TaskBagDeriver extends Deriver {
 
     /** default depth (subpremise evaluations) per seed */
-    public static int DEPTH = 9;
+    public static int DEPTH =
+        11;
+        //9;
 
     /** default iterations per cycle */
     private static int ITERS = 5;

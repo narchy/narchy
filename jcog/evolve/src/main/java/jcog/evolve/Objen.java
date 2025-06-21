@@ -329,12 +329,12 @@ public class Objen {
 
         private HashMap<Parameter, Value> mixValues(DNA<T> other, double rate) {
             var y = new HashMap<>(vals);
-            vals.forEach((p, value) -> {
+            vals.forEach((p, val) -> {
                 var rng = rng();
                 if (rng.nextDouble() < rate) {
                     y.put(p, paramSpace(p).random(rng));
                 } else if (rng.nextBoolean()) {
-                    y.put(p, other.vals.getOrDefault(p, value));
+                    y.put(p, other.vals.getOrDefault(p, val));
                 }
             });
             return y;

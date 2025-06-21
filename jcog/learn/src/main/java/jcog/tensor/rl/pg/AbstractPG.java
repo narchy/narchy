@@ -30,7 +30,7 @@ public abstract class AbstractPG {
     public static final float sigmaMin = 2e-1f; //?
     public final FloatRange sigmaMax = new FloatRange(4 /*6*/, sigmaMin*2, 8);
 
-    protected final RandomBits rng = new RandomBits(new XoRoShiRo128PlusRandom());
+    protected RandomBits rng = new RandomBits(new XoRoShiRo128PlusRandom());
 
 
     protected AbstractPG(int inputs, int outputs) {
@@ -262,7 +262,7 @@ public abstract class AbstractPG {
         ExpClipSmooth,
         SoftPlus
     }
-    final SigmaMode sigmaMode =
+    SigmaMode sigmaMode =
         SigmaMode.Exp
         //SigmaMode.ExpClipSmooth
         //SigmaMode.ExpClip

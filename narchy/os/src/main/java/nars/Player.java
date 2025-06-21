@@ -79,7 +79,7 @@ import static spacegraph.SpaceGraph.window;
  */
 public class Player implements AutoCloseable {
 
-    public boolean ADVANCED;
+    public boolean ADVANCED = true;
 
     public boolean selfMetaReflex = ADVANCED;
     public boolean subMetaReflex;
@@ -332,7 +332,8 @@ public class Player implements AutoCloseable {
     int complexMin = 12;
 
     public int complexMax = jcog.Config.INT("complexity",
-            32
+            //32
+            28
             //22
             //26
             //40
