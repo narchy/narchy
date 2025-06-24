@@ -14,15 +14,22 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Consumer;
 
 public abstract class AbstrPG {
-    protected final int inputs, outputs;
-    protected final RandomBits rng = new RandomBits(new XoRoShiRo128PlusRandom());
-    public Consumer<double[]> actionFilter = a -> {
-    };
+    public final int inputs; // Changed to public final
+    public final int outputs; // Changed to public final
+    protected final RandomBits rng = new RandomBits(new XoRoShiRo128PlusRandom()); // Keep protected final for internal use
+    public final Consumer<double[]> actionFilter; // Changed to public final
 
-    protected AbstrPG(int inputs, int outputs) {
+    protected AbstrPG(int inputs, int outputs, Consumer<double[]> actionFilter) {
         this.inputs = inputs;
         this.outputs = outputs;
+        this.actionFilter = Objects.requireNonNull(actionFilter, "actionFilter cannot be null");
     }
+
+    // Overloaded constructor for default actionFilter
+    protected AbstrPG(int inputs, int outputs) {
+        this(inputs, outputs, a -> {}); // Default no-op action filter
+    }
+
 
     public abstract double[] act(double[] input, double reward, boolean done);
 

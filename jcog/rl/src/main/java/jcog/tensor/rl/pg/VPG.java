@@ -12,7 +12,16 @@ import static jcog.tensor.Models.Layers.layerLerp;
 
 /**
  * Vanilla Policy Gradient
+ * @deprecated This class represents an older VPG (Vanilla Policy Gradient / REINFORCE with a baseline) implementation.
+ *             For REINFORCE without a baseline, please use {@link PGBuilder.ReinforceStrategy}.
+ *             For VPG (REINFORCE with a baseline) or more advanced Actor-Critic methods like A2C/A3C,
+ *             it's recommended to use {@link PGBuilder.PPOStrategy} and configure its hyperparameters
+ *             (e.g., gamma, lambda for GAE which can approximate VPG advantages, ppoClip can be made very large)
+ *             or await/implement a dedicated ActorCriticStrategy using the new framework components
+ *             ({@link PGBuilder.GaussianPolicy}, {@link PGBuilder.ValueNetwork}).
+ *             The policy network in this old VPG has a non-standard structure.
  */
+@Deprecated
 public class VPG extends Reinforce {
 
     public final UnaryOperator<Tensor> value;
