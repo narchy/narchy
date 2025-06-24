@@ -11,8 +11,8 @@ public class SimpleGridWorld implements SyntheticEnvironment {
     private final int[] goalState;
     private final double goalReward;
     private final double wallPenalty;
-    private final double stepPenalty;
-    private final int maxSteps;
+    public final double stepPenalty;
+    public final int maxSteps;
 
     private int[] currentState;
     private int currentStep;

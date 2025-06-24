@@ -6,10 +6,8 @@ import jcog.tensor.rl.pg.PGBuilder;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public abstract class RLAgentTestBase {
