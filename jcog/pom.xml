@@ -46,8 +46,8 @@
 
         <hipparchus.version>4.0.1</hipparchus.version>
 
-        <junit-platform-launcher.version>1.13.1</junit-platform-launcher.version>
-        <junit-jupiter-params.version>5.13.1</junit-jupiter-params.version>
+        <junit-platform-launcher.version>1.13.2</junit-platform-launcher.version>
+        <junit-jupiter-params.version>5.13.2</junit-jupiter-params.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
