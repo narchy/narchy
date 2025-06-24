@@ -408,14 +408,15 @@ public class Agents {
 
         //return new DDPG(i, o, h, h).agent();
 
-        return new PGBuilder(i, o)
-                .algorithm(PGBuilder.Algorithm.DDPG)
-                .memory(rb -> rb.episodeLength(64).replayBuffer( r -> r.capacity(1024).batchSize(16)))
-                .policy(p -> p.hiddenLayers(h,h).activation(Tensor.RELU))
-                .value(v -> v.hiddenLayers(h,h).activation(Tensor.RELU))
-                .hyperparams(p -> p.gamma(0.9f).policyLR(3e-4f).valueLR(1e-3f).epochs(1).entropyBonus(0.01f))
-                .action(d -> d.distribution(PGBuilder.ActionConfig.Distribution.DETERMINISTIC).noise(n -> n.type(PGBuilder.ActionConfig.NoiseConfig.Type.OU)))
-                .build().agent();
+
+        var hyperparams = new PGBuilder.HyperparamConfig();
+        var actionConfig = new PGBuilder.ActionConfig();
+        var memoryConfig = new PGBuilder.MemoryConfig(32, // episodeLength for on-policy
+            new PGBuilder.MemoryConfig.ReplayBufferConfig(1024, 4) // replayBuffer for off-policy
+        );
+        var policyNetConfig = new PGBuilder.NetworkConfig(3e-4f, h, h);
+        var valueNetConfig = new PGBuilder.NetworkConfig(1e-3f, h, h);
+        return new PolicyGradientModel(i, o, DDPGStrategy.ddpgStrategy(i, o, actionConfig, policyNetConfig, valueNetConfig, memoryConfig, hyperparams)).agent();
     }
 
     public static Agent ReinforceODE(int i, int o) {

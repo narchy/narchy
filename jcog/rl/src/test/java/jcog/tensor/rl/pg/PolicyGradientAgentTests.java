@@ -99,18 +99,6 @@ public class PolicyGradientAgentTests extends RLAgentTestBase {
         eval(a.agent(), e);
     }
 
-    @Test void PPO_PGBuilder_Matching1() {
-        evalPGBuilder(new MatchingEnv(1), PGBuilder.Algorithm.PPO);
-    }
-
-    @Test void VPG_PGBuilder_Matching1() {
-        evalPGBuilder(new MatchingEnv(1), PGBuilder.Algorithm.VPG);
-    }
-
-    @Test void VPG_PGBuilder_Matching2() {
-        evalPGBuilder(new MatchingEnv(2), PGBuilder.Algorithm.VPG);
-    }
-
     // Refactored helper method to use direct DI
     private void evalStrategyForEnv(MatchingEnv e, TestAlgoType algoType) {
         var hidden = e.stateDimension() * brains;
@@ -134,9 +122,8 @@ public class PolicyGradientAgentTests extends RLAgentTestBase {
         PGBuilder.NetworkConfig policyNetConfig = new PGBuilder.NetworkConfig(hyperparams.policyLR(), hidden).withActivation(Tensor.RELU);
         PGBuilder.NetworkConfig valueNetConfig = new PGBuilder.NetworkConfig(hyperparams.valueLR(), hidden).withActivation(Tensor.RELU); // For PPO
 
-        PolicyGradientModel model;
-        AlgorithmStrategy strategy;
-        boolean isOffPolicy;
+
+        PGStrategy strategy;
 
         switch (algoType) {
             case PPO: // VPG tests will also use PPO strategy
@@ -146,14 +133,12 @@ public class PolicyGradientAgentTests extends RLAgentTestBase {
                 Tensor.Optimizer ppoValueOpt = valueNetConfig.optimizer().buildOptimizer();
                 OnPolicyEpisodeBuffer ppoMemory = new OnPolicyEpisodeBuffer(memoryConfig.episodeLength());
                 strategy = new PPOStrategy(hyperparams, actionConfig, memoryConfig, ppoMemory, ppoPolicy, ppoValueNet, ppoPolicyOpt, ppoValueOpt);
-                isOffPolicy = false;
                 break;
             case REINFORCE: // Example if we wanted to test Reinforce this way
                  PGBuilder.GaussianPolicy reinforcePolicy = new PGBuilder.GaussianPolicy(policyNetConfig, inputs, outputs);
                  Tensor.Optimizer reinforcePolicyOpt = policyNetConfig.optimizer().buildOptimizer();
                  OnPolicyEpisodeBuffer reinforceMemory = new OnPolicyEpisodeBuffer(memoryConfig.episodeLength());
                  strategy = new ReinforceStrategy(hyperparams, actionConfig, memoryConfig, reinforceMemory, reinforcePolicy, reinforcePolicyOpt);
-                 isOffPolicy = false;
                  break;
             // SAC and DDPG cases would need more setup (Q-networks, different policy types, replay buffers)
             // and are not currently tested by the MatchingEnv tests using evalPGBuilder.
@@ -162,8 +147,8 @@ public class PolicyGradientAgentTests extends RLAgentTestBase {
                 throw new UnsupportedOperationException("Algorithm type " + algoType + " not fully configured in this test helper for MatchingEnv.");
         }
 
-        model = new PolicyGradientModel(inputs, outputs, strategy, isOffPolicy);
-        eval(model.agent(), e);
+
+        eval(new PolicyGradientModel(inputs, outputs, strategy).agent(), e);
     }
 
 

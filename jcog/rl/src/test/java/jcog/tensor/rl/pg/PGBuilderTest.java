@@ -4,6 +4,7 @@ import jcog.tensor.Models;
 import jcog.tensor.Tensor;
 import jcog.tensor.rl.pg.util.Experience2;
 import jcog.tensor.rl.pg.util.ReplayBuffer2;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -13,9 +14,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.UnaryOperator;
+import java.util.function.Consumer;
 import java.util.stream.DoubleStream;
 
+import static jcog.tensor.rl.pg.DDPGStrategy.ddpgStrategy;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("PGBuilder Test Suite") // Name can be updated later if PGBuilder class is renamed
@@ -34,93 +36,86 @@ class PGBuilderTest {
 
     private static PolicyGradientModel createTestModel(TestAlgoType algoType) {
         // Common configurations
-        PGBuilder.HyperparamConfig hyperparams = new PGBuilder.HyperparamConfig()
-            .withEpochs(1).withPolicyUpdateFreq(1); // Default other hyperparams
-
-        PGBuilder.ActionConfig actionConfig = new PGBuilder.ActionConfig(); // Default action config
-
-        PGBuilder.MemoryConfig memoryConfig = new PGBuilder.MemoryConfig(
+        var hyperparams = new PGBuilder.HyperparamConfig();
+        var actionConfig = new PGBuilder.ActionConfig();
+        var memoryConfig = new PGBuilder.MemoryConfig(
             32, // episodeLength for on-policy
             new PGBuilder.MemoryConfig.ReplayBufferConfig(128, 16) // replayBuffer for off-policy
         );
 
         // Network configurations
-        PGBuilder.NetworkConfig policyNetConfig = new PGBuilder.NetworkConfig(1e-3f, 16, 16);
-        PGBuilder.NetworkConfig valueNetConfig = new PGBuilder.NetworkConfig(1e-3f, 16, 16); // For PPO, DDPG (critic)
-        PGBuilder.NetworkConfig qNetConfig = new PGBuilder.NetworkConfig(1e-3f, 16, 16); // For SAC
+        var policyNetConfig = new PGBuilder.NetworkConfig(1e-3f, 16, 16);
+        var valueNetConfig = new PGBuilder.NetworkConfig(1e-3f, 16, 16); // For PPO, DDPG (critic)
+        var qNetConfig = new PGBuilder.NetworkConfig(1e-3f, 16, 16); // For SAC
 
-        AlgorithmStrategy strategy;
-        boolean isOffPolicy;
+        PGStrategy strategy;
 
         switch (algoType) {
             case REINFORCE:
-                PGBuilder.GaussianPolicy reinforcePolicy = new PGBuilder.GaussianPolicy(policyNetConfig, INPUTS, OUTPUTS);
-                Tensor.Optimizer reinforcePolicyOpt = policyNetConfig.optimizer().buildOptimizer();
-                // REINFORCE uses OnPolicyEpisodeBuffer
-                OnPolicyEpisodeBuffer reinforceMemory = new OnPolicyEpisodeBuffer(memoryConfig.episodeLength());
-                strategy = new ReinforceStrategy(hyperparams, actionConfig, memoryConfig, reinforceMemory, reinforcePolicy, reinforcePolicyOpt);
-                isOffPolicy = false;
+                strategy = reinforceStrategy(policyNetConfig, memoryConfig, hyperparams, actionConfig);
                 break;
             case PPO:
-                PGBuilder.GaussianPolicy ppoPolicy = new PGBuilder.GaussianPolicy(policyNetConfig, INPUTS, OUTPUTS);
-                Tensor.Optimizer ppoPolicyOpt = policyNetConfig.optimizer().buildOptimizer();
-                PGBuilder.ValueNetwork ppoValueNet = new PGBuilder.ValueNetwork(valueNetConfig, INPUTS);
-                Tensor.Optimizer ppoValueOpt = valueNetConfig.optimizer().buildOptimizer();
-                OnPolicyEpisodeBuffer ppoMemory = new OnPolicyEpisodeBuffer(memoryConfig.episodeLength());
-                strategy = new PPOStrategy(hyperparams, actionConfig, memoryConfig, ppoMemory, ppoPolicy, ppoValueNet, ppoPolicyOpt, ppoValueOpt);
-                isOffPolicy = false;
+                strategy = ppoStrategy(policyNetConfig, valueNetConfig, memoryConfig, hyperparams, actionConfig);
                 break;
             case SAC:
-                PGBuilder.GaussianPolicy sacPolicy = new PGBuilder.GaussianPolicy(policyNetConfig, INPUTS, OUTPUTS);
-                Tensor.Optimizer sacPolicyOpt = policyNetConfig.optimizer().buildOptimizer();
-
-                PGBuilder.QNetwork sacQ1 = new PGBuilder.QNetwork(qNetConfig, INPUTS, OUTPUTS);
-                PGBuilder.QNetwork sacQ2 = new PGBuilder.QNetwork(qNetConfig, INPUTS, OUTPUTS);
-                PGBuilder.QNetwork sacTargetQ1 = new PGBuilder.QNetwork(qNetConfig, INPUTS, OUTPUTS);
-                PGBuilder.QNetwork sacTargetQ2 = new PGBuilder.QNetwork(qNetConfig, INPUTS, OUTPUTS);
-                RLUtils.hardUpdate(sacQ1, sacTargetQ1);
-                RLUtils.hardUpdate(sacQ2, sacTargetQ2);
-
-                Tensor.Optimizer sacQ1Opt = qNetConfig.optimizer().buildOptimizer();
-                Tensor.Optimizer sacQ2Opt = qNetConfig.optimizer().buildOptimizer();
-
-                ReplayBuffer2 sacMemory = new ReplayBuffer2(memoryConfig.replayBuffer().capacity());
-                strategy = new SACStrategy(hyperparams, actionConfig, memoryConfig, sacMemory, sacPolicy,
-                                           java.util.List.of(sacQ1, sacQ2),
-                                           java.util.List.of(sacTargetQ1, sacTargetQ2),
-                                           sacPolicyOpt,
-                                           java.util.List.of(sacQ1Opt, sacQ2Opt),
-                                           OUTPUTS);
-                isOffPolicy = true;
+                strategy = sacStrategy(policyNetConfig, qNetConfig, memoryConfig, hyperparams, actionConfig);
                 break;
             case DDPG:
-                // DDPG specific action config
-                PGBuilder.ActionConfig ddpgActionConfig = actionConfig.withDistribution(PGBuilder.ActionConfig.Distribution.DETERMINISTIC);
-                // DDPG policy needs Tanh output activation
-                PGBuilder.NetworkConfig ddpgPolicyNetConfig = policyNetConfig.withOutputActivation(Tensor.TANH);
-
-                PGBuilder.DeterministicPolicy ddpgPolicy = new PGBuilder.DeterministicPolicy(ddpgPolicyNetConfig, INPUTS, OUTPUTS);
-                PGBuilder.DeterministicPolicy ddpgTargetPolicy = new PGBuilder.DeterministicPolicy(ddpgPolicyNetConfig, INPUTS, OUTPUTS);
-                Tensor.Optimizer ddpgPolicyOpt = ddpgPolicyNetConfig.optimizer().buildOptimizer();
-
-                PGBuilder.QNetwork ddpgCritic = new PGBuilder.QNetwork(valueNetConfig, INPUTS, OUTPUTS); // DDPG uses a Q-network as critic
-                PGBuilder.QNetwork ddpgTargetCritic = new PGBuilder.QNetwork(valueNetConfig, INPUTS, OUTPUTS);
-                Tensor.Optimizer ddpgCriticOpt = valueNetConfig.optimizer().buildOptimizer();
-
-                RLUtils.hardUpdate(ddpgPolicy, ddpgTargetPolicy);
-                RLUtils.hardUpdate(ddpgCritic, ddpgTargetCritic);
-
-                ReplayBuffer2 ddpgMemory = new ReplayBuffer2(memoryConfig.replayBuffer().capacity());
-                strategy = new DDPGStrategy(hyperparams, ddpgActionConfig, memoryConfig, ddpgMemory, ddpgPolicy, ddpgCritic,
-                                            ddpgTargetPolicy, ddpgTargetCritic, ddpgPolicyOpt, ddpgCriticOpt, OUTPUTS);
-                isOffPolicy = true;
+                strategy = ddpgStrategy(INPUTS, OUTPUTS, actionConfig, policyNetConfig, valueNetConfig, memoryConfig, hyperparams);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported algoType: " + algoType);
         }
 
-        return new PolicyGradientModel(INPUTS, OUTPUTS, strategy, isOffPolicy);
+        return new PolicyGradientModel(INPUTS, OUTPUTS, strategy);
     }
+
+    private static @NotNull PGStrategy reinforceStrategy(PGBuilder.NetworkConfig policyNetConfig, PGBuilder.MemoryConfig memoryConfig, PGBuilder.HyperparamConfig hyperparams, PGBuilder.ActionConfig actionConfig) {
+        PGStrategy strategy;
+        var reinforcePolicy = new PGBuilder.GaussianPolicy(policyNetConfig, INPUTS, OUTPUTS);
+        var reinforcePolicyOpt = policyNetConfig.optimizer().buildOptimizer();
+        // REINFORCE uses OnPolicyEpisodeBuffer
+        var reinforceMemory = new OnPolicyEpisodeBuffer(memoryConfig.episodeLength());
+        strategy = new ReinforceStrategy(hyperparams, actionConfig, memoryConfig, reinforceMemory, reinforcePolicy, reinforcePolicyOpt);
+        return strategy;
+    }
+
+    private static @NotNull PGStrategy ppoStrategy(PGBuilder.NetworkConfig policyNetConfig, PGBuilder.NetworkConfig valueNetConfig, PGBuilder.MemoryConfig memoryConfig, PGBuilder.HyperparamConfig hyperparams, PGBuilder.ActionConfig actionConfig) {
+        PGStrategy strategy;
+        var ppoPolicy = new PGBuilder.GaussianPolicy(policyNetConfig, INPUTS, OUTPUTS);
+        var ppoPolicyOpt = policyNetConfig.optimizer().buildOptimizer();
+        var ppoValueNet = new PGBuilder.ValueNetwork(valueNetConfig, INPUTS);
+        var ppoValueOpt = valueNetConfig.optimizer().buildOptimizer();
+        var ppoMemory = new OnPolicyEpisodeBuffer(memoryConfig.episodeLength());
+        strategy = new PPOStrategy(hyperparams, actionConfig, memoryConfig, ppoMemory, ppoPolicy, ppoValueNet, ppoPolicyOpt, ppoValueOpt);
+        return strategy;
+    }
+
+    private static @NotNull PGStrategy sacStrategy(PGBuilder.NetworkConfig policyNetConfig, PGBuilder.NetworkConfig qNetConfig, PGBuilder.MemoryConfig memoryConfig, PGBuilder.HyperparamConfig hyperparams, PGBuilder.ActionConfig actionConfig) {
+        PGStrategy strategy;
+        var sacPolicy = new PGBuilder.GaussianPolicy(policyNetConfig, INPUTS, OUTPUTS);
+        var sacPolicyOpt = policyNetConfig.optimizer().buildOptimizer();
+
+        var sacQ1 = new PGBuilder.QNetwork(qNetConfig, INPUTS, OUTPUTS);
+        var sacQ2 = new PGBuilder.QNetwork(qNetConfig, INPUTS, OUTPUTS);
+        var sacTargetQ1 = new PGBuilder.QNetwork(qNetConfig, INPUTS, OUTPUTS);
+        var sacTargetQ2 = new PGBuilder.QNetwork(qNetConfig, INPUTS, OUTPUTS);
+        RLUtils.hardUpdate(sacQ1, sacTargetQ1);
+        RLUtils.hardUpdate(sacQ2, sacTargetQ2);
+
+        var sacQ1Opt = qNetConfig.optimizer().buildOptimizer();
+        var sacQ2Opt = qNetConfig.optimizer().buildOptimizer();
+
+        var sacMemory = new ReplayBuffer2(memoryConfig.replayBuffer().capacity());
+        strategy = new SACStrategy(hyperparams, actionConfig, memoryConfig, sacMemory, sacPolicy,
+                                   java.util.List.of(sacQ1, sacQ2),
+                                   java.util.List.of(sacTargetQ1, sacTargetQ2),
+                                   sacPolicyOpt,
+                                   java.util.List.of(sacQ1Opt, sacQ2Opt),
+                                   OUTPUTS);
+        return strategy;
+    }
+
 
     // private static AlgorithmStrategy getStrategy(AbstrPG model) { // No longer needed with direct strategy access
     //     return ((PolicyGradientModel) model).strategy;
@@ -216,7 +211,7 @@ class PGBuilderTest {
         @Test
         @DisplayName("DDPGStrategy constructor fails with null critic network")
         void testDDPG_failsWithoutCriticNetwork() {
-             PGBuilder.DeterministicPolicy ddpgPolicy = new PGBuilder.DeterministicPolicy(validPolicyNetConfig, INPUTS, OUTPUTS);
+            var ddpgPolicy = new PGBuilder.DeterministicPolicy(validPolicyNetConfig, INPUTS, OUTPUTS);
              var e = assertThrows(NullPointerException.class, () ->
                 new DDPGStrategy(validHyperparams, validActionConfig.withDistribution(PGBuilder.ActionConfig.Distribution.DETERMINISTIC),
                                  validMemoryConfig, validOffPolicyMemory,
@@ -235,7 +230,7 @@ class PGBuilderTest {
                                 validPolicy, null, null, validOptimizer, null, OUTPUTS) // Null Q-networks and opts
             );
 
-            PGBuilder.QNetwork qNet = new PGBuilder.QNetwork(validValueNetConfig, INPUTS, OUTPUTS);
+            var qNet = new PGBuilder.QNetwork(validValueNetConfig, INPUTS, OUTPUTS);
             assertThrows(IllegalArgumentException.class, () ->
                 new SACStrategy(validHyperparams, validActionConfig, validMemoryConfig, validOffPolicyMemory,
                                 validPolicy,
@@ -267,9 +262,9 @@ class PGBuilderTest {
             // The old test asserted an error from builder.build(). Now, construction is separate.
             // The actual check for DDPG is usually that it *uses* a DeterministicPolicy.
             // Let's ensure the strategy can be constructed, the runtime implications are separate.
-             PGBuilder.ActionConfig gaussianActionConfig = validActionConfig.withDistribution(PGBuilder.ActionConfig.Distribution.GAUSSIAN);
-             PGBuilder.DeterministicPolicy ddpgPolicy = new PGBuilder.DeterministicPolicy(validPolicyNetConfig, INPUTS, OUTPUTS);
-             PGBuilder.QNetwork ddpgCritic = new PGBuilder.QNetwork(validValueNetConfig, INPUTS, OUTPUTS);
+            var gaussianActionConfig = validActionConfig.withDistribution(PGBuilder.ActionConfig.Distribution.GAUSSIAN);
+            var ddpgPolicy = new PGBuilder.DeterministicPolicy(validPolicyNetConfig, INPUTS, OUTPUTS);
+            var ddpgCritic = new PGBuilder.QNetwork(validValueNetConfig, INPUTS, OUTPUTS);
 
             // DDPGStrategy constructor does not validate the distribution type in ActionConfig directly.
             // The original test was for PGBuilder.DDPGConfigurator.validate().
@@ -310,9 +305,8 @@ class PGBuilderTest {
             };
 
             // Create a PPO model for testing, passing the custom filter
-            PolicyGradientModel model = new PolicyGradientModel(INPUTS, OUTPUTS,
+            var model = new PolicyGradientModel(INPUTS, OUTPUTS,
                 createTestModel(TestAlgoType.PPO).strategy, // get a valid strategy
-                false, // isOffPolicy for PPO
                 myFilter);
 
             var action = model.act(random.doubles(INPUTS).toArray(), 0.0, false);

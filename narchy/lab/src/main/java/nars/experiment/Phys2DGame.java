@@ -40,13 +40,13 @@ import static spacegraph.space2d.phys.dynamics.BodyType.STATIC;
 public abstract class Phys2DGame extends Game {
 
     protected final Dynamics2D world = new Dynamics2D();
-    protected float worldDT = 1/4f;
+    protected float worldDT = 1/16f;
     protected boolean gravity;
 
     public Phys2DGame(String id) {
         super(id);
         if (!gravity) world.setGravity(new v2());
-        beforeFrame(() -> world.step(worldDT, 1, 1));
+        beforeFrame(() -> world.step(worldDT, 2, 2));
     }
 
     public Phys2DGame window() {
@@ -94,13 +94,16 @@ public abstract class Phys2DGame extends Game {
         public DirectDrive(RevoluteJoint j, FloatSupplier motorSpeed) {
             joint = j;
             this.motorSpeed = motorSpeed;
-            joint.setMaxMotorTorque(5);
+            joint.setMaxMotorTorque(1f);
         }
 
         @Override
         public float valueOf(float x) {
             float s = Fuzzy.polarize(x);
-            joint.setMotorSpeed(s * motorSpeed.asFloat());
+            //joint.setMotorSpeed(s * motorSpeed.asFloat());
+            //float s = x;
+            //float a = (float) (s * PI * 1); joint.setLimits(a,a);
+            float a = Util.clamp((s * motorSpeed.asFloat()) + joint.getLowerLimit(), 0, (float) +PI); joint.setLimits(a, a);
             return x;
         }
     }
@@ -111,10 +114,10 @@ public abstract class Phys2DGame extends Game {
     public static class Arm2D extends Phys2DGame {
 
         static class Config {
-            public final FloatRange motorSpeed = new FloatRange(0.02f, 0.001f, 0.1f);
+            public final FloatRange motorSpeed = new FloatRange(0.05f, 0.001f, 0.1f);
         }
 
-        private static final float density = 0.01f;
+        private static final float density = 0.001f;
 
         final RevoluteJoint rotShoulder, rotElbow, rotFingerA, rotFingerB;
         final Body2D fingerA;
@@ -221,6 +224,7 @@ public abstract class Phys2DGame extends Game {
                 () -> fingerA.pos,
                 () -> ball.pos,
                 rewardPow, 40);
+            reward($.inh(id,"still"), ()->1 / (1 + rotElbow.B().vel.length())).weight(0.1f);
         }
 
         private void updateBall(Body2D ball) {

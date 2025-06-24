@@ -10,16 +10,14 @@ import jcog.tensor.Tensor;
 import jcog.tensor.model.ODELayer;
 import jcog.tensor.rl.pg.util.Experience2;
 import jcog.tensor.rl.pg.util.Memory;
-import jcog.tensor.rl.pg.util.ReplayBuffer2;
-import jcog.tensor.rl.util.RLNetworkUtils; // Added import
+import jcog.tensor.rl.util.RLNetworkUtils;
 import jcog.util.ArrayUtil;
 
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
-import java.util.random.RandomGenerator;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static jcog.tensor.rl.pg.PGBuilder.*;
@@ -97,29 +95,6 @@ enum RLUtils {
             return sigma.log().add(0.5 * (1.0 + Math.log(2 * Math.PI))).sum(1);
         }
     }
-}
-
-/**
- * A generic interface for an RL algorithm's strategy, defining how it interacts with the environment and learns.
- */
-interface AlgorithmStrategy {
-    void initialize(PolicyGradientModel model);
-
-    void record(Experience2 e);
-
-    void update(long totalSteps);
-
-    double[] selectAction(Tensor state, boolean deterministic);
-
-    boolean isTrainingMode();
-
-    Memory getMemory();
-
-    long getUpdateSteps();
-
-    UnaryOperator<Tensor> getPolicy();
-
-    MemoryConfig getMemoryConfig();
 }
 
 /**
@@ -722,71 +697,6 @@ public class PGBuilder { // Class name retained to minimize disruption, though i
     //    but the primary path is direct instantiation.
 }
 
-class PolicyGradientModel extends AbstrPG {
-    public final AlgorithmStrategy strategy; // Made public final
-    public final boolean isOffPolicy; // Made public final
-
-    // Internal state variables, remain private and mutable
-    private Tensor lastState;
-    private double[] lastAction;
-    private long totalSteps;
-    private Tensor lastLogProb;
-
-    // Constructor now accepts actionFilter to pass to AbstrPG
-    public PolicyGradientModel(int inputs, int outputs,
-                               AlgorithmStrategy strategy, boolean isOffPolicy,
-                               Consumer<double[]> actionFilter) {
-        super(inputs, outputs, actionFilter); // Pass actionFilter to super constructor
-        this.strategy = Objects.requireNonNull(strategy, "strategy cannot be null");
-        this.isOffPolicy = isOffPolicy;
-        this.strategy.initialize(this); // Initialize strategy after all final fields are set
-    }
-
-    // Overloaded constructor for default actionFilter
-    public PolicyGradientModel(int inputs, int outputs,
-                               AlgorithmStrategy strategy, boolean isOffPolicy) {
-        this(inputs, outputs, strategy, isOffPolicy, a -> {}); // Default no-op action filter
-    }
-
-    @Override
-    public double[] act(double[] input, double reward, boolean done) {
-        totalSteps++;
-        var currentState = Tensor.row(input);
-        if (lastState != null) {
-            strategy.record(new Experience2(lastState, lastAction, reward, currentState, done, lastLogProb));
-        }
-        var currentAction = action(currentState, !strategy.isTrainingMode() && isOffPolicy);
-        if (done) {
-            lastState = null;
-            lastAction = null;
-            lastLogProb = null;
-        } else {
-            lastState = currentState;
-            lastAction = currentAction;
-        }
-        return currentAction;
-    }
-
-    @Override
-    protected double[] _action(Tensor state, boolean deterministic) {
-        // For PPO, we need to capture the log probability of the action taken.
-        if (strategy instanceof PPOStrategy ppo) {
-            var dist = ppo.policy.getDistribution(state, ppo.a.sigmaMin(), ppo.a.sigmaMax());
-            var actionTensor = dist.sample(deterministic).clipUnitPolar();
-            this.lastLogProb = dist.logProb(actionTensor).detach();
-            return actionTensor.array();
-        } else {
-            this.lastLogProb = null;
-            return strategy.selectAction(state, deterministic);
-        }
-    }
-
-    @Override
-    protected void reviseAction(double[] actionPrev) {
-        if (this.lastAction != null) System.arraycopy(actionPrev, 0, this.lastAction, 0, actionPrev.length);
-    }
-}
-
 class OnPolicyEpisodeBuffer implements Memory {
     private final List<Experience2> buffer;
     private final int capacity;
@@ -822,7 +732,7 @@ class OnPolicyEpisodeBuffer implements Memory {
     }
 }
 
-abstract class AbstractStrategy implements AlgorithmStrategy {
+abstract class AbstractStrategy implements PGStrategy {
     protected PolicyGradientModel model;
     protected boolean trainingMode = true;
     protected long updateSteps;
@@ -1151,7 +1061,7 @@ class SACStrategy extends OffPolicyStrategy {
             throw new IllegalArgumentException("qNetworks, targetQNetworks, and qOpts must be non-empty and of the same size.");
         }
 
-        this.targetEntropy = (float) -outputs; // Cast to float
+        this.targetEntropy = -outputs; // Cast to float
         if (h.learnableAlpha()) {
             this.logAlpha = Tensor.zeros(1, 1).parameter();
             // Use valueLR from HyperparamConfig for alpha optimizer's learning rate
@@ -1160,6 +1070,11 @@ class SACStrategy extends OffPolicyStrategy {
             this.logAlpha = Tensor.scalar(Math.log(h.entropyBonus()));
             this.alphaOpt = null;
         }
+    }
+
+    @Override
+    public boolean isOffPolicy() {
+        return true;
     }
 
     @Override
@@ -1235,121 +1150,3 @@ class SACStrategy extends OffPolicyStrategy {
     }
 }
 
-class DDPGStrategy extends OffPolicyStrategy {
-    public final HyperparamConfig h;
-    public final ActionConfig a; // Added to store the action config
-    public final DeterministicPolicy policy;
-    public final DeterministicPolicy targetPolicy;
-    public final QNetwork critic;
-    public final QNetwork targetCritic;
-    public final Noise noise;
-    public final Tensor.Optimizer policyOpt;
-    public final Tensor.Optimizer criticOpt;
-    public final int outputs; // Storing for clarity, as it's used for noise creation
-
-    // Internal state for updates, not part of the public final configuration fields
-    private final Tensor.GradQueue vCtx = new Tensor.GradQueue();
-    private final Tensor.GradQueue pCtx = new Tensor.GradQueue();
-
-    public DDPGStrategy(HyperparamConfig h, ActionConfig a, MemoryConfig m,
-                        Memory memory, // Changed to Memory interface
-                        DeterministicPolicy policy, QNetwork critic,
-                        DeterministicPolicy targetPolicy, QNetwork targetCritic,
-                        Tensor.Optimizer policyOpt, Tensor.Optimizer criticOpt,
-                        int outputs) {
-        super(m, memory);
-        this.h = Objects.requireNonNull(h);
-        this.a = Objects.requireNonNull(a); // Store action config
-        this.policy = Objects.requireNonNull(policy);
-        this.critic = Objects.requireNonNull(critic);
-        this.targetPolicy = Objects.requireNonNull(targetPolicy);
-        this.targetCritic = Objects.requireNonNull(targetCritic);
-        this.policyOpt = Objects.requireNonNull(policyOpt);
-        this.criticOpt = Objects.requireNonNull(criticOpt);
-        this.outputs = outputs;
-        this.noise = Noise.create(a.noise(), outputs); // Noise uses the stored action config
-    }
-
-    @Override
-    public MemoryConfig getMemoryConfig() {
-        return m;
-    }
-
-    @Override
-    public UnaryOperator<Tensor> getPolicy() {
-        return policy;
-    }
-
-    @Override
-    public void update(long totalSteps) {
-        setTrainingMode(true, policy, critic);
-        updateSteps++;
-        var batch = toBatch(memory.sample(m.replayBuffer().batchSize()));
-        Tensor y;
-        try (var ignored = Tensor.noGrad()) {
-            var nextActions = targetPolicy.apply(batch.nextStates());
-            var targetQ = targetCritic.apply(batch.nextStates(), nextActions);
-
-            var nonTerminal = batch.dones().neg().add(1.0f);
-            y = batch.rewards().add(targetQ.mul(h.gamma()).mul(nonTerminal));
-
-        }
-        critic.apply(batch.states(), batch.actions()).loss(y, Tensor.Loss.MeanSquared).minimize(vCtx);
-        vCtx.optimize(criticOpt);
-
-        if (updateSteps % h.policyUpdateFreq() == 0) {
-            critic.apply(batch.states(), policy.apply(batch.states())).mean().neg().minimize(pCtx);
-            pCtx.optimize(policyOpt);
-            RLUtils.softUpdate(policy, targetPolicy, h.tau());
-            RLUtils.softUpdate(critic, targetCritic, h.tau());
-        }
-    }
-
-    @Override
-    public double[] selectAction(Tensor state, boolean deterministic) {
-        setTrainingMode(false, policy);
-        try (var ignored = Tensor.noGrad()) {
-            var action = policy.apply(state).array();
-            if (!deterministic) {
-                noise.apply(action, model.rng);
-                for (var i = 0; i < action.length; i++) action[i] = Util.clampSafePolar(action[i]);
-            }
-            //System.out.println(Str.n2(action));
-            return action;
-        }
-    }
-
-    private interface Noise {
-        static Noise create(ActionConfig.NoiseConfig config, int actionDim) {
-            return switch (config.type()) {
-                case OU -> new OUNoise(actionDim, config.stddev());
-                case GAUSSIAN -> (action, rng) -> {
-                    for (var i = 0; i < action.length; i++) action[i] += rng.nextGaussian(0, config.stddev());
-                };
-                case NONE -> (action, rng) -> {
-                };
-            };
-        }
-
-        void apply(double[] action, RandomGenerator rng);
-    }
-
-    private static class OUNoise implements Noise {
-        private final double[] state;
-        private final double mu = 0, theta = 0.15, sigma;
-
-        OUNoise(int size, double sigma) {
-            this.state = new double[size];
-            this.sigma = sigma;
-        }
-
-        @Override
-        public void apply(double[] action, RandomGenerator rng) {
-            for (var i = 0; i < state.length; i++) {
-                var dx = theta * (mu - state[i]) + sigma * rng.nextGaussian();
-                state[i] += dx;
-                action[i] += state[i];
-            }
-        }
-    }
-}

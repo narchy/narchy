@@ -11,6 +11,7 @@ import jcog.tensor.Tensor;
 import org.eclipse.collections.api.block.function.primitive.FloatToFloatFunction;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public abstract class AbstrPG {

@@ -37,6 +37,8 @@ public class Tensor {
 
     public static final Tensor[] EMPTY_ARRAY = new Tensor[0];
     public static final UnaryOperator<Tensor> TANH = Tensor::tanh;
+    public static final UnaryOperator<Tensor> UNITIZE = t -> t.clip(0, 1);
+    public static final UnaryOperator<Tensor> UNITIZE_POLAR = t -> t.clip(-1, +1);
     public static final UnaryOperator<Tensor> RELU = Tensor::relu;
     public static final UnaryOperator<Tensor> RELU_LEAKY = Tensor::reluLeaky;
     public static final UnaryOperator<Tensor> SIGMOID = Tensor::sigmoid;

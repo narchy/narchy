@@ -3,9 +3,10 @@ package jcog.tensor.rl.util;
 import jcog.tensor.Models;
 import jcog.tensor.Models.Linear;
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg.PGBuilder.NetworkConfig; // PGBuilder.NetworkConfig will be just NetworkConfig after imports cleanup
+import jcog.tensor.rl.pg.PGBuilder.NetworkConfig;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 

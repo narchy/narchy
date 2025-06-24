@@ -79,7 +79,7 @@ import static spacegraph.SpaceGraph.window;
  */
 public class Player implements AutoCloseable {
 
-    public boolean ADVANCED = true;
+    public boolean ADVANCED = false;
 
     public boolean selfMetaReflex = ADVANCED;
     public boolean subMetaReflex;
