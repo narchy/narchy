@@ -6,6 +6,13 @@ import jcog.tensor.Tensor;
 
 import java.util.function.UnaryOperator;
 
+/**
+ * @deprecated This class represents an older REINFORCE implementation and served as a base for VPG.java.
+ *             Please use {@link PGBuilder.ReinforceStrategy} (found within PGBuilder.java)
+ *             for a standard REINFORCE algorithm, instantiated with {@link PGBuilder.GaussianPolicy}
+ *             and other components via constructor injection. This old version has a non-standard policy network structure.
+ */
+@Deprecated
 public class Reinforce extends AbstractReinforce {
 
     final UnaryOperator<Tensor> policyActivation =

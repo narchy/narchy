@@ -11,6 +11,7 @@ import jcog.tensor.model.ODELayer;
 import jcog.tensor.rl.pg.util.Experience2;
 import jcog.tensor.rl.pg.util.Memory;
 import jcog.tensor.rl.pg.util.ReplayBuffer2;
+import jcog.tensor.rl.util.RLNetworkUtils; // Added import
 import jcog.util.ArrayUtil;
 
 import java.util.*;
@@ -122,229 +123,114 @@ interface AlgorithmStrategy {
 }
 
 /**
- * A fluent builder for constructing policy gradient-based reinforcement learning agents.
+ * This class formerly contained a fluent builder for policy gradient agents.
+ * It has been refactored to promote direct constructor-based dependency injection
+ * for all components (configurations, networks, strategies).
+ *
+ * Users should now:
+ * 1. Instantiate configuration records (e.g., HyperparamConfig, NetworkConfig).
+ * 2. Instantiate network models (e.g., GaussianPolicy, ValueNetwork) using these configs.
+ * 3. Instantiate optimizers (e.g., via OptimizerConfig.buildOptimizer()).
+ * 4. Instantiate memory buffers (e.g., OnPolicyEpisodeBuffer, ReplayBuffer2).
+ * 5. Instantiate the desired AlgorithmStrategy (e.g., PPOStrategy, SACStrategy)
+ *    by passing all the above components directly to its constructor.
+ * 6. Instantiate the PolicyGradientModel, passing the strategy.
+ *
+ * The static inner classes for configurations (HyperparamConfig, NetworkConfig, etc.)
+ * and network models (GaussianPolicy, ValueNetwork, etc.) remain part of this file
+ * as they define the components to be injected.
+ *
+ * The ModelFactory, Algorithm enum, and AlgorithmConfigurator infrastructure
+ * have been removed as they were part of the old builder pattern.
+ * Their logic will be handled by direct instantiation or moved to static factory methods
+ * on the respective components if complex creation logic is still needed.
  */
-public class PGBuilder {
+public class PGBuilder { // Class name retained to minimize disruption, though it's no longer a builder.
+                         // Consider renaming to something like PolicyGradientComponents or RLAgentFactoryUtils in the future.
 
-    final int inputs;
-    final int outputs;
-    final HyperparamConfig.Builder hyperparams = new HyperparamConfig.Builder();
-    final NetworkConfig.Builder policy = new NetworkConfig.Builder();
-    final NetworkConfig.Builder value = new NetworkConfig.Builder();
-    final List<NetworkConfig.Builder> qNetworks = List.of(new NetworkConfig.Builder(), new NetworkConfig.Builder());
-    final ActionConfig.Builder action = new ActionConfig.Builder();
-    final MemoryConfig.Builder memory = new MemoryConfig.Builder();
+    // createMlp method has been moved to jcog.tensor.rl.util.RLNetworkUtils
 
-    Consumer<double[]> actionFilter = a -> {
-    };
-    private Algorithm algorithm = Algorithm.PPO;
+    // createOptimizer is now part of OptimizerConfig.buildOptimizer()
+    // createGaussianPolicy is now new GaussianPolicy(...)
 
-    public PGBuilder(int inputs, int outputs) {
-        this.inputs = inputs;
-        this.outputs = outputs;
-    }
+    // All former PGBuilder fluent methods, Algorithm enum, and AlgorithmConfigurator implementations are removed.
+    // Configuration records and network classes remain below.
 
-    public PGBuilder algorithm(Algorithm algorithm) {
-        this.algorithm = Objects.requireNonNull(algorithm, "Algorithm cannot be null");
-        return this;
-    }
-
-    public PGBuilder policy(Consumer<NetworkConfig.Builder> c) {
-        c.accept(this.policy);
-        return this;
-    }
-
-    public PGBuilder value(Consumer<NetworkConfig.Builder> c) {
-        c.accept(this.value);
-        return this;
-    }
-
-    public PGBuilder qNetworks(Consumer<NetworkConfig.Builder> c) {
-        this.qNetworks.forEach(c);
-        return this;
-    }
-
-    public PGBuilder hyperparams(Consumer<HyperparamConfig.Builder> c) {
-        c.accept(this.hyperparams);
-        return this;
-    }
-
-    public PGBuilder action(Consumer<ActionConfig.Builder> c) {
-        c.accept(this.action);
-        return this;
-    }
-
-    public PGBuilder memory(Consumer<MemoryConfig.Builder> c) {
-        c.accept(this.memory);
-        return this;
-    }
-
-    public PGBuilder actionFilter(Consumer<double[]> filter) {
-        this.actionFilter = Objects.requireNonNull(filter, "Action filter cannot be null");
-        return this;
-    }
-
-    public AbstrPG build() {
-        var configurator = this.algorithm.getConfigurator();
-        configurator.validate(this);
-        var strategy = configurator.buildStrategy(this);
-        var model = new PolicyGradientModel(inputs, outputs, strategy, algorithm.isOffPolicy());
-        model.actionFilter = this.actionFilter;
-        return model;
-    }
-
-    public enum Algorithm {
-        REINFORCE(ReinforceConfigurator::new, false),
-        VPG(PPOConfigurator::new, false), // VPG is a variant of PPO without clipping
-        PPO(PPOConfigurator::new, false),
-        SAC(SACConfigurator::new, true),
-        DDPG(DDPGConfigurator::new, true);
-
-        private final Supplier<AlgorithmConfigurator> configuratorFactory;
-        private final boolean offPolicy;
-
-        Algorithm(Supplier<AlgorithmConfigurator> factory, boolean offPolicy) {
-            this.configuratorFactory = factory;
-            this.offPolicy = offPolicy;
-        }
-
-        public AlgorithmConfigurator getConfigurator() {
-            return configuratorFactory.get();
-        }
-
-        public boolean isOffPolicy() {
-            return offPolicy;
-        }
-    }
-
-    private enum ModelFactory {
-        ;
-
-        static UnaryOperator<Tensor> createMlp(int ins, int outs, NetworkConfig config) {
-            var layers = IntStream.concat(IntStream.of(ins), Arrays.stream(config.hiddenLayers())).toArray();
-            layers = IntStream.concat(Arrays.stream(layers), IntStream.of(outs)).toArray();
-
-            return new Models.Layers(config.activation(), config.outputActivation(), config.biasInLastLayer(), layers) {
-                @Override
-                protected Linear layer(int l, int maxLayers, int I, int O, UnaryOperator<Tensor> a, boolean bias) {
-                    var linearLayer = (Linear) super.layer(l, maxLayers, I, O, a, bias);
-                    if (config.orthogonalInit()) {
-                        Tensor.orthoInit(linearLayer.weight, (l < maxLayers - 1) ? Math.sqrt(2.0) : 0.01);
-                        if (bias) linearLayer.bias.zero();
-                    }
-                    return linearLayer;
-                }
-
-                @Override
-                protected void afterLayer(int O, int l, int maxLayers) {
-                    if (config.dropout() > 0 && l < maxLayers - 1) {
-                        layer.add(new Models.Dropout(config.dropout()));
-                    }
-                }
-            };
-        }
-
-        static Tensor.Optimizer createOptimizer(OptimizerConfig config) {
-            FloatSupplier LR = config::learningRate;
-            return switch (config.type()) {
-                case ADAM -> new Optimizers.ADAM(LR).get();
-                case SGD -> new Optimizers.SGD(LR).get();
-            };
-        }
-
-        static GaussianPolicy createGaussianPolicy(PGBuilder b) {
-            return new GaussianPolicy(b.policy.build(b.hyperparams.build().policyLR()), b.inputs, b.outputs);
-        }
-    }
-
-    interface AlgorithmConfigurator {
-        void validate(PGBuilder builder);
-
-        AlgorithmStrategy buildStrategy(PGBuilder builder);
-    }
-
+    //TODO make default constructor with sane defaults, then allow overrides with `with` keyword if Java records get it, or provide copy-constructors
     public record HyperparamConfig(
             float gamma, float lambda, float entropyBonus, float ppoClip, float tau,
             float policyLR, float valueLR, int epochs, int policyUpdateFreq,
             boolean normalizeAdvantages, boolean normalizeReturns, boolean learnableAlpha
     ) {
-        public static class Builder {
-            private float gamma = 0.9f, lambda = 0.5f, entropyBonus = 0.01f, ppoClip = 0.2f, tau = 0.005f;
-            private float policyLR = 3e-5f, valueLR = 1e-4f;
-            private int epochs = 1, policyUpdateFreq = 1;
-            private boolean normalizeAdvantages = true, normalizeReturns, learnableAlpha;
+        // Default values
+        public static final float DEFAULT_GAMMA = 0.9f;
+        public static final float DEFAULT_LAMBDA = 0.5f;
+        public static final float DEFAULT_ENTROPY_BONUS = 0.01f;
+        public static final float DEFAULT_PPO_CLIP = 0.2f;
+        public static final float DEFAULT_TAU = 0.005f;
+        public static final float DEFAULT_POLICY_LR = 3e-5f;
+        public static final float DEFAULT_VALUE_LR = 1e-4f;
+        public static final int DEFAULT_EPOCHS = 1;
+        public static final int DEFAULT_POLICY_UPDATE_FREQ = 1;
+        public static final boolean DEFAULT_NORMALIZE_ADVANTAGES = true;
+        public static final boolean DEFAULT_NORMALIZE_RETURNS = false;
+        public static final boolean DEFAULT_LEARNABLE_ALPHA = false;
 
-            public Builder gamma(float v) {
-                this.gamma = v;
-                return this;
-            }
+        // Constructor with all arguments for full customization
+        public HyperparamConfig {
+            if (gamma < 0.0f || gamma > 1.0f) throw new IllegalArgumentException("gamma must be in [0, 1]");
+            if (lambda < 0.0f || lambda > 1.0f) throw new IllegalArgumentException("lambda must be in [0, 1]");
+            if (tau < 0.0f || tau > 1.0f) throw new IllegalArgumentException("tau must be in [0, 1]");
+            if (policyLR <= 0) throw new IllegalArgumentException("policyLR must be positive");
+            if (valueLR <= 0) throw new IllegalArgumentException("valueLR must be positive");
+            if (epochs <= 0) throw new IllegalArgumentException("epochs must be positive");
+            if (policyUpdateFreq <= 0) throw new IllegalArgumentException("policyUpdateFreq must be positive");
+            if (ppoClip <= 0) throw new IllegalArgumentException("ppoClip must be positive");
+        }
 
-            public Builder lambda(float v) {
-                this.lambda = v;
-                return this;
-            }
+        // Constructor with default values
+        public HyperparamConfig() {
+            this(DEFAULT_GAMMA, DEFAULT_LAMBDA, DEFAULT_ENTROPY_BONUS, DEFAULT_PPO_CLIP, DEFAULT_TAU,
+                 DEFAULT_POLICY_LR, DEFAULT_VALUE_LR, DEFAULT_EPOCHS, DEFAULT_POLICY_UPDATE_FREQ,
+                 DEFAULT_NORMALIZE_ADVANTAGES, DEFAULT_NORMALIZE_RETURNS, DEFAULT_LEARNABLE_ALPHA);
+        }
 
-            public Builder entropyBonus(float v) {
-                this.entropyBonus = v;
-                return this;
-            }
-
-            public Builder ppoClip(float v) {
-                this.ppoClip = v;
-                return this;
-            }
-
-            public Builder tau(float v) {
-                this.tau = v;
-                return this;
-            }
-
-            public Builder policyLR(float v) {
-                this.policyLR = v;
-                return this;
-            }
-
-            public Builder valueLR(float v) {
-                this.valueLR = v;
-                return this;
-            }
-
-            public Builder epochs(int v) {
-                this.epochs = v;
-                return this;
-            }
-
-            public Builder policyUpdateFreq(int v) {
-                this.policyUpdateFreq = v;
-                return this;
-            }
-
-            public Builder normalizeAdvantages(boolean v) {
-                this.normalizeAdvantages = v;
-                return this;
-            }
-
-            public Builder normalizeReturns(boolean v) {
-                this.normalizeReturns = v;
-                return this;
-            }
-
-            public Builder learnableAlpha(boolean v) {
-                this.learnableAlpha = v;
-                return this;
-            }
-
-            public HyperparamConfig build() {
-                if (gamma < 0.0f || gamma > 1.0f) throw new IllegalArgumentException("gamma must be in [0, 1]");
-                if (lambda < 0.0f || lambda > 1.0f) throw new IllegalArgumentException("lambda must be in [0, 1]");
-                if (tau < 0.0f || tau > 1.0f) throw new IllegalArgumentException("tau must be in [0, 1]");
-                if (policyLR <= 0) throw new IllegalArgumentException("policyLR must be positive");
-                if (valueLR <= 0) throw new IllegalArgumentException("valueLR must be positive");
-                if (epochs <= 0) throw new IllegalArgumentException("epochs must be positive");
-                if (policyUpdateFreq <= 0) throw new IllegalArgumentException("policyUpdateFreq must be positive");
-                if (ppoClip <= 0) throw new IllegalArgumentException("ppoClip must be positive");
-                return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
-            }
+        // "Wither" methods for individual parameter modification, returning a new instance
+        public HyperparamConfig withGamma(float gamma) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withLambda(float lambda) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withEntropyBonus(float entropyBonus) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withPpoClip(float ppoClip) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withTau(float tau) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withPolicyLR(float policyLR) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withValueLR(float valueLR) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withEpochs(int epochs) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withPolicyUpdateFreq(int policyUpdateFreq) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withNormalizeAdvantages(boolean normalizeAdvantages) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withNormalizeReturns(boolean normalizeReturns) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
+        }
+        public HyperparamConfig withLearnableAlpha(boolean learnableAlpha) {
+            return new HyperparamConfig(gamma, lambda, entropyBonus, ppoClip, tau, policyLR, valueLR, epochs, policyUpdateFreq, normalizeAdvantages, normalizeReturns, learnableAlpha);
         }
     }
 
@@ -352,92 +238,112 @@ public class PGBuilder {
             int[] hiddenLayers, UnaryOperator<Tensor> activation, UnaryOperator<Tensor> outputActivation,
             boolean biasInLastLayer, boolean orthogonalInit, float dropout, OptimizerConfig optimizer
     ) {
-        public boolean isConfigured() {
+        // Defaults
+        public static final int[] DEFAULT_HIDDEN_LAYERS = ArrayUtil.EMPTY_INT_ARRAY;
+        public static final UnaryOperator<Tensor> DEFAULT_ACTIVATION = Tensor.RELU;
+        public static final UnaryOperator<Tensor> DEFAULT_OUTPUT_ACTIVATION = null; // often identity or specific to use-case
+        public static final boolean DEFAULT_BIAS_IN_LAST_LAYER = true;
+        public static final boolean DEFAULT_ORTHOGONAL_INIT = true;
+        public static final float DEFAULT_DROPOUT = 0.0f; // Default to no dropout
+
+        public NetworkConfig {
+            Objects.requireNonNull(hiddenLayers, "hiddenLayers cannot be null");
+            Objects.requireNonNull(activation, "activation function cannot be null");
+            // outputActivation can be null
+            Objects.requireNonNull(optimizer, "optimizer cannot be null");
+            if (dropout < 0.0f || dropout >= 1.0f) throw new IllegalArgumentException("dropout must be in [0, 1)");
+        }
+
+        // Constructor for minimal setup, typically for when an optimizer with a specific LR is needed.
+        public NetworkConfig(OptimizerConfig optimizer, int... hiddenLayers) {
+            this(hiddenLayers, DEFAULT_ACTIVATION, DEFAULT_OUTPUT_ACTIVATION,
+                 DEFAULT_BIAS_IN_LAST_LAYER, DEFAULT_ORTHOGONAL_INIT, DEFAULT_DROPOUT, optimizer);
+        }
+
+        // Constructor with common defaults, requiring explicit optimizer and default learning rate for it
+        public NetworkConfig(float defaultLearningRate, int... hiddenLayers) {
+            this(hiddenLayers, DEFAULT_ACTIVATION, DEFAULT_OUTPUT_ACTIVATION,
+                 DEFAULT_BIAS_IN_LAST_LAYER, DEFAULT_ORTHOGONAL_INIT, DEFAULT_DROPOUT,
+                 OptimizerConfig.of(defaultLearningRate)); // Create default optimizer if only LR is given
+        }
+
+        // Default constructor using all default values, including a default optimizer.
+        // NOTE: This defaultLearningRate is a bit arbitrary here, might be better to require OptimizerConfig explicitly.
+        // For now, matches typical PGBuilder use.
+        public NetworkConfig(float defaultLearningRate) {
+            this(DEFAULT_HIDDEN_LAYERS, DEFAULT_ACTIVATION, DEFAULT_OUTPUT_ACTIVATION,
+                 DEFAULT_BIAS_IN_LAST_LAYER, DEFAULT_ORTHOGONAL_INIT, DEFAULT_DROPOUT,
+                 OptimizerConfig.of(defaultLearningRate));
+        }
+
+
+        public boolean isConfigured() { // Retained as it's used in PGBuilder logic
             return hiddenLayers != null && hiddenLayers.length > 0;
         }
 
-        public static class Builder {
-            private final OptimizerConfig.Builder optimizer = new OptimizerConfig.Builder();
-            private int[] hiddenLayers = ArrayUtil.EMPTY_INT_ARRAY;
-            private UnaryOperator<Tensor> activation = Tensor.RELU, outputActivation;
-            private boolean biasInLastLayer = true, orthogonalInit = true;
-            private float dropout = 0.1f;
-
-            public Builder hiddenLayers(int... layers) {
-                this.hiddenLayers = layers;
-                return this;
-            }
-
-            public Builder activation(UnaryOperator<Tensor> a) {
-                this.activation = a;
-                return this;
-            }
-
-            public Builder outputActivation(UnaryOperator<Tensor> a) {
-                this.outputActivation = a;
-                return this;
-            }
-
-            public Builder biasInLastLayer(boolean b) {
-                this.biasInLastLayer = b;
-                return this;
-            }
-
-            public Builder orthogonalInit(boolean b) {
-                this.orthogonalInit = b;
-                return this;
-            }
-
-            public Builder dropout(float d) {
-                this.dropout = d;
-                return this;
-            }
-
-            public Builder optimizer(Consumer<OptimizerConfig.Builder> c) {
-                c.accept(this.optimizer);
-                return this;
-            }
-
-            public boolean isConfigured() {
-                return hiddenLayers != null && hiddenLayers.length > 0;
-            }
-
-            public NetworkConfig build(float defaultLR) {
-                if (dropout < 0.0f || dropout >= 1.0f) throw new IllegalArgumentException("dropout must be in [0, 1)");
-                if (!optimizer.isConfigured()) optimizer.learningRate(defaultLR);
-                return new NetworkConfig(hiddenLayers, activation, outputActivation, biasInLastLayer, orthogonalInit, dropout, optimizer.build());
-            }
+        // Wither methods
+        public NetworkConfig withHiddenLayers(int... hiddenLayers) {
+            return new NetworkConfig(hiddenLayers, activation, outputActivation, biasInLastLayer, orthogonalInit, dropout, optimizer);
+        }
+        public NetworkConfig withActivation(UnaryOperator<Tensor> activation) {
+            return new NetworkConfig(hiddenLayers, activation, outputActivation, biasInLastLayer, orthogonalInit, dropout, optimizer);
+        }
+        public NetworkConfig withOutputActivation(UnaryOperator<Tensor> outputActivation) {
+            return new NetworkConfig(hiddenLayers, activation, outputActivation, biasInLastLayer, orthogonalInit, dropout, optimizer);
+        }
+        public NetworkConfig withBiasInLastLayer(boolean biasInLastLayer) {
+            return new NetworkConfig(hiddenLayers, activation, outputActivation, biasInLastLayer, orthogonalInit, dropout, optimizer);
+        }
+        public NetworkConfig withOrthogonalInit(boolean orthogonalInit) {
+            return new NetworkConfig(hiddenLayers, activation, outputActivation, biasInLastLayer, orthogonalInit, dropout, optimizer);
+        }
+        public NetworkConfig withDropout(float dropout) {
+            return new NetworkConfig(hiddenLayers, activation, outputActivation, biasInLastLayer, orthogonalInit, dropout, optimizer);
+        }
+        public NetworkConfig withOptimizer(OptimizerConfig optimizer) {
+            return new NetworkConfig(hiddenLayers, activation, outputActivation, biasInLastLayer, orthogonalInit, dropout, optimizer);
+        }
+        public NetworkConfig withOptimizerLearningRate(float learningRate) {
+            return new NetworkConfig(hiddenLayers, activation, outputActivation, biasInLastLayer, orthogonalInit, dropout, this.optimizer.withLearningRate(learningRate));
+        }
+        public NetworkConfig withOptimizerType(OptimizerConfig.Type type) {
+            return new NetworkConfig(hiddenLayers, activation, outputActivation, biasInLastLayer, orthogonalInit, dropout, this.optimizer.withType(type));
         }
     }
 
     public record OptimizerConfig(Type type, float learningRate) {
         public enum Type {ADAM, SGD}
 
-        public static class Builder {
-            private Type type = Type.ADAM;
-            private float learningRate = -1f;
-            private boolean configured;
+        // Default values
+        public static final Type DEFAULT_OPTIMIZER_TYPE = Type.ADAM;
+        // No default for learningRate, it should be specified or defaulted by the network using it.
 
-            public Builder type(Type t) {
-                this.type = t;
-                this.configured = true;
-                return this;
-            }
+        // Constructor with all arguments for full customization
+        public OptimizerConfig {
+            if (learningRate <= 0) throw new IllegalArgumentException("Learning rate must be positive.");
+            Objects.requireNonNull(type, "Optimizer type cannot be null");
+        }
 
-            public Builder learningRate(float lr) {
-                this.learningRate = lr;
-                this.configured = true;
-                return this;
-            }
+        // Static factory for default type if learning rate is provided
+        public static OptimizerConfig of(float learningRate) {
+            return new OptimizerConfig(DEFAULT_OPTIMIZER_TYPE, learningRate);
+        }
 
-            public boolean isConfigured() {
-                return configured;
-            }
+        // "Wither" methods
+        public OptimizerConfig withType(Type type) {
+            return new OptimizerConfig(type, learningRate);
+        }
 
-            public OptimizerConfig build() {
-                if (learningRate <= 0) throw new IllegalArgumentException("Learning rate must be positive.");
-                return new OptimizerConfig(type, learningRate);
-            }
+        public OptimizerConfig withLearningRate(float learningRate) {
+            return new OptimizerConfig(type, learningRate);
+        }
+
+        public Tensor.Optimizer buildOptimizer() {
+            FloatSupplier lrSupplier = this::learningRate;
+            return switch (type) {
+                case ADAM -> new Optimizers.ADAM(lrSupplier).get();
+                case SGD -> new Optimizers.SGD(lrSupplier).get();
+            };
         }
     }
 
@@ -447,162 +353,246 @@ public class PGBuilder {
         public record NoiseConfig(Type type, float stddev) {
             public enum Type {NONE, GAUSSIAN, OU}
 
-            public static class Builder {
-                private Type type = Type.GAUSSIAN;
-                private float stddev = 0.1f;
+            // Defaults
+            public static final Type DEFAULT_NOISE_TYPE = Type.GAUSSIAN;
+            public static final float DEFAULT_NOISE_STDDEV = 0.1f;
 
-                public Builder type(Type t) {
-                    this.type = t;
-                    return this;
-                }
+            public NoiseConfig {
+                Objects.requireNonNull(type, "Noise type cannot be null");
+                if (stddev < 0 && type != Type.NONE) throw new IllegalArgumentException("Noise stddev must be non-negative for GAUSSIAN or OU noise.");
+            }
 
-                public Builder stddev(float s) {
-                    this.stddev = s;
-                    return this;
-                }
+            public NoiseConfig() {
+                this(DEFAULT_NOISE_TYPE, DEFAULT_NOISE_STDDEV);
+            }
 
-                public NoiseConfig build() {
-                    return new NoiseConfig(type, stddev);
-                }
+            public NoiseConfig withType(Type type) {
+                return new NoiseConfig(type, this.stddev);
+            }
+
+            public NoiseConfig withStddev(float stddev) {
+                return new NoiseConfig(this.type, stddev);
             }
         }
 
-        public static class Builder {
-            private final NoiseConfig.Builder noise = new NoiseConfig.Builder();
-            private Distribution distribution = Distribution.GAUSSIAN;
-            private float sigmaMin = 0.2f, sigmaMax = 4.0f;
+        // Defaults for ActionConfig
+        public static final Distribution DEFAULT_ACTION_DISTRIBUTION = Distribution.GAUSSIAN;
+        public static final float DEFAULT_SIGMA_MIN = 0.2f;
+        public static final float DEFAULT_SIGMA_MAX = 4.0f;
+        public static final NoiseConfig DEFAULT_NOISE_CONFIG = new NoiseConfig();
 
-            public Builder distribution(Distribution d) {
-                this.distribution = d;
-                return this;
-            }
 
-            public Builder sigmaMin(float v) {
-                this.sigmaMin = v;
-                return this;
+        public ActionConfig {
+            Objects.requireNonNull(distribution, "Action distribution cannot be null");
+            Objects.requireNonNull(noise, "Noise config cannot be null");
+            if (sigmaMin >= sigmaMax && distribution == Distribution.GAUSSIAN) {
+                throw new IllegalArgumentException("sigmaMin must be less than sigmaMax for GAUSSIAN distribution");
             }
+        }
 
-            public Builder sigmaMax(float v) {
-                this.sigmaMax = v;
-                return this;
-            }
+        public ActionConfig() {
+            this(DEFAULT_ACTION_DISTRIBUTION, DEFAULT_SIGMA_MIN, DEFAULT_SIGMA_MAX, DEFAULT_NOISE_CONFIG);
+        }
 
-            public Builder noise(Consumer<NoiseConfig.Builder> c) {
-                c.accept(this.noise);
-                return this;
-            }
+        public ActionConfig withDistribution(Distribution distribution) {
+            return new ActionConfig(distribution, sigmaMin, sigmaMax, noise);
+        }
 
-            public ActionConfig build() {
-                if (sigmaMin >= sigmaMax) throw new IllegalArgumentException("sigmaMin must be less than sigmaMax");
-                return new ActionConfig(distribution, sigmaMin, sigmaMax, noise.build());
-            }
+        public ActionConfig withSigmaMin(float sigmaMin) {
+            return new ActionConfig(distribution, sigmaMin, sigmaMax, noise);
+        }
+
+        public ActionConfig withSigmaMax(float sigmaMax) {
+            return new ActionConfig(distribution, sigmaMin, sigmaMax, noise);
+        }
+
+        public ActionConfig withNoiseConfig(NoiseConfig noise) {
+            return new ActionConfig(distribution, sigmaMin, sigmaMax, noise);
+        }
+
+        public ActionConfig withNoiseType(NoiseConfig.Type noiseType) {
+            return new ActionConfig(distribution, sigmaMin, sigmaMax, this.noise.withType(noiseType));
+        }
+
+        public ActionConfig withNoiseStddev(float noiseStddev) {
+            return new ActionConfig(distribution, sigmaMin, sigmaMax, this.noise.withStddev(noiseStddev));
         }
     }
 
     public record MemoryConfig(int episodeLength, ReplayBufferConfig replayBuffer) {
         public record ReplayBufferConfig(int capacity, int batchSize) {
-            public static class Builder {
-                private int capacity = 100_000, batchSize = 256;
+            // Defaults
+            public static final int DEFAULT_CAPACITY = 100_000;
+            public static final int DEFAULT_BATCH_SIZE = 256;
 
-                public Builder capacity(int c) {
-                    this.capacity = c;
-                    return this;
-                }
+            public ReplayBufferConfig {
+                if (capacity <= 0 || batchSize <= 0)
+                    throw new IllegalArgumentException("Buffer capacity and batch size must be positive");
+                if (batchSize > capacity)
+                    throw new IllegalArgumentException("Batch size cannot be larger than buffer capacity");
+            }
 
-                public Builder batchSize(int b) {
-                    this.batchSize = b;
-                    return this;
-                }
+            public ReplayBufferConfig() {
+                this(DEFAULT_CAPACITY, DEFAULT_BATCH_SIZE);
+            }
 
-                public ReplayBufferConfig build() {
-                    if (capacity <= 0 || batchSize <= 0)
-                        throw new IllegalArgumentException("Buffer capacity and batch size must be positive");
-                    if (batchSize > capacity)
-                        throw new IllegalArgumentException("Batch size cannot be larger than buffer capacity");
-                    return new ReplayBufferConfig(capacity, batchSize);
-                }
+            public ReplayBufferConfig withCapacity(int capacity) {
+                return new ReplayBufferConfig(capacity, this.batchSize);
+            }
+
+            public ReplayBufferConfig withBatchSize(int batchSize) {
+                return new ReplayBufferConfig(this.capacity, batchSize);
             }
         }
 
-        public static class Builder {
-            private final ReplayBufferConfig.Builder replayBuffer = new ReplayBufferConfig.Builder();
-            private int episodeLength = 2048; // A common value for PPO.
+        // Defaults for MemoryConfig
+        public static final int DEFAULT_EPISODE_LENGTH = 2048; // A common value for PPO.
+        public static final ReplayBufferConfig DEFAULT_REPLAY_BUFFER_CONFIG = new ReplayBufferConfig();
 
-            public Builder episodeLength(int len) {
-                this.episodeLength = len;
-                return this;
+        public MemoryConfig {
+            if (episodeLength <= 0 && replayBuffer == null) { // episodeLength is for on-policy, replayBuffer for off-policy
+                 throw new IllegalArgumentException("Episode length must be positive for on-policy, or replay buffer must be configured for off-policy.");
             }
+             if (episodeLength <= 0 && (replayBuffer != null && (replayBuffer.capacity <=0 || replayBuffer.batchSize <=0))) {
+                throw new IllegalArgumentException("Episode length must be positive for on-policy, or replay buffer parameters must be positive for off-policy.");
+            }
+            // Allow replayBuffer to be null for on-policy algorithms that don't use it.
+            // Validation for replayBuffer itself is handled in its own constructor.
+        }
 
-            public Builder replayBuffer(Consumer<ReplayBufferConfig.Builder> c) {
-                c.accept(this.replayBuffer);
-                return this;
-            }
+        public MemoryConfig(int episodeLength) {
+            this(episodeLength, null); // For on-policy that doesn't use a replay buffer
+        }
 
-            public MemoryConfig build() {
-                if (episodeLength <= 0) throw new IllegalArgumentException("Episode length must be positive");
-                return new MemoryConfig(episodeLength, replayBuffer.build());
-            }
+        public MemoryConfig(ReplayBufferConfig replayBufferConfig) {
+            this(0, replayBufferConfig); // For off-policy, episodeLength might not be relevant or can be defaulted/ignored
+        }
+
+        public MemoryConfig() {
+            this(DEFAULT_EPISODE_LENGTH, DEFAULT_REPLAY_BUFFER_CONFIG);
+        }
+
+
+        public MemoryConfig withEpisodeLength(int episodeLength) {
+            return new MemoryConfig(episodeLength, this.replayBuffer);
+        }
+
+        public MemoryConfig withReplayBufferConfig(ReplayBufferConfig replayBuffer) {
+            return new MemoryConfig(this.episodeLength, replayBuffer);
+        }
+
+        public MemoryConfig withReplayBufferCapacity(int capacity) {
+            ReplayBufferConfig currentRB = this.replayBuffer == null ? new ReplayBufferConfig() : this.replayBuffer;
+            return new MemoryConfig(this.episodeLength, currentRB.withCapacity(capacity));
+        }
+
+        public MemoryConfig withReplayBufferBatchSize(int batchSize) {
+            ReplayBufferConfig currentRB = this.replayBuffer == null ? new ReplayBufferConfig() : this.replayBuffer;
+            return new MemoryConfig(this.episodeLength, currentRB.withBatchSize(batchSize));
         }
     }
 
     public record OdeConfig(int stateSize, int hiddenSize, int steps, SolverType solverType) {
         public enum SolverType {EULER, RK4}
 
-        public static class Builder {
-            private int stateSize = 64, hiddenSize = 128, steps = 5;
-            private SolverType solverType = SolverType.RK4;
+        // Defaults
+        public static final int DEFAULT_STATE_SIZE = 64;
+        public static final int DEFAULT_HIDDEN_SIZE = 128;
+        public static final int DEFAULT_STEPS = 5;
+        public static final SolverType DEFAULT_SOLVER_TYPE = SolverType.RK4;
 
-            public Builder stateSize(int s) {
-                this.stateSize = s;
-                return this;
-            }
+        public OdeConfig {
+            if (stateSize <= 0) throw new IllegalArgumentException("stateSize must be positive.");
+            if (hiddenSize <= 0) throw new IllegalArgumentException("hiddenSize must be positive.");
+            if (steps <= 0) throw new IllegalArgumentException("steps must be positive.");
+            Objects.requireNonNull(solverType, "solverType cannot be null.");
+        }
 
-            public Builder hiddenSize(int h) {
-                this.hiddenSize = h;
-                return this;
-            }
+        public OdeConfig() {
+            this(DEFAULT_STATE_SIZE, DEFAULT_HIDDEN_SIZE, DEFAULT_STEPS, DEFAULT_SOLVER_TYPE);
+        }
 
-            public Builder steps(int s) {
-                this.steps = s;
-                return this;
-            }
-
-            public Builder solverType(SolverType t) {
-                this.solverType = t;
-                return this;
-            }
-
-            public OdeConfig build() {
-                return new OdeConfig(stateSize, hiddenSize, steps, solverType);
-            }
+        // Wither methods
+        public OdeConfig withStateSize(int stateSize) {
+            return new OdeConfig(stateSize, hiddenSize, steps, solverType);
+        }
+        public OdeConfig withHiddenSize(int hiddenSize) {
+            return new OdeConfig(stateSize, hiddenSize, steps, solverType);
+        }
+        public OdeConfig withSteps(int steps) {
+            return new OdeConfig(stateSize, hiddenSize, steps, solverType);
+        }
+        public OdeConfig withSolverType(SolverType solverType) {
+            return new OdeConfig(stateSize, hiddenSize, steps, solverType);
         }
     }
 
     public static class GaussianPolicy extends Models.Layers {
-        public Models.Layers body;
-        public Linear muHead;
-        public Linear logSigmaHead;
+        public final Models.Layers body;
+        public final Linear muHead;
+        public final Linear logSigmaHead;
+        public final NetworkConfig config;
+        public final int inputs;
+        public final int outputs;
 
-        protected GaussianPolicy() {
-            super(null, null, false);
+        // Comprehensive constructor for subclasses or advanced use
+        public GaussianPolicy(NetworkConfig config, int inputs, int outputs, Models.Layers body, Linear muHead, Linear logSigmaHead) {
+            super(null, null, false); // Base Models.Layers constructor
+            this.config = Objects.requireNonNull(config, "NetworkConfig cannot be null");
+            this.inputs = inputs;
+            this.outputs = outputs;
+            this.body = Objects.requireNonNull(body, "Body cannot be null");
+            this.muHead = Objects.requireNonNull(muHead, "muHead cannot be null");
+            this.logSigmaHead = Objects.requireNonNull(logSigmaHead, "logSigmaHead cannot be null");
+
+            this.layer.add(this.body);
+            // muHead and logSigmaHead are used in getDistribution, not added to this.layer directly
         }
 
+        // Standard constructor that builds an MLP body
         public GaussianPolicy(NetworkConfig config, int inputs, int outputs) {
-            super(null, null, false);
-            this.body = new Models.Layers(config.activation(), config.activation(), true);
-            var lastLayerSize = buildMlpBody(this.body, config, inputs);
-            createHeads(lastLayerSize, outputs, config);
-            this.layer.add(body);
+            this(config, inputs, outputs,
+                 buildDefaultMlpBody(config, inputs), // Call static method to build body
+                 createOrthogonalLinear( // Directly create muHead
+                    getLastLayerSize(config, inputs), // Calculate last layer size for head input
+                    outputs, null, config.biasInLastLayer(), 0.01),
+                 createOrthogonalLinear( // Directly create logSigmaHead
+                    getLastLayerSize(config, inputs), // Calculate last layer size for head input
+                    outputs, null, config.biasInLastLayer(), 0.01)
+            );
         }
 
-        protected static int buildMlpBody(Models.Layers body, NetworkConfig config, int inputs) {
-            var lastLayerSize = inputs;
-            for (var hiddenSize : config.hiddenLayers()) {
-                body.layer.add(createOrthogonalLinear(lastLayerSize, hiddenSize, config.activation(), true, Math.sqrt(2.0)));
-                lastLayerSize = hiddenSize;
+        // Helper to calculate the size of the last layer of the MLP body, needed for head creation
+        private static int getLastLayerSize(NetworkConfig config, int inputs) {
+            if (config.hiddenLayers() == null || config.hiddenLayers().length == 0) {
+                return inputs;
             }
-            return lastLayerSize;
+            return config.hiddenLayers()[config.hiddenLayers().length - 1];
         }
+
+        // Static method to build the default MLP body, used by the standard constructor
+        private static Models.Layers buildDefaultMlpBody(NetworkConfig config, int inputs) {
+            Models.Layers newBody = new Models.Layers(config.activation(), config.activation(), true);
+            int lastLayerSize = inputs;
+            if (config.hiddenLayers() != null) {
+                for (int hiddenSize : config.hiddenLayers()) {
+                    newBody.layer.add(createOrthogonalLinear(lastLayerSize, hiddenSize, config.activation(), true, Math.sqrt(2.0)));
+                    lastLayerSize = hiddenSize;
+                }
+            }
+            return newBody;
+        }
+
+        // Renamed from buildMlpBody to avoid confusion, now specifically for the default MLP policy body construction.
+        // This method is now part of the static buildDefaultMlpBody.
+        // public static int configureMlpBodyLayers(Models.Layers bodyToConfigure, NetworkConfig config, int inputs) {
+        //     var lastLayerSize = inputs;
+        //     for (var hiddenSize : config.hiddenLayers()) {
+        //         bodyToConfigure.layer.add(createOrthogonalLinear(lastLayerSize, hiddenSize, config.activation(), true, Math.sqrt(2.0)));
+        //         lastLayerSize = hiddenSize;
+        //     }
+        //     return lastLayerSize;
+        // }
 
         static Linear createOrthogonalLinear(int I, int O, UnaryOperator<Tensor> activation, boolean bias, double gain) {
             var linearLayer = new Linear(I, O, activation, bias);
@@ -611,10 +601,7 @@ public class PGBuilder {
             return linearLayer;
         }
 
-        protected void createHeads(int bodyOutputSize, int outputs, NetworkConfig config) {
-            this.muHead = createOrthogonalLinear(bodyOutputSize, outputs, null, config.biasInLastLayer(), 0.01);
-            this.logSigmaHead = createOrthogonalLinear(bodyOutputSize, outputs, null, config.biasInLastLayer(), 0.01);
-        }
+        // createHeads logic is now incorporated into the main constructor(s)
 
         public RLUtils.GaussianDistribution getDistribution(Tensor state, float sigmaMin, float sigmaMax) {
             var bodyOutput = this.body.apply(state);
@@ -630,25 +617,49 @@ public class PGBuilder {
     }
 
     public static class OdeGaussianPolicy extends GaussianPolicy {
+        public final OdeConfig odeConfig;
+
         public OdeGaussianPolicy(NetworkConfig config, OdeConfig odeConfig, int inputs, int outputs) {
-            super();
-            this.body = new Models.Layers(config.activation(), config.activation(), true);
-            var inputProjection = createOrthogonalLinear(inputs, odeConfig.stateSize(), config.activation(), true, Math.sqrt(2.0));
-            var odeLayer = new ODELayer(odeConfig.stateSize(), odeConfig.stateSize(), odeConfig.hiddenSize(), odeConfig.solverType() == OdeConfig.SolverType.RK4, odeConfig::steps);
-            this.body.layer.add(inputProjection);
-            this.body.layer.add(odeLayer);
-            createHeads(odeConfig.stateSize(), outputs, config);
-            this.layer.add(this.body);
+            // 1. Construct the specific body for OdeGaussianPolicy
+            Models.Layers constructedBody = new Models.Layers(
+                    Objects.requireNonNull(config, "NetworkConfig cannot be null for OdeGaussianPolicy").activation(),
+                    config.activation(),
+                    true); // Assuming bias in body layers based on typical MLP structure
+
+            var inputProjection = createOrthogonalLinear(inputs,
+                    Objects.requireNonNull(odeConfig, "OdeConfig cannot be null for OdeGaussianPolicy").stateSize(),
+                    config.activation(), true, Math.sqrt(2.0));
+            var odeL = new ODELayer(odeConfig.stateSize(), odeConfig.stateSize(), odeConfig.hiddenSize(),
+                    odeConfig.solverType() == OdeConfig.SolverType.RK4, odeConfig::steps);
+            constructedBody.layer.add(inputProjection);
+            constructedBody.layer.add(odeL);
+
+            // 2. Determine the output size of this body (which is the input size for the heads)
+            int bodyOutputSize = odeConfig.stateSize();
+
+            // 3. Construct the heads
+            Linear constructedMuHead = createOrthogonalLinear(bodyOutputSize, outputs, null, config.biasInLastLayer(), 0.01);
+            Linear constructedLogSigmaHead = createOrthogonalLinear(bodyOutputSize, outputs, null, config.biasInLastLayer(), 0.01);
+
+            // 4. Call the comprehensive super constructor from GaussianPolicy
+            super(config, inputs, outputs, constructedBody, constructedMuHead, constructedLogSigmaHead);
+
+            // 5. Initialize own final fields
+            this.odeConfig = odeConfig;
         }
     }
 
     public static class ValueNetwork extends Models.Layers {
         public final UnaryOperator<Tensor> network;
+        public final NetworkConfig config;
+        public final int stateDim;
 
         public ValueNetwork(NetworkConfig config, int stateDim) {
-            super(null, null, false);
-            this.network = ModelFactory.createMlp(stateDim, 1, config);
-            this.layer.add(network);
+            super(null, null, false); // Base class constructor
+            this.config = Objects.requireNonNull(config, "NetworkConfig cannot be null");
+            this.stateDim = stateDim;
+            this.network = RLNetworkUtils.createMlp(stateDim, 1, config); // Changed to RLNetworkUtils.createMlp
+            this.layer.add(network); // Add the created MLP to this Models.Layers instance
         }
 
         @Override
@@ -659,11 +670,17 @@ public class PGBuilder {
 
     public static class DeterministicPolicy extends Models.Layers {
         public final UnaryOperator<Tensor> network;
+        public final NetworkConfig config;
+        public final int inputs;
+        public final int outputs;
 
         public DeterministicPolicy(NetworkConfig config, int inputs, int outputs) {
-            super(null, null, false);
-            this.network = ModelFactory.createMlp(inputs, outputs, config);
-            this.layer.add(network);
+            super(null, null, false); // Base class constructor
+            this.config = Objects.requireNonNull(config, "NetworkConfig cannot be null");
+            this.inputs = inputs;
+            this.outputs = outputs;
+            this.network = RLNetworkUtils.createMlp(inputs, outputs, config); // Changed to RLNetworkUtils.createMlp
+            this.layer.add(network); // Add the created MLP to this Models.Layers instance
         }
 
         @Override
@@ -674,11 +691,17 @@ public class PGBuilder {
 
     public static class QNetwork extends Models.Layers {
         public final UnaryOperator<Tensor> network;
+        public final NetworkConfig config;
+        public final int stateDim;
+        public final int actionDim;
 
         public QNetwork(NetworkConfig config, int stateDim, int actionDim) {
-            super(null, null, false);
-            this.network = ModelFactory.createMlp(stateDim + actionDim, 1, config);
-            this.layer.add(network);
+            super(null, null, false); // Base class constructor
+            this.config = Objects.requireNonNull(config, "NetworkConfig cannot be null");
+            this.stateDim = stateDim;
+            this.actionDim = actionDim;
+            this.network = RLNetworkUtils.createMlp(stateDim + actionDim, 1, config); // Changed to RLNetworkUtils.createMlp
+            this.layer.add(network); // Add the created MLP to this Models.Layers instance
         }
 
         public Tensor apply(Tensor state, Tensor action) {
@@ -691,138 +714,38 @@ public class PGBuilder {
         }
     }
 
-    private static class ReinforceConfigurator implements AlgorithmConfigurator {
-        @Override
-        public void validate(PGBuilder builder) {
-            if (!builder.policy.isConfigured()) throw new IllegalStateException("REINFORCE requires a policy network.");
-            if (builder.action.build().distribution() != ActionConfig.Distribution.GAUSSIAN)
-                throw new IllegalStateException("REINFORCE requires a GAUSSIAN action distribution.");
-            if (builder.value.isConfigured())
-                System.err.println("Warning: REINFORCE does not use a value network. The configured value network will be ignored.");
-        }
-
-        @Override
-        public AlgorithmStrategy buildStrategy(PGBuilder builder) {
-            var h = builder.hyperparams.build();
-            var a = builder.action.build();
-            var m = builder.memory.build();
-            var policy = ModelFactory.createGaussianPolicy(builder);
-            var policyOpt = ModelFactory.createOptimizer(builder.policy.build(h.policyLR()).optimizer());
-            var buffer = new OnPolicyEpisodeBuffer(m.episodeLength());
-            return new ReinforceStrategy(h, a, m, buffer, policy, policyOpt);
-        }
-    }
-
-    private static class PPOConfigurator implements AlgorithmConfigurator {
-        @Override
-        public void validate(PGBuilder builder) {
-            if (!builder.policy.isConfigured()) throw new IllegalStateException("PPO requires a policy network.");
-            if (!builder.value.isConfigured()) throw new IllegalStateException("PPO requires a value network.");
-            if (builder.action.build().distribution() != ActionConfig.Distribution.GAUSSIAN)
-                throw new IllegalStateException("PPO requires a GAUSSIAN action distribution.");
-            // Set PPO-specific hyperparameter overrides for better default performance
-            builder.hyperparams.lambda(0.95f);
-            builder.hyperparams.epochs(10);
-            builder.hyperparams.policyLR(3e-4f);
-            builder.hyperparams.valueLR(1e-3f);
-        }
-
-        @Override
-        public AlgorithmStrategy buildStrategy(PGBuilder builder) {
-            var h = builder.hyperparams.build();
-            var a = builder.action.build();
-            var m = builder.memory.build();
-            var policy = ModelFactory.createGaussianPolicy(builder);
-            var policyOpt = ModelFactory.createOptimizer(builder.policy.build(h.policyLR()).optimizer());
-            var valueConfig = builder.value.build(h.valueLR());
-            var value = new ValueNetwork(valueConfig, builder.inputs);
-            var valueOpt = ModelFactory.createOptimizer(valueConfig.optimizer());
-            var buffer = new OnPolicyEpisodeBuffer(m.episodeLength());
-            return new PPOStrategy(h, a, m, buffer, policy, value, policyOpt, valueOpt);
-        }
-    }
-
-    private static class SACConfigurator implements AlgorithmConfigurator {
-        @Override
-        public void validate(PGBuilder builder) {
-            if (!builder.policy.isConfigured()) throw new IllegalStateException("SAC requires a policy network.");
-            if (builder.qNetworks.stream().anyMatch(b -> !b.isConfigured()))
-                throw new IllegalStateException("SAC requires two Q-networks to be configured.");
-            if (builder.action.build().distribution() != ActionConfig.Distribution.GAUSSIAN)
-                throw new IllegalStateException("SAC requires a GAUSSIAN action distribution.");
-        }
-
-        @Override
-        public AlgorithmStrategy buildStrategy(PGBuilder builder) {
-            var h = builder.hyperparams.build();
-            var a = builder.action.build();
-            var m = builder.memory.build();
-            var policy = ModelFactory.createGaussianPolicy(builder);
-            var policyOpt = ModelFactory.createOptimizer(builder.policy.build(h.policyLR()).optimizer());
-            List<QNetwork> qNetworks = new ArrayList<>(), targetQNetworks = new ArrayList<>();
-            List<Tensor.Optimizer> qOpts = new ArrayList<>();
-            for (var qConfigBuilder : builder.qNetworks) {
-                var qConfig = qConfigBuilder.build(h.valueLR());
-                var qNet = new QNetwork(qConfig, builder.inputs, builder.outputs);
-                var targetQNet = new QNetwork(qConfig, builder.inputs, builder.outputs);
-                RLUtils.hardUpdate(qNet, targetQNet);
-                qNetworks.add(qNet);
-                targetQNetworks.add(targetQNet);
-                qOpts.add(ModelFactory.createOptimizer(qConfig.optimizer()));
-            }
-            var buffer = new ReplayBuffer2(m.replayBuffer().capacity());
-            return new SACStrategy(h, a, m, buffer, policy, qNetworks, targetQNetworks, policyOpt, qOpts, builder.outputs);
-        }
-    }
-
-    private static class DDPGConfigurator implements AlgorithmConfigurator {
-        @Override
-        public void validate(PGBuilder builder) {
-            if (!builder.policy.isConfigured()) throw new IllegalStateException("DDPG requires a policy network.");
-            if (!builder.value.isConfigured())
-                throw new IllegalStateException("DDPG requires a critic (value) network.");
-            // --- FIX: Throw an exception for invalid configurations instead of printing a warning. ---
-            // This ensures that tests expecting an exception for misconfiguration will pass.
-            if (builder.action.build().distribution() != ActionConfig.Distribution.DETERMINISTIC) {
-                throw new IllegalArgumentException("DDPG requires a DETERMINISTIC action distribution.");
-            }
-        }
-
-        @Override
-        public AlgorithmStrategy buildStrategy(PGBuilder builder) {
-            var h = builder.hyperparams.build();
-            var a = builder.action.build();
-            var m = builder.memory.build();
-            builder.policy.outputActivation(Tensor.TANH);
-            var policyConfig = builder.policy.build(h.policyLR());
-            var policy = new DeterministicPolicy(policyConfig, builder.inputs, builder.outputs);
-            var targetPolicy = new DeterministicPolicy(policyConfig, builder.inputs, builder.outputs);
-            var policyOpt = ModelFactory.createOptimizer(policyConfig.optimizer());
-            var criticConfig = builder.value.build(h.valueLR());
-            var critic = new QNetwork(criticConfig, builder.inputs, builder.outputs);
-            var targetCritic = new QNetwork(criticConfig, builder.inputs, builder.outputs);
-            var criticOpt = ModelFactory.createOptimizer(criticConfig.optimizer());
-            RLUtils.hardUpdate(policy, targetPolicy);
-            RLUtils.hardUpdate(critic, targetCritic);
-            var buffer = new ReplayBuffer2(m.replayBuffer().capacity());
-            return new DDPGStrategy(h, a, m, buffer, policy, critic, targetPolicy, targetCritic, policyOpt, criticOpt, builder.outputs);
-        }
-    }
+    // Former AlgorithmConfigurator implementations (ReinforceConfigurator, PPOConfigurator, SACConfigurator, DDPGConfigurator)
+    // are removed. Their logic for validation and strategy construction will now be handled by:
+    // 1. Direct instantiation of strategies with all required components.
+    // 2. Validation logic can be part of strategy constructors or dedicated validation methods if needed.
+    // 3. Helper/factory methods for creating common strategy setups can be added if desired,
+    //    but the primary path is direct instantiation.
 }
 
 class PolicyGradientModel extends AbstrPG {
-    final AlgorithmStrategy strategy;
-    private final boolean isOffPolicy;
+    public final AlgorithmStrategy strategy; // Made public final
+    public final boolean isOffPolicy; // Made public final
+
+    // Internal state variables, remain private and mutable
     private Tensor lastState;
     private double[] lastAction;
     private long totalSteps;
     private Tensor lastLogProb;
 
-    PolicyGradientModel(int inputs, int outputs, AlgorithmStrategy strategy, boolean isOffPolicy) {
-        super(inputs, outputs);
-        this.strategy = strategy;
+    // Constructor now accepts actionFilter to pass to AbstrPG
+    public PolicyGradientModel(int inputs, int outputs,
+                               AlgorithmStrategy strategy, boolean isOffPolicy,
+                               Consumer<double[]> actionFilter) {
+        super(inputs, outputs, actionFilter); // Pass actionFilter to super constructor
+        this.strategy = Objects.requireNonNull(strategy, "strategy cannot be null");
         this.isOffPolicy = isOffPolicy;
-        this.strategy.initialize(this);
+        this.strategy.initialize(this); // Initialize strategy after all final fields are set
+    }
+
+    // Overloaded constructor for default actionFilter
+    public PolicyGradientModel(int inputs, int outputs,
+                               AlgorithmStrategy strategy, boolean isOffPolicy) {
+        this(inputs, outputs, strategy, isOffPolicy, a -> {}); // Default no-op action filter
     }
 
     @Override
@@ -926,25 +849,27 @@ abstract class AbstractStrategy implements AlgorithmStrategy {
 }
 
 class ReinforceStrategy extends AbstractStrategy {
-    private final HyperparamConfig h;
-    private final ActionConfig a;
-    private final MemoryConfig m;
-    private final OnPolicyEpisodeBuffer memory;
-    private final GaussianPolicy policy;
-    private final Tensor.Optimizer policyOpt;
+    public final HyperparamConfig h;
+    public final ActionConfig a;
+    public final MemoryConfig m;
+    public final Memory memory; // Changed to Memory interface
+    public final GaussianPolicy policy;
+    public final Tensor.Optimizer policyOpt;
 
-    public ReinforceStrategy(HyperparamConfig h, ActionConfig a, MemoryConfig m, OnPolicyEpisodeBuffer memory, GaussianPolicy policy, Tensor.Optimizer policyOpt) {
-        this.h = h;
-        this.a = a;
-        this.m = m;
-        this.memory = memory;
-        this.policy = policy;
-        this.policyOpt = policyOpt;
+    public ReinforceStrategy(HyperparamConfig h, ActionConfig a, MemoryConfig m,
+                             Memory memory, // Changed to Memory interface
+                             GaussianPolicy policy, Tensor.Optimizer policyOpt) {
+        this.h = Objects.requireNonNull(h);
+        this.a = Objects.requireNonNull(a);
+        this.m = Objects.requireNonNull(m);
+        this.memory = Objects.requireNonNull(memory);
+        this.policy = Objects.requireNonNull(policy);
+        this.policyOpt = Objects.requireNonNull(policyOpt);
     }
 
     @Override
     public Memory getMemory() {
-        return memory;
+        return memory; // Already returns Memory type
     }
 
     @Override
@@ -1022,28 +947,32 @@ class ReinforceStrategy extends AbstractStrategy {
 }
 
 class PPOStrategy extends AbstractStrategy {
-    final HyperparamConfig h;
-    final ActionConfig a;
-    final MemoryConfig m;
-    final GaussianPolicy policy;
-    private final OnPolicyEpisodeBuffer memory;
-    private final ValueNetwork value;
-    private final Tensor.Optimizer policyOpt, valueOpt;
+    public final HyperparamConfig h;
+    public final ActionConfig a;
+    public final MemoryConfig m;
+    public final GaussianPolicy policy;
+    public final Memory memory; // Changed to Memory interface
+    public final ValueNetwork value;
+    public final Tensor.Optimizer policyOpt;
+    public final Tensor.Optimizer valueOpt;
 
-    public PPOStrategy(HyperparamConfig h, ActionConfig a, MemoryConfig m, OnPolicyEpisodeBuffer memory, GaussianPolicy policy, ValueNetwork value, Tensor.Optimizer policyOpt, Tensor.Optimizer valueOpt) {
-        this.h = h;
-        this.a = a;
-        this.m = m;
-        this.memory = memory;
-        this.policy = policy;
-        this.value = value;
-        this.policyOpt = policyOpt;
-        this.valueOpt = valueOpt;
+    public PPOStrategy(HyperparamConfig h, ActionConfig a, MemoryConfig m,
+                       Memory memory, // Changed to Memory interface
+                       GaussianPolicy policy, ValueNetwork value,
+                       Tensor.Optimizer policyOpt, Tensor.Optimizer valueOpt) {
+        this.h = Objects.requireNonNull(h);
+        this.a = Objects.requireNonNull(a);
+        this.m = Objects.requireNonNull(m);
+        this.memory = Objects.requireNonNull(memory);
+        this.policy = Objects.requireNonNull(policy);
+        this.value = Objects.requireNonNull(value);
+        this.policyOpt = Objects.requireNonNull(policyOpt);
+        this.valueOpt = Objects.requireNonNull(valueOpt);
     }
 
     @Override
     public Memory getMemory() {
-        return memory;
+        return memory; // Already returns Memory type
     }
 
     @Override
@@ -1156,12 +1085,12 @@ class PPOStrategy extends AbstractStrategy {
 }
 
 abstract class OffPolicyStrategy extends AbstractStrategy {
-    protected final MemoryConfig m;
-    protected final ReplayBuffer2 memory;
+    public final MemoryConfig m;
+    public final Memory memory; // Changed to Memory interface
 
-    protected OffPolicyStrategy(MemoryConfig m, ReplayBuffer2 memory) {
-        this.m = m;
-        this.memory = memory;
+    protected OffPolicyStrategy(MemoryConfig m, Memory memory) { // Changed to Memory interface
+        this.m = Objects.requireNonNull(m);
+        this.memory = Objects.requireNonNull(memory);
     }
 
     protected static Batch toBatch(Collection<Experience2> experiences) {
@@ -1190,28 +1119,42 @@ abstract class OffPolicyStrategy extends AbstractStrategy {
 }
 
 class SACStrategy extends OffPolicyStrategy {
-    private final HyperparamConfig h;
-    private final ActionConfig a;
-    private final GaussianPolicy policy;
-    private final List<QNetwork> qNetworks, targetQNetworks;
-    private final Tensor.Optimizer policyOpt;
-    private final List<Tensor.Optimizer> qOpts;
-    private final Tensor logAlpha;
-    private final Tensor.Optimizer alphaOpt;
-    private final float targetEntropy;
+    public final HyperparamConfig h;
+    public final ActionConfig a;
+    public final GaussianPolicy policy;
+    public final List<QNetwork> qNetworks;
+    public final List<QNetwork> targetQNetworks;
+    public final Tensor.Optimizer policyOpt;
+    public final List<Tensor.Optimizer> qOpts;
+    public final Tensor logAlpha; // Initialized based on h.learnableAlpha()
+    public final Tensor.Optimizer alphaOpt; // Can be null
+    public final float targetEntropy;
+    public final int outputs; // Storing for clarity, as it's used for targetEntropy
 
-    public SACStrategy(HyperparamConfig h, ActionConfig a, MemoryConfig m, ReplayBuffer2 memory, GaussianPolicy policy, List<QNetwork> qNetworks, List<QNetwork> targetQNetworks, Tensor.Optimizer policyOpt, List<Tensor.Optimizer> qOpts, int outputs) {
+    public SACStrategy(HyperparamConfig h, ActionConfig a, MemoryConfig m,
+                       Memory memory, // Changed to Memory interface
+                       GaussianPolicy policy,
+                       List<QNetwork> qNetworks, List<QNetwork> targetQNetworks,
+                       Tensor.Optimizer policyOpt, List<Tensor.Optimizer> qOpts,
+                       int outputs) {
         super(m, memory);
-        this.h = h;
-        this.a = a;
-        this.policy = policy;
-        this.qNetworks = qNetworks;
-        this.targetQNetworks = targetQNetworks;
-        this.policyOpt = policyOpt;
-        this.qOpts = qOpts;
-        this.targetEntropy = -outputs;
+        this.h = Objects.requireNonNull(h);
+        this.a = Objects.requireNonNull(a);
+        this.policy = Objects.requireNonNull(policy);
+        this.qNetworks = Objects.requireNonNull(qNetworks);
+        this.targetQNetworks = Objects.requireNonNull(targetQNetworks);
+        this.policyOpt = Objects.requireNonNull(policyOpt);
+        this.qOpts = Objects.requireNonNull(qOpts);
+        this.outputs = outputs;
+
+        if (qNetworks.size() != targetQNetworks.size() || qNetworks.size() != qOpts.size() || qNetworks.isEmpty()) {
+            throw new IllegalArgumentException("qNetworks, targetQNetworks, and qOpts must be non-empty and of the same size.");
+        }
+
+        this.targetEntropy = (float) -outputs; // Cast to float
         if (h.learnableAlpha()) {
             this.logAlpha = Tensor.zeros(1, 1).parameter();
+            // Use valueLR from HyperparamConfig for alpha optimizer's learning rate
             this.alphaOpt = new Optimizers.ADAM(h::valueLR).get();
         } else {
             this.logAlpha = Tensor.scalar(Math.log(h.entropyBonus()));
@@ -1294,22 +1237,37 @@ class SACStrategy extends OffPolicyStrategy {
 
 class DDPGStrategy extends OffPolicyStrategy {
     public final HyperparamConfig h;
-    public final DeterministicPolicy policy, targetPolicy;
-    public final QNetwork critic, targetCritic;
+    public final ActionConfig a; // Added to store the action config
+    public final DeterministicPolicy policy;
+    public final DeterministicPolicy targetPolicy;
+    public final QNetwork critic;
+    public final QNetwork targetCritic;
     public final Noise noise;
-    private final Tensor.Optimizer policyOpt, criticOpt;
-    private final Tensor.GradQueue vCtx = new Tensor.GradQueue(), pCtx = new Tensor.GradQueue();
+    public final Tensor.Optimizer policyOpt;
+    public final Tensor.Optimizer criticOpt;
+    public final int outputs; // Storing for clarity, as it's used for noise creation
 
-    public DDPGStrategy(HyperparamConfig h, ActionConfig a, MemoryConfig m, ReplayBuffer2 memory, DeterministicPolicy policy, QNetwork critic, DeterministicPolicy targetPolicy, QNetwork targetCritic, Tensor.Optimizer policyOpt, Tensor.Optimizer criticOpt, int outputs) {
+    // Internal state for updates, not part of the public final configuration fields
+    private final Tensor.GradQueue vCtx = new Tensor.GradQueue();
+    private final Tensor.GradQueue pCtx = new Tensor.GradQueue();
+
+    public DDPGStrategy(HyperparamConfig h, ActionConfig a, MemoryConfig m,
+                        Memory memory, // Changed to Memory interface
+                        DeterministicPolicy policy, QNetwork critic,
+                        DeterministicPolicy targetPolicy, QNetwork targetCritic,
+                        Tensor.Optimizer policyOpt, Tensor.Optimizer criticOpt,
+                        int outputs) {
         super(m, memory);
-        this.h = h;
-        this.policy = policy;
-        this.critic = critic;
-        this.targetPolicy = targetPolicy;
-        this.targetCritic = targetCritic;
-        this.policyOpt = policyOpt;
-        this.criticOpt = criticOpt;
-        this.noise = Noise.create(a.noise(), outputs);
+        this.h = Objects.requireNonNull(h);
+        this.a = Objects.requireNonNull(a); // Store action config
+        this.policy = Objects.requireNonNull(policy);
+        this.critic = Objects.requireNonNull(critic);
+        this.targetPolicy = Objects.requireNonNull(targetPolicy);
+        this.targetCritic = Objects.requireNonNull(targetCritic);
+        this.policyOpt = Objects.requireNonNull(policyOpt);
+        this.criticOpt = Objects.requireNonNull(criticOpt);
+        this.outputs = outputs;
+        this.noise = Noise.create(a.noise(), outputs); // Noise uses the stored action config
     }
 
     @Override

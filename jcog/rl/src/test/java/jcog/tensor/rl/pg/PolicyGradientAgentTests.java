@@ -15,18 +15,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PolicyGradientAgentTests extends RLAgentTestBase {
 
+    // Local enum for test parameterization, similar to PGBuilderTest.TestAlgoType
+    // This helps in replacing PGBuilder.Algorithm
+    enum TestAlgoType {
+        REINFORCE, PPO, SAC, DDPG
+        // VPG tests will use PPO strategy as per old PGBuilder mapping
+    }
+
     int brains = 4;
     float gamma = 0.9f;
     int iter = 1 * 1024;
     int trials = 3;
     int episodeLen = 1;
 
+    @Deprecated // Uses old Reinforce class, new tests should use PGBuilder.ReinforceStrategy
     @Test void REINFORCE_Matching1() {
         var e = new MatchingEnv(1);
         var a = new Reinforce(e.stateDimension(), e.actionDimension(), e.stateDimension()*brains, episodeLen);
         a.gamma.set(gamma);
         eval(a.agent(), e);
     }
+
+    @Deprecated // Uses old Reinforce class, new tests should use PGBuilder.ReinforceStrategy
     @Test void REINFORCE_Matching2() {
         var e = new MatchingEnv(2);
         var a = new Reinforce(e.stateDimension(), e.actionDimension(), e.stateDimension()*brains, episodeLen);
@@ -34,6 +44,7 @@ public class PolicyGradientAgentTests extends RLAgentTestBase {
         eval(a.agent(), e);
     }
 
+    @Deprecated // Uses old VPG class, new tests should use PGBuilder.PPOStrategy or a dedicated VPG-like strategy
     @Test void VPG_Matching1() {
         var e = new MatchingEnv(1);
         var hidden = e.stateDimension() * brains;
@@ -41,13 +52,14 @@ public class PolicyGradientAgentTests extends RLAgentTestBase {
         a.gamma.set(gamma);
         eval(a.agent(), e);
     }
-    @Test void StreamAC_Matching1() {
+    @Test void StreamAC_Matching1() { // Assuming StreamAC is a current/valid agent not part of PGBuilder refactor
         var e = new MatchingEnv(1);
         var hidden = e.stateDimension() * brains;
         var a = new StreamAC(e.stateDimension(), e.actionDimension(), hidden, hidden);
         a.gamma.set(gamma);
         eval(a.agent(), e);
     }
+    @Deprecated // Uses old DDPG class, new tests should use PGBuilder.DDPGStrategy
     @Test void DDPG_Matching() {
         var e = new MatchingEnv(1);
         var hidden = e.stateDimension() * brains;
@@ -56,12 +68,14 @@ public class PolicyGradientAgentTests extends RLAgentTestBase {
         eval(a.agent(), e);
     }
 
+    @Deprecated // Uses old Reinforce class
     @Test void REINFORCE_Target1D() {
         var e = new ContinuousSeekEnv();
         var a = new Reinforce(e.stateDimension(), e.actionDimension(), e.stateDimension()*brains, episodeLen);
         a.gamma.set(gamma);
         eval(a.agent(), e);
     }
+    @Deprecated // Uses old Reinforce class
     @Test void REINFORCE_Target2D() {
         var e = ContinuousSeekEnv.W2D();
         var a = new Reinforce(e.stateDimension(), e.actionDimension(), e.stateDimension()*brains, episodeLen);
@@ -76,6 +90,7 @@ public class PolicyGradientAgentTests extends RLAgentTestBase {
 //        eval(a.agent(), e);
 //    }
 
+    @Deprecated // Uses old PPO class
     @Test void PPO_Original_Matching() {
         var e = new MatchingEnv(1);
         var hidden = e.stateDimension() * brains;
@@ -96,16 +111,59 @@ public class PolicyGradientAgentTests extends RLAgentTestBase {
         evalPGBuilder(new MatchingEnv(2), PGBuilder.Algorithm.VPG);
     }
 
-    private void evalPGBuilder(MatchingEnv e, PGBuilder.Algorithm alg) {
+    // Refactored helper method to use direct DI
+    private void evalStrategyForEnv(MatchingEnv e, TestAlgoType algoType) {
         var hidden = e.stateDimension() * brains;
-        var a = new PGBuilder(e.stateDimension(), e.actionDimension())
-                .algorithm(alg)
-                .policy(p -> p.hiddenLayers(hidden).activation(Tensor.RELU))
-                .value(v -> v.hiddenLayers(hidden).activation(Tensor.RELU))
-                .hyperparams(h -> h.gamma(gamma).policyLR(3e-4f).valueLR(1e-3f).ppoClip(0.2f).epochs(1).entropyBonus(0.01f))
-                .memory(m -> m.episodeLength(episodeLen))
-                .build();
-        eval(a.agent(), e);
+        int inputs = e.stateDimension();
+        int outputs = e.actionDimension();
+
+        PGBuilder.HyperparamConfig hyperparams = new PGBuilder.HyperparamConfig()
+                .withGamma(this.gamma) // Use gamma from test class
+                .withPolicyLR(3e-4f)
+                .withValueLR(1e-3f) // Relevant for PPO/SAC/DDPG critics
+                .withPpoClip(0.2f)   // Relevant for PPO
+                .withEpochs(1)
+                .withEntropyBonus(0.01f);
+
+        PGBuilder.ActionConfig actionConfig = new PGBuilder.ActionConfig(); // Default
+
+        // MemoryConfig: episodeLength for on-policy, ReplayBufferConfig for off-policy (though not used by MatchingEnv tests for off-policy yet)
+        PGBuilder.MemoryConfig memoryConfig = new PGBuilder.MemoryConfig(this.episodeLen);
+
+
+        PGBuilder.NetworkConfig policyNetConfig = new PGBuilder.NetworkConfig(hyperparams.policyLR(), hidden).withActivation(Tensor.RELU);
+        PGBuilder.NetworkConfig valueNetConfig = new PGBuilder.NetworkConfig(hyperparams.valueLR(), hidden).withActivation(Tensor.RELU); // For PPO
+
+        PolicyGradientModel model;
+        AlgorithmStrategy strategy;
+        boolean isOffPolicy;
+
+        switch (algoType) {
+            case PPO: // VPG tests will also use PPO strategy
+                PGBuilder.GaussianPolicy ppoPolicy = new PGBuilder.GaussianPolicy(policyNetConfig, inputs, outputs);
+                Tensor.Optimizer ppoPolicyOpt = policyNetConfig.optimizer().buildOptimizer();
+                PGBuilder.ValueNetwork ppoValueNet = new PGBuilder.ValueNetwork(valueNetConfig, inputs);
+                Tensor.Optimizer ppoValueOpt = valueNetConfig.optimizer().buildOptimizer();
+                OnPolicyEpisodeBuffer ppoMemory = new OnPolicyEpisodeBuffer(memoryConfig.episodeLength());
+                strategy = new PPOStrategy(hyperparams, actionConfig, memoryConfig, ppoMemory, ppoPolicy, ppoValueNet, ppoPolicyOpt, ppoValueOpt);
+                isOffPolicy = false;
+                break;
+            case REINFORCE: // Example if we wanted to test Reinforce this way
+                 PGBuilder.GaussianPolicy reinforcePolicy = new PGBuilder.GaussianPolicy(policyNetConfig, inputs, outputs);
+                 Tensor.Optimizer reinforcePolicyOpt = policyNetConfig.optimizer().buildOptimizer();
+                 OnPolicyEpisodeBuffer reinforceMemory = new OnPolicyEpisodeBuffer(memoryConfig.episodeLength());
+                 strategy = new ReinforceStrategy(hyperparams, actionConfig, memoryConfig, reinforceMemory, reinforcePolicy, reinforcePolicyOpt);
+                 isOffPolicy = false;
+                 break;
+            // SAC and DDPG cases would need more setup (Q-networks, different policy types, replay buffers)
+            // and are not currently tested by the MatchingEnv tests using evalPGBuilder.
+            // If they were, their setup would mirror createTestModel from PGBuilderTest.
+            default:
+                throw new UnsupportedOperationException("Algorithm type " + algoType + " not fully configured in this test helper for MatchingEnv.");
+        }
+
+        model = new PolicyGradientModel(inputs, outputs, strategy, isOffPolicy);
+        eval(model.agent(), e);
     }
 
 
