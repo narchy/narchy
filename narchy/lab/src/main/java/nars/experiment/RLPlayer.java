@@ -32,7 +32,7 @@ public class RLPlayer {
             //new TrackXY(5, 5);
 
             //new Tetris().fallTime(4); window(Tetris.tetrisView(((Tetris)g)), 400, 800);
-            new Tetris().fallTime(2); window(Tetris.tetrisView(((Tetris)g)), 400, 800);
+            //new Tetris().fallTime(2); window(Tetris.tetrisView(((Tetris)g)), 400, 800);
             //new Tetris().fallTime(1); window(Tetris.tetrisView(((Tetris)g)), 400, 800);
 
 //            new Tetris.Dotris($.$$("t"),
@@ -50,7 +50,7 @@ public class RLPlayer {
 //                }
 //            };
 
-            //new PoleCart("p", true);
+            new PoleCart("p", true);
 
             //new Acrobot();
             //new Phys2DGame.Arm2D("a").window();
@@ -109,12 +109,12 @@ public class RLPlayer {
         };
 
         IntIntToObjectFunction<Agent> policy =
-            Agents::PPO
+            //Agents::PPO
             //Agents::StreamAC
             //Agents::VPG
             //Agents::REINFORCE
             //Agents::SAC
-            //Agents::DDPG
+            Agents::DDPG
             //Agents::A2C
             //Agents::ReinforceDNC
             //Agents::ReinforceODE //<--- !!!!!

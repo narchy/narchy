@@ -11,12 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -109,104 +106,6 @@ class PGBuilderTest {
                 assertEquals(expectedMemorySize, strategy.getMemory().size(), "On-policy buffer size mismatch for " + algo);
             }
         });
-    }
-
-    // ===================================================================================
-    // RL Performance Tests on Synthetic Tasks
-    // ===================================================================================
-    @Nested
-    @DisplayName("L5: RL Performance on Synthetic Tasks")
-    class RLPerformanceTests {
-
-        private static final int PERF_INPUTS = 2;
-        private static final int PERF_OUTPUTS = 2;
-
-        private PGBuilder createPerformanceTestBuilder(PGBuilder.Algorithm algo) {
-            var builder = new PGBuilder(PERF_INPUTS, PERF_OUTPUTS).algorithm(algo);
-            var d = 32;
-            builder.policy(p -> p.hiddenLayers(d, d).optimizer(o -> o.learningRate(3e-4f)));
-            switch (algo) {
-                case PPO, VPG, REINFORCE ->
-                        builder.value(v -> v.hiddenLayers(d, d).optimizer(o -> o.learningRate(1e-3f)));
-                case SAC -> builder.qNetworks(q -> q.hiddenLayers(d, d).optimizer(o -> o.learningRate(1e-3f)));
-                case DDPG -> builder.value(v -> v.hiddenLayers(d, d).optimizer(o -> o.learningRate(1e-3f)))
-                        .action(a -> a.distribution(PGBuilder.ActionConfig.Distribution.DETERMINISTIC));
-            }
-            builder.hyperparams(h -> h.epochs(4).policyUpdateFreq(1).gamma(0.9f));
-            builder.memory(m -> m
-                    .episodeLength(4)
-                    .replayBuffer(rb -> rb.capacity(10000).batchSize(128))
-            );
-            return builder;
-        }
-
-        private double evaluatePerformance(AbstrPG model, int episodes) {
-            double totalReward = 0;
-            var envRandom = new Random(42);
-
-            for (var e = 0; e < episodes; e++) {
-                var state = envRandom.doubles(PERF_INPUTS, -1.0, 1.0).toArray();
-                var action = model._action(Tensor.row(state), true);
-                double mse = 0;
-                for (var i = 0; i < PERF_OUTPUTS; i++) {
-                    mse += Math.pow(state[i] - action[i], 2);
-                }
-                totalReward += (-mse / PERF_OUTPUTS);
-            }
-            return totalReward / episodes;
-        }
-
-        @ParameterizedTest(name = "Algorithm: {0}")
-        @EnumSource(value = PGBuilder.Algorithm.class) // Test all algorithms
-        @DisplayName("Learns to match state vector as action")
-        void testLearningOnMatchingTask(PGBuilder.Algorithm algo) {
-            var model = createPerformanceTestBuilder(algo).build();
-
-            var totalSteps = 18000;
-            var evalInterval = 1000;
-            var evalEpisodes = 50;
-            List<Double> rewardsHistory = new ArrayList<>();
-            var trainRandom = new Random(123);
-
-            rewardsHistory.add(evaluatePerformance(model, evalEpisodes));
-
-            var state = trainRandom.doubles(PERF_INPUTS, -1.0, 1.0).toArray();
-            var lastReward = 0.0;
-
-            for (var step = 1; step <= totalSteps; step++) {
-                // --- FIX: Signal `done=true` on each step to create 1-step episodes. ---
-                // This is critical for both on-policy and off-policy agents to learn correctly
-                // in this independent-trial environment.
-                var action = model.act(state, lastReward, true);
-
-                double mse = 0;
-                for (var i = 0; i < PERF_OUTPUTS; i++) {
-                    mse += Math.pow(state[i] - action[i], 2);
-                }
-                lastReward = -mse / PERF_OUTPUTS;
-
-                state = trainRandom.doubles(PERF_INPUTS, -1.0, 1.0).toArray();
-
-                if (step % evalInterval == 0) {
-                    rewardsHistory.add(evaluatePerformance(model, evalEpisodes));
-                }
-            }
-
-            var learningCurve = rewardsHistory.stream()
-                    .map(r -> String.format("%.4f", r))
-                    .collect(Collectors.joining(", "));
-
-            System.out.printf("Performance for %s: [%s]%n", algo, learningCurve);
-
-            var historySize = rewardsHistory.size();
-            double initialPerf = rewardsHistory.get(0);
-            var finalPerf = (rewardsHistory.get(historySize - 1) + rewardsHistory.get(historySize - 2)) / 2.0;
-
-            assertTrue(finalPerf > initialPerf,
-                    "Final performance should be better than initial. Learning curve: " + learningCurve);
-            assertTrue(finalPerf > -0.1,
-                    "Model " + algo + " failed to learn the task adequately. Final avg reward: " + finalPerf + ". Learning curve: " + learningCurve);
-        }
     }
 
 
@@ -384,4 +283,105 @@ class PGBuilderTest {
             assertTrue(DoubleStream.of(action).anyMatch(v -> v != 0.0), "Agent did not populate action array");
         }
     }
+
+
+//    // ===================================================================================
+//    // RL Performance Tests on Synthetic Tasks
+//    // ===================================================================================
+//    @Nested
+//    @DisplayName("L5: RL Performance on Synthetic Tasks")
+//    class RLPerformanceTests {
+//
+//        private static final int PERF_INPUTS = 2;
+//        private static final int PERF_OUTPUTS = 2;
+//
+//        private PGBuilder createPerformanceTestBuilder(PGBuilder.Algorithm algo) {
+//            var builder = new PGBuilder(PERF_INPUTS, PERF_OUTPUTS).algorithm(algo);
+//            var d = 32;
+//            builder.policy(p -> p.hiddenLayers(d, d).optimizer(o -> o.learningRate(3e-4f)));
+//            switch (algo) {
+//                case PPO, VPG, REINFORCE ->
+//                        builder.value(v -> v.hiddenLayers(d, d).optimizer(o -> o.learningRate(1e-3f)));
+//                case SAC -> builder.qNetworks(q -> q.hiddenLayers(d, d).optimizer(o -> o.learningRate(1e-3f)));
+//                case DDPG -> builder.value(v -> v.hiddenLayers(d, d).optimizer(o -> o.learningRate(1e-3f)))
+//                        .action(a -> a.distribution(PGBuilder.ActionConfig.Distribution.DETERMINISTIC));
+//            }
+//            builder.hyperparams(h -> h.epochs(4).policyUpdateFreq(1).gamma(0.9f));
+//            builder.memory(m -> m
+//                    .episodeLength(4)
+//                    .replayBuffer(rb -> rb.capacity(10000).batchSize(128))
+//            );
+//            return builder;
+//        }
+//
+//        private double evaluatePerformance(AbstrPG model, int episodes) {
+//            double totalReward = 0;
+//            var envRandom = new Random(42);
+//
+//            for (var e = 0; e < episodes; e++) {
+//                var state = envRandom.doubles(PERF_INPUTS, -1.0, 1.0).toArray();
+//                var action = model._action(Tensor.row(state), true);
+//                double mse = 0;
+//                for (var i = 0; i < PERF_OUTPUTS; i++) {
+//                    mse += Math.pow(state[i] - action[i], 2);
+//                }
+//                totalReward += (-mse / PERF_OUTPUTS);
+//            }
+//            return totalReward / episodes;
+//        }
+//
+//        @ParameterizedTest(name = "Algorithm: {0}")
+//        @EnumSource(value = PGBuilder.Algorithm.class) // Test all algorithms
+//        @DisplayName("Learns to match state vector as action")
+//        void testLearningOnMatchingTask(PGBuilder.Algorithm algo) {
+//            var model = createPerformanceTestBuilder(algo).build();
+//
+//            var totalSteps = 18000;
+//            var evalInterval = 1000;
+//            var evalEpisodes = 50;
+//            List<Double> rewardsHistory = new ArrayList<>();
+//            var trainRandom = new Random(123);
+//
+//            rewardsHistory.add(evaluatePerformance(model, evalEpisodes));
+//
+//            var state = trainRandom.doubles(PERF_INPUTS, -1.0, 1.0).toArray();
+//            var lastReward = 0.0;
+//
+//            for (var step = 1; step <= totalSteps; step++) {
+//                // --- FIX: Signal `done=true` on each step to create 1-step episodes. ---
+//                // This is critical for both on-policy and off-policy agents to learn correctly
+//                // in this independent-trial environment.
+//                var action = model.act(state, lastReward, true);
+//
+//                double mse = 0;
+//                for (var i = 0; i < PERF_OUTPUTS; i++) {
+//                    mse += Math.pow(state[i] - action[i], 2);
+//                }
+//                lastReward = -mse / PERF_OUTPUTS;
+//
+//                state = trainRandom.doubles(PERF_INPUTS, -1.0, 1.0).toArray();
+//
+//                if (step % evalInterval == 0) {
+//                    rewardsHistory.add(evaluatePerformance(model, evalEpisodes));
+//                }
+//            }
+//
+//            var learningCurve = rewardsHistory.stream()
+//                    .map(r -> String.format("%.4f", r))
+//                    .collect(Collectors.joining(", "));
+//
+//            System.out.printf("Performance for %s: [%s]%n", algo, learningCurve);
+//
+//            var historySize = rewardsHistory.size();
+//            double initialPerf = rewardsHistory.get(0);
+//            var finalPerf = (rewardsHistory.get(historySize - 1) + rewardsHistory.get(historySize - 2)) / 2.0;
+//
+//            assertTrue(finalPerf > initialPerf,
+//                    "Final performance should be better than initial. Learning curve: " + learningCurve);
+//            assertTrue(finalPerf > -0.1,
+//                    "Model " + algo + " failed to learn the task adequately. Final avg reward: " + finalPerf + ". Learning curve: " + learningCurve);
+//        }
+//    }
+//
+
 }

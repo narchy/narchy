@@ -1298,6 +1298,7 @@ class DDPGStrategy extends OffPolicyStrategy {
     public final QNetwork critic, targetCritic;
     public final Noise noise;
     private final Tensor.Optimizer policyOpt, criticOpt;
+    private final Tensor.GradQueue vCtx = new Tensor.GradQueue(), pCtx = new Tensor.GradQueue();
 
     public DDPGStrategy(HyperparamConfig h, ActionConfig a, MemoryConfig m, ReplayBuffer2 memory, DeterministicPolicy policy, QNetwork critic, DeterministicPolicy targetPolicy, QNetwork targetCritic, Tensor.Optimizer policyOpt, Tensor.Optimizer criticOpt, int outputs) {
         super(m, memory);
@@ -1335,12 +1336,10 @@ class DDPGStrategy extends OffPolicyStrategy {
             y = batch.rewards().add(targetQ.mul(h.gamma()).mul(nonTerminal));
 
         }
-        var vCtx = new Tensor.GradQueue();
         critic.apply(batch.states(), batch.actions()).loss(y, Tensor.Loss.MeanSquared).minimize(vCtx);
         vCtx.optimize(criticOpt);
 
         if (updateSteps % h.policyUpdateFreq() == 0) {
-            var pCtx = new Tensor.GradQueue();
             critic.apply(batch.states(), policy.apply(batch.states())).mean().neg().minimize(pCtx);
             pCtx.optimize(policyOpt);
             RLUtils.softUpdate(policy, targetPolicy, h.tau());
@@ -1355,8 +1354,9 @@ class DDPGStrategy extends OffPolicyStrategy {
             var action = policy.apply(state).array();
             if (!deterministic) {
                 noise.apply(action, model.rng);
-                for (var i = 0; i < action.length; i++) action[i] = Util.clamp(action[i], -1, 1);
+                for (var i = 0; i < action.length; i++) action[i] = Util.clampSafePolar(action[i]);
             }
+            //System.out.println(Str.n2(action));
             return action;
         }
     }

@@ -403,11 +403,19 @@ public class Agents {
     }
 
     public static Agent DDPG(int i, int o) {
-        float s = 2;
-        return new
-            //DDPG
-            DDPGAuto
-                (i, o, round(i*s), round(i*s)).agent();
+        float s = 4;
+        int h = round(i*s);
+
+        //return new DDPG(i, o, h, h).agent();
+
+        return new PGBuilder(i, o)
+                .algorithm(PGBuilder.Algorithm.DDPG)
+                .memory(rb -> rb.episodeLength(64).replayBuffer( r -> r.capacity(1024).batchSize(16)))
+                .policy(p -> p.hiddenLayers(h,h).activation(Tensor.RELU))
+                .value(v -> v.hiddenLayers(h,h).activation(Tensor.RELU))
+                .hyperparams(p -> p.gamma(0.9f).policyLR(3e-4f).valueLR(1e-3f).epochs(1).entropyBonus(0.01f))
+                .action(d -> d.distribution(PGBuilder.ActionConfig.Distribution.DETERMINISTIC).noise(n -> n.type(PGBuilder.ActionConfig.NoiseConfig.Type.OU)))
+                .build().agent();
     }
 
     public static Agent ReinforceODE(int i, int o) {

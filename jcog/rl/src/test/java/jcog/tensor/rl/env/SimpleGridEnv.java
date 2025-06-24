@@ -2,8 +2,9 @@ package jcog.tensor.rl.env;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.random.RandomGenerator;
 
-public class SimpleGridWorld implements SyntheticEnvironment {
+public class SimpleGridEnv implements SyntheticEnv {
 
     private final int width;
     private final int height;
@@ -12,7 +13,7 @@ public class SimpleGridWorld implements SyntheticEnvironment {
     private final double goalReward;
     private final double wallPenalty;
     public final double stepPenalty;
-    public final int maxSteps;
+
 
     private int[] currentState;
     private int currentStep;
@@ -23,8 +24,8 @@ public class SimpleGridWorld implements SyntheticEnvironment {
     public static final int ACTION_LEFT = 2;
     public static final int ACTION_RIGHT = 3;
 
-    public SimpleGridWorld(int width, int height, int[] startState, int[] goalState,
-                           double goalReward, double wallPenalty, double stepPenalty, int maxSteps) {
+    public SimpleGridEnv(int width, int height, int[] startState, int[] goalState,
+                         double goalReward, double wallPenalty, double stepPenalty) {
         this.width = width;
         this.height = height;
         this.startState = Arrays.copyOf(startState, startState.length);
@@ -32,13 +33,12 @@ public class SimpleGridWorld implements SyntheticEnvironment {
         this.goalReward = goalReward;
         this.wallPenalty = wallPenalty;
         this.stepPenalty = stepPenalty;
-        this.maxSteps = maxSteps;
         this.random = new Random(); // Or allow seeding
-        reset();
+        reset(random);
     }
 
-    public SimpleGridWorld() {
-        this(5, 5, new int[]{0, 0}, new int[]{4, 4}, 1.0, -0.5, -0.01, 100);
+    public SimpleGridEnv() {
+        this(5, 5, new int[]{0, 0}, new int[]{4, 4}, 1.0, -0.5, -0.01);
     }
 
     @Override
@@ -57,7 +57,7 @@ public class SimpleGridWorld implements SyntheticEnvironment {
     }
 
     @Override
-    public double[] reset() {
+    public double[] reset(RandomGenerator rng) {
         this.currentState = Arrays.copyOf(startState, startState.length);
         this.currentStep = 0;
         return Arrays.stream(this.currentState).asDoubleStream().toArray();
@@ -99,15 +99,9 @@ public class SimpleGridWorld implements SyntheticEnvironment {
         // Check if goal reached
         if (Arrays.equals(currentState, goalState)) {
             reward += goalReward;
-            done = true;
         }
 
-        // Check max steps
-        if (currentStep >= maxSteps) {
-            done = true;
-        }
-
-        return new StepResult(Arrays.stream(currentState).asDoubleStream().toArray(), reward, done);
+        return new StepResult(Arrays.stream(currentState).asDoubleStream().toArray(), reward);
     }
 
     // Optional: A method to render or print the grid (useful for debugging)

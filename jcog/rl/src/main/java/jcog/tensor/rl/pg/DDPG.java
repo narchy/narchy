@@ -72,7 +72,7 @@ public class DDPG extends AbstractPG {
 
         ouNoise = new OUNoise(outputs);
 
-        policy = model(inputs, hiddenSize, outputs, policyOutputActivation, true, 3);
+        policy = model(inputs, hiddenSize, outputs, policyOutputActivation, true, 2);
         value = model(inputs + outputs, valueSize, 1, valueOutputActivation, true, 2);
 
         policy.train(false);
@@ -144,10 +144,12 @@ public class DDPG extends AbstractPG {
     }
 
     private void actionNoise(double[] action) {
+        //System.out.println(Str.n2(action));
         var n = actionNoise.floatValue();
         var noise = ouNoise.sample();
         for (var i = 0; i < action.length; i++)
-            action[i] = Util.clamp(action[i] + n * noise[i], -1, +1);
+            //action[i] = Util.clampSafePolar(action[i] + n * noise[i]);
+            action[i] = Math.tanh(action[i] + n * noise[i]);
     }
 
     protected void remember(Tensor state, double[] action, double reward, Tensor nextState, boolean done) {
@@ -465,13 +467,11 @@ public class DDPG extends AbstractPG {
             for (var i = 0; i < n; i++) {
                 var x = X[i];
                 var dx =
-                        dt * theta * (mu - x) +
-                        sqrtDT * sigma *
-                            rng.nextGaussian();
-                            //Fuzzy.polarize(rng.nextFloat());
-                X[i] = Util.clampSafePolar(x + dx, radius);
+                    dt * theta * (mu - x) +
+                    sqrtDT * sigma * rng.nextGaussian();
+                X[i] = x + dx;
+                //X[i] = Util.clampSafePolar(x + dx, radius);
             }
-            //System.out.println(Str.n2(X));
             return X;
         }
     }

@@ -1,9 +1,11 @@
-package net.nwrn.jcog.rl.env;
+package jcog.tensor.rl.env;
+
+import jcog.TODO;
 
 import java.util.Arrays;
 import java.util.random.RandomGenerator;
 
-public class SimpleGridWorld implements GameAdapter {
+public class SimpleGridEnv2 implements SyntheticEnv {
 
     private final int gridSize;
     private final int[] agentPos;
@@ -12,11 +14,10 @@ public class SimpleGridWorld implements GameAdapter {
     private final double goalReward;
     private final double pitReward;
     private final double stepPenalty;
-    private final int maxSteps;
     private int currentSteps;
 
-    public SimpleGridWorld(int gridSize, int[] startPos, int[] goalPos, int[] pitPos,
-                           double goalReward, double pitReward, double stepPenalty, int maxSteps) {
+    public SimpleGridEnv2(int gridSize, int[] startPos, int[] goalPos, int[] pitPos,
+                          double goalReward, double pitReward, double stepPenalty) {
         this.gridSize = gridSize;
         this.agentPos = Arrays.copyOf(startPos, startPos.length);
         this.goalPos = Arrays.copyOf(goalPos, goalPos.length);
@@ -24,21 +25,25 @@ public class SimpleGridWorld implements GameAdapter {
         this.goalReward = goalReward;
         this.pitReward = pitReward;
         this.stepPenalty = stepPenalty;
-        this.maxSteps = maxSteps;
     }
 
-    public SimpleGridWorld() {
-        this(3, new int[]{0, 0}, new int[]{2, 2}, new int[]{1, 1}, 10.0, -10.0, -0.1, 20);
+    public SimpleGridEnv2() {
+        this(3, new int[]{0, 0}, new int[]{2, 2}, new int[]{1, 1}, 10.0, -10.0, -0.1);
     }
 
     @Override
-    public int observationDim() {
+    public int stateDimension() {
         return 2; // x, y coordinates
     }
 
     @Override
-    public int actionDim() {
+    public int actionDimension() {
         return 4; // 0:Up, 1:Down, 2:Left, 3:Right
+    }
+
+    @Override
+    public boolean isDiscreteActionSpace() {
+        return true;
     }
 
     @Override
@@ -51,7 +56,7 @@ public class SimpleGridWorld implements GameAdapter {
 
     @Override
     public StepResult step(double[] action) {
-        if (action.length != 1 && !isContinuousActions()) {
+        if (action.length != 1 && isDiscreteActionSpace()) {
             throw new IllegalArgumentException("Discrete SimpleGridWorld expects a single action index.");
         }
         int actionIdx = (int) action[0];
@@ -78,22 +83,20 @@ public class SimpleGridWorld implements GameAdapter {
         }
 
         currentSteps++;
-        boolean done = false;
         float reward = (float) stepPenalty;
 
         if (Arrays.equals(agentPos, goalPos)) {
             reward = (float) goalReward;
-            done = true;
         } else if (pitPos != null && Arrays.equals(agentPos, pitPos)) {
             reward = (float) pitReward;
-            done = true;
         }
 
-        if (currentSteps >= maxSteps) {
-            done = true;
-        }
+        return new StepResult(getObservation(), reward);
+    }
 
-        return new StepResult(getObservation(), reward, done);
+    @Override
+    public StepResult step(int action) {
+        throw new TODO();
     }
 
     private double[] getObservation() {
@@ -104,8 +107,4 @@ public class SimpleGridWorld implements GameAdapter {
         };
     }
 
-    @Override
-    public boolean isContinuousActions() {
-        return false; // Discrete actions
-    }
 }

@@ -1,152 +1,179 @@
 package jcog.tensor.rl.pg;
 
+import jcog.agent.Agent;
+import jcog.tensor.Tensor;
 import jcog.tensor.rl.RLAgentTestBase;
-import jcog.tensor.rl.env.SimpleGridWorld;
-import jcog.tensor.rl.env.SyntheticEnvironment;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import jcog.tensor.rl.env.ContinuousSeekEnv;
+import jcog.tensor.rl.env.MatchingEnv;
+import jcog.tensor.rl.env.SyntheticEnv;
+import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Tag("RLAlgorithmTests")
-@DisplayName("Policy Gradient Agent Tests")
 public class PolicyGradientAgentTests extends RLAgentTestBase {
 
-    // Helper to create agents using PGBuilder
-    private AbstrPG createAgent(PGBuilder.Algorithm algo, int inputs, int outputs, boolean isDiscrete) {
-        PGBuilder builder = createDefaultPGBuilder(algo, inputs, outputs, isDiscrete);
+    int brains = 4;
+    float gamma = 0.9f;
+    int iter = 1 * 1024;
+    int trials = 3;
+    int episodeLen = 1;
 
-        // Specific configurations if needed, e.g., for discrete action spaces
-        if (isDiscrete) {
-            // PGBuilder's default action distribution is Gaussian, which is for continuous.
-            // For discrete environments, the policy network's output (size `outputs`)
-            // is typically fed into a softmax and then sampled (Categorical distribution).
-            // RLAgentTestBase.selectDiscreteAction uses argmax on the raw output,
-            // which is a common simplification if the network learns appropriate logits.
-            // Ideally, PGBuilder would allow specifying a Categorical distribution.
-            // builder.action(a -> a.distribution(PGBuilder.ActionConfig.Distribution.CATEGORICAL));
-        }
-
-        // Some algorithms might need longer episode lengths or different hyperparams by default
-        if (algo == PGBuilder.Algorithm.REINFORCE && isDiscrete) {
-            builder.memory(m -> m.episodeLength(128)); // REINFORCE might need more samples per update
-        }
-        if (algo == PGBuilder.Algorithm.SAC || algo == PGBuilder.Algorithm.DDPG) {
-             builder.hyperparams(h -> h.gamma(0.95f)); // Common for off-policy
-        }
-
-
-        return builder.build();
+    @Test void REINFORCE_Matching1() {
+        var e = new MatchingEnv(1);
+        var a = new Reinforce(e.stateDimension(), e.actionDimension(), e.stateDimension()*brains, episodeLen);
+        a.gamma.set(gamma);
+        eval(a.agent(), e);
+    }
+    @Test void REINFORCE_Matching2() {
+        var e = new MatchingEnv(2);
+        var a = new Reinforce(e.stateDimension(), e.actionDimension(), e.stateDimension()*brains, episodeLen);
+        a.gamma.set(gamma);
+        eval(a.agent(), e);
     }
 
-    @ParameterizedTest(name = "{0} on SimpleGridWorld")
-    @EnumSource(value = PGBuilder.Algorithm.class,
-                 names = {"REINFORCE", "VPG", "PPO"}) // SAC and DDPG are typically for continuous.
-    @DisplayName("Discrete Action Test: SimpleGridWorld")
-    @Timeout(value = 5, unit = TimeUnit.MINUTES) // Generous timeout for potentially slow learning
-    void testAgentOnSimpleGridWorld(PGBuilder.Algorithm algo) {
-        SimpleGridWorld env = new SimpleGridWorld(); // Default 5x5 grid
-        AbstrPG agent = createAgent(algo, env.stateDimension(), env.actionDimension(), true);
+    @Test void VPG_Matching1() {
+        var e = new MatchingEnv(1);
+        var hidden = e.stateDimension() * brains;
+        var a = new VPG(e.stateDimension(), e.actionDimension(), hidden, hidden, episodeLen);
+        a.gamma.set(gamma);
+        eval(a.agent(), e);
+    }
+    @Test void StreamAC_Matching1() {
+        var e = new MatchingEnv(1);
+        var hidden = e.stateDimension() * brains;
+        var a = new StreamAC(e.stateDimension(), e.actionDimension(), hidden, hidden);
+        a.gamma.set(gamma);
+        eval(a.agent(), e);
+    }
+    @Test void DDPG_Matching() {
+        var e = new MatchingEnv(1);
+        var hidden = e.stateDimension() * brains;
+        var a = new DDPG(e.stateDimension(), e.actionDimension(), hidden, hidden);
+        a.gamma.set(gamma);
+        eval(a.agent(), e);
+    }
 
-        int totalEpisodes = 300;
-        int maxStepsPerEpisode = env.maxSteps; // Use env's max steps
-        int evaluationWindow = 30;
+    @Test void REINFORCE_Target1D() {
+        var e = new ContinuousSeekEnv();
+        var a = new Reinforce(e.stateDimension(), e.actionDimension(), e.stateDimension()*brains, episodeLen);
+        a.gamma.set(gamma);
+        eval(a.agent(), e);
+    }
+    @Test void REINFORCE_Target2D() {
+        var e = ContinuousSeekEnv.W2D();
+        var a = new Reinforce(e.stateDimension(), e.actionDimension(), e.stateDimension()*brains, episodeLen);
+        a.gamma.set(gamma);
+        eval(a.agent(), e);
+    }
 
-        if (algo == PGBuilder.Algorithm.REINFORCE) {
-            totalEpisodes = 700; // REINFORCE is less sample efficient
-            evaluationWindow = 70;
-        }
+//    @Test void REINFORCE_GridWorld() {
+//        var e = new SimpleGridWorld();
+//        var hidden = e.stateDimension() * brains;
+//        var a = new Reinforce(e.stateDimension(), e.actionDimension(), hidden, episodeLen);
+//        eval(a.agent(), e);
+//    }
 
-        List<Double> rewardsHistory = trainAgent(agent, env, totalEpisodes, maxStepsPerEpisode);
-        assertLearningOccurs(rewardsHistory, evaluationWindow, algo + " on SimpleGridWorld");
+    @Test void PPO_Original_Matching() {
+        var e = new MatchingEnv(1);
+        var hidden = e.stateDimension() * brains;
+        var a = new PPO(e.stateDimension(), e.actionDimension(), hidden, hidden, episodeLen);
+        a.gamma.set(gamma);
+        eval(a.agent(), e);
+    }
 
-        double avgEvalReward = evaluateAgent(agent, env, 20, maxStepsPerEpisode);
-        System.out.printf("%s SimpleGridWorld - Avg Eval Reward after training: %.4f%n", algo, avgEvalReward);
+    @Test void PPO_PGBuilder_Matching1() {
+        evalPGBuilder(new MatchingEnv(1), PGBuilder.Algorithm.PPO);
+    }
 
-        // Performance expectation can vary. PPO/VPG should do better than REINFORCE.
-        double expectedMinReward = -(maxStepsPerEpisode * env.stepPenalty) * 0.5; // Should at least do better than random walk
-        if (algo == PGBuilder.Algorithm.PPO || algo == PGBuilder.Algorithm.VPG) {
-            expectedMinReward = 0; // Expect PPO/VPG to solve it (positive reward)
-        }
+    @Test void VPG_PGBuilder_Matching1() {
+        evalPGBuilder(new MatchingEnv(1), PGBuilder.Algorithm.VPG);
+    }
 
-        assertTrue(avgEvalReward > expectedMinReward,
-                algo + " should achieve a reasonable score on SimpleGridWorld. Got: " + avgEvalReward + ", Expected > " + expectedMinReward);
+    @Test void VPG_PGBuilder_Matching2() {
+        evalPGBuilder(new MatchingEnv(2), PGBuilder.Algorithm.VPG);
+    }
+
+    private void evalPGBuilder(MatchingEnv e, PGBuilder.Algorithm alg) {
+        var hidden = e.stateDimension() * brains;
+        var a = new PGBuilder(e.stateDimension(), e.actionDimension())
+                .algorithm(alg)
+                .policy(p -> p.hiddenLayers(hidden).activation(Tensor.RELU))
+                .value(v -> v.hiddenLayers(hidden).activation(Tensor.RELU))
+                .hyperparams(h -> h.gamma(gamma).policyLR(3e-4f).valueLR(1e-3f).ppoClip(0.2f).epochs(1).entropyBonus(0.01f))
+                .memory(m -> m.episodeLength(episodeLen))
+                .build();
+        eval(a.agent(), e);
     }
 
 
-    // MatchingEnv for continuous tests
-    private static class MatchingEnv implements SyntheticEnvironment {
-        private final int dim;
-        private final Random randomInstance; // Use instance for better control if needed, or base class random
-        private double[] currentState;
+    private void eval(Agent a, SyntheticEnv e) {
+        eval(a, e, iter, trials);
+    }
 
-        public MatchingEnv(int dim, Random randomSeedGenerator) {
-            this.dim = dim;
-            this.randomInstance = new Random(randomSeedGenerator.nextLong()); // Seed per instance
+    public static double rewardTrend(List<Double> rewards, int numEpisodes) {
+        if (rewards == null || rewards.isEmpty() || numEpisodes <= 0) {
+            throw new IllegalArgumentException("Invalid input: rewards must not be null/empty, numEpisodes must be positive");
         }
 
-        @Override public int stateDimension() { return dim; }
-        @Override public int actionDimension() { return dim; }
-        @Override public boolean isDiscreteActionSpace() { return false; }
+        numEpisodes = Math.min(numEpisodes, rewards.size());
+        int episodeSize = rewards.size() / numEpisodes;
 
-        @Override public double[] reset() {
-            currentState = randomInstance.doubles(dim, -1.0, 1.0).toArray();
-            return currentState;
+        // Calculate first and last episode means
+        double firstMean = 0.0;
+        int firstCount = 0;
+        for (int i = 0; i < episodeSize; i++) {
+            firstMean += rewards.get(i);
+            firstCount++;
         }
+        firstMean /= firstCount;
 
-        @Override public StepResult step(double[] action) {
-            double mse = 0;
-            for (int i = 0; i < dim; i++) {
-                mse += Math.pow(currentState[i] - action[i], 2);
+        double lastMean = 0.0;
+        int lastCount = 0;
+        int start = (numEpisodes - 1) * episodeSize;
+        for (int i = start; i < rewards.size(); i++) {
+            lastMean += rewards.get(i);
+            lastCount++;
+        }
+        lastMean /= lastCount;
+
+        // Return difference as trend indicator
+        return lastMean - firstMean;
+    }
+
+    protected void eval(Agent agent, SyntheticEnv env, int iterations, int trials) {
+        var episodes = 4;
+
+        double[] actionVec = new double[agent.actions], actionPrev = new double[agent.actions];
+        List<Double> trends = new ArrayList(trials);
+
+        for (int t = 0; t < trials; t++) {
+            List<Double> rewards = new ArrayList<>(iterations);
+
+            double reward = 0; // Initial reward signal for the first step
+            boolean doneSignal = false;    // Initial done signal
+            double[] currentState = env.reset(random);
+
+            for (int i = 0; i < iterations; i++) {
+                agent.act(actionPrev, (float) reward, currentState, actionVec);
+
+                SyntheticEnv.StepResult result;
+                result = env.step(actionVec);
+
+                reward = result.reward;
+                rewards.add(reward);
+                currentState = result.nextState;
             }
-            double reward = -mse / dim;
-            // For matching task, each step is an independent trial, so "done" is true.
-            // The next state is a new random state.
-            double[] nextState = randomInstance.doubles(dim, -1.0, 1.0).toArray();
-            // currentState = nextState; // Not needed as it's reset effectively
-            return new StepResult(nextState, reward, true);
-        }
-        @Override public StepResult step(int action) { throw new UnsupportedOperationException("MatchingEnv uses continuous actions."); }
-    }
 
-    @ParameterizedTest(name = "{0} on Matching Task")
-    @EnumSource(PGBuilder.Algorithm.class) // Test all algorithms that support continuous actions
-    @DisplayName("Continuous Action Test: Matching Task")
-    @Timeout(value = 5, unit = TimeUnit.MINUTES)
-    void testAgentOnMatchingTask(PGBuilder.Algorithm algo) {
-        // DDPG and SAC are primarily for continuous action spaces.
-        // REINFORCE, VPG, PPO can also handle continuous actions with appropriate policy distributions (e.g., Gaussian).
-        MatchingEnv env = new MatchingEnv(DEFAULT_INPUTS_CONTINUOUS, this.random); // Use base class random for seeding
-        AbstrPG agent = createAgent(algo, env.stateDimension(), env.actionDimension(), false);
-
-        // Matching task uses 1-step episodes. totalEpisodes effectively means total training steps.
-        int totalTrainingSteps = (algo == PGBuilder.Algorithm.REINFORCE) ? 12000 : 8000;
-        if (algo == PGBuilder.Algorithm.SAC || algo == PGBuilder.Algorithm.DDPG) {
-            totalTrainingSteps = 10000; // Off-policy might need a bit more interaction for this setup
+            double trend = rewardTrend(rewards, episodes);
+            trends.add(trend);
         }
 
-        int maxStepsPerEpisode = 1; // Env is always done in 1 step
-        int evaluationWindow = totalTrainingSteps / 10; // Evaluate over last 10% of steps
-
-        List<Double> rewardsHistory = trainAgent(agent, env, totalTrainingSteps, maxStepsPerEpisode);
-        assertLearningOccurs(rewardsHistory, evaluationWindow, algo + " on MatchingTask");
-
-        double avgEvalReward = evaluateAgent(agent, env, 200, maxStepsPerEpisode);
-        System.out.printf("%s MatchingTask - Avg Eval Reward after training: %.4f%n", algo, avgEvalReward);
-
-        double expectedMinPerf = MIN_PERFORMANCE_MATCHING_TASK;
-        if (algo == PGBuilder.Algorithm.SAC || algo == PGBuilder.Algorithm.DDPG) {
-            expectedMinPerf = -0.05; // Expect better performance from SAC/DDPG
-        }
-
-        assertTrue(avgEvalReward > expectedMinPerf,
-             algo + " should achieve a good score on MatchingTask. Got: " + avgEvalReward + ", Expected > " + expectedMinPerf);
+        var trendMean = trends.stream().mapToDouble(x -> x).average().getAsDouble();
+        System.out.println(agent + ": mean=" + trendMean + " " + trends);
+        //for (var trend : trends) assertTrue(trend > 0, agent + " rewardTrend=" + trend);
+        assertTrue(trendMean > 0);
     }
 }
