@@ -8,6 +8,9 @@ import jcog.tensor.rl.blackbox.CMAESZeroPolicy;
 import jcog.tensor.rl.blackbox.PopulationPolicy;
 import jcog.tensor.rl.dqn.PolicyAgent;
 import jcog.tensor.rl.pg.*;
+import jcog.tensor.rl.pg2.DDPGStrategy;
+import jcog.tensor.rl.pg2.PGBuilder;
+import jcog.tensor.rl.pg3.configs.NetworkConfig;
 
 import java.util.Random;
 
@@ -387,9 +390,12 @@ public class Agents {
     }
 
     public static Agent PPO(int i, int o) {
-        var s = 2;
-        var episodes = 32;
-        return new PPO(i, o, round(i * s), round(i * s), episodes).agent();
+        var s = 4;
+        var episodes = 24;
+        var h = round(i * s);
+        return new PPO(i, o, h, h, episodes).agent();
+
+        //return new PPOAgent(new PPOAgentConfig(), i, o);
     }
 
     public static Agent StreamAC(int i, int o) {
@@ -414,8 +420,8 @@ public class Agents {
         var memoryConfig = new PGBuilder.MemoryConfig(32, // episodeLength for on-policy
             new PGBuilder.MemoryConfig.ReplayBufferConfig(1024, 4) // replayBuffer for off-policy
         );
-        var policyNetConfig = new PGBuilder.NetworkConfig(3e-4f, h, h);
-        var valueNetConfig = new PGBuilder.NetworkConfig(1e-3f, h, h);
+        var policyNetConfig = new NetworkConfig(3e-4f, h, h);
+        var valueNetConfig = new NetworkConfig(1e-3f, h, h);
         return new PolicyGradientModel(i, o, DDPGStrategy.ddpgStrategy(i, o, actionConfig, policyNetConfig, valueNetConfig, memoryConfig, hyperparams)).agent();
     }
 

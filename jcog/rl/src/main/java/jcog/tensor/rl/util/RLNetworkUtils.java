@@ -3,7 +3,7 @@ package jcog.tensor.rl.util;
 import jcog.tensor.Models;
 import jcog.tensor.Models.Linear;
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg.PGBuilder.NetworkConfig;
+import jcog.tensor.rl.pg3.configs.NetworkConfig;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -43,7 +43,7 @@ public final class RLNetworkUtils {
 
             @Override
             protected void afterLayer(int O, int l, int maxLayers) {
-                if (config.dropout() > 0 && l < maxLayers - 1) {
+                if (config.dropout().asFloat() > 0 && l < maxLayers - 1) {
                     // Accessing the 'layer' field of the anonymous Models.Layers subclass
                     // This assumes 'layer' is accessible (e.g., protected or package-private in Models.Layers)
                     // and refers to the list of layers being built.

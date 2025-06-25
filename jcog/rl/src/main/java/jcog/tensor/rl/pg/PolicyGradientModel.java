@@ -2,6 +2,9 @@ package jcog.tensor.rl.pg;
 
 import jcog.tensor.Tensor;
 import jcog.tensor.rl.pg.util.Experience2;
+import jcog.tensor.rl.pg2.AbstrPG;
+import jcog.tensor.rl.pg2.PGStrategy;
+import jcog.tensor.rl.pg2.PPOStrategy;
 
 import java.util.Objects;
 import java.util.function.Consumer;

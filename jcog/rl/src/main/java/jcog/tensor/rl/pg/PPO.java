@@ -3,6 +3,7 @@ package jcog.tensor.rl.pg;
 import jcog.data.list.Lst;
 import jcog.signal.FloatRange;
 import jcog.tensor.Tensor;
+import jcog.tensor.rl.pg2.PGBuilder;
 
 import java.util.List;
 

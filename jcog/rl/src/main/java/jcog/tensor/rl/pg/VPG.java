@@ -4,6 +4,7 @@ import jcog.math.FloatSupplier;
 import jcog.tensor.Models;
 import jcog.tensor.Optimizers;
 import jcog.tensor.Tensor;
+import jcog.tensor.rl.pg2.PGBuilder;
 import jcog.tensor.util.TensorUtil;
 
 import java.util.function.UnaryOperator;

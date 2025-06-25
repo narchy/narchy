@@ -2,9 +2,9 @@ package jcog.tensor;
 
 import jcog.data.bit.MetalBitSet;
 import jcog.data.list.Lst;
+import jcog.math.FloatSupplier;
 import jcog.random.RandomBits;
 import jcog.random.XoRoShiRo128PlusRandom;
-import jcog.signal.FloatRange;
 import jcog.tensor.model.AttentionMechanisms;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.ejml.simple.SimpleMatrix;
@@ -217,11 +217,15 @@ public class Models {
     }
 
     public static class Dropout implements UnaryOperator<Tensor> {
-        public final FloatRange dropoutRate;
+        public final FloatSupplier dropoutRate;
         public boolean training = true;
 
         public Dropout(float dropoutRate) {
-            this.dropoutRate = FloatRange.unit(dropoutRate);
+            this(()->dropoutRate);
+        }
+
+        public Dropout(FloatSupplier dropoutRate) {
+            this.dropoutRate = dropoutRate;
         }
 
         @Override
@@ -229,7 +233,7 @@ public class Models {
             if (!training)
                 return input; // In inference mode, just return the input tensor as-is
 
-            var dropoutRate = this.dropoutRate.floatValue();
+            var dropoutRate = this.dropoutRate.asFloat();
             if (dropoutRate <= 0)
                 return input;
 

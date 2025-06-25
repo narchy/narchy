@@ -24,7 +24,7 @@ public class VanillaAutoencoder extends AbstractAutoencoder {
 
     public final FloatRange sparse = new FloatRange(/*0*/ 0.005f, 0, 0.25f);
 
-    public final FloatRange corrupt;
+    public final FloatSupplier corrupt;
 
     private final int inputSize, encodedSize;
 

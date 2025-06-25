@@ -3,16 +3,16 @@ package jcog.tensor.rl.pg;
 import jcog.tensor.Models;
 import jcog.tensor.Optimizers;
 import jcog.tensor.Tensor;
+import jcog.tensor.rl.pg2.PGBuilder;
 
 import java.util.function.UnaryOperator;
 
 /**
- * @deprecated This class represents an older REINFORCE implementation and served as a base for VPG.java.
+ * This class represents an older REINFORCE implementation and served as a base for VPG.java.
  *             Please use {@link PGBuilder.ReinforceStrategy} (found within PGBuilder.java)
  *             for a standard REINFORCE algorithm, instantiated with {@link PGBuilder.GaussianPolicy}
  *             and other components via constructor injection. This old version has a non-standard policy network structure.
  */
-@Deprecated
 public class Reinforce extends AbstractReinforce {
 
     final UnaryOperator<Tensor> policyActivation =
@@ -40,7 +40,7 @@ public class Reinforce extends AbstractReinforce {
         UnaryOperator<Tensor> pre = null;
         UnaryOperator<Tensor> p;
 
-        var policyLayerCount = 3;
+        var policyLayerCount = 4;
         p = new Models.Layers(policyActivation, null, biasInPolicyLastLayer,
                 Models.Layers.layerLerp(inputs + policyInputsAux, hiddenPolicy, (outputs*2) + policyOutputsAux, policyLayerCount)) {
 
