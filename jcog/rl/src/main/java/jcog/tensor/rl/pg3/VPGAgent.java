@@ -181,4 +181,13 @@ public class VPGAgent extends BasePolicyGradientAgent {
     public void clearMemory() {
         this.memory.clear();
     }
+
+    @Override
+    protected ActionWithLogProb selectActionWithLogProb(Tensor state, boolean deterministic) {
+        // VPG, like Reinforce, calculates logProbs during its update phase.
+        // The selectAction method is sufficient for action selection.
+        // LogProb can be null for the base class's caching mechanism if not used by VPG's Experience2.
+        double[] action = selectAction(state, deterministic);
+        return new ActionWithLogProb(action, null);
+    }
 }

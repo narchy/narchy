@@ -8,9 +8,16 @@ import jcog.tensor.rl.blackbox.CMAESZeroPolicy;
 import jcog.tensor.rl.blackbox.PopulationPolicy;
 import jcog.tensor.rl.dqn.PolicyAgent;
 import jcog.tensor.rl.pg.*;
-import jcog.tensor.rl.pg2.DDPGStrategy;
-import jcog.tensor.rl.pg2.PGBuilder;
-import jcog.tensor.rl.pg3.configs.NetworkConfig;
+import jcog.tensor.rl.pg2.DDPGStrategy; // Will be replaced by pg3.DDPGAgent
+import jcog.tensor.rl.pg2.PGBuilder;    // May still be used or parts adapted for pg3 configs
+// PG3 imports
+import jcog.tensor.rl.pg3.PPOAgent;
+import jcog.tensor.rl.pg3.VPGAgent;
+import jcog.tensor.rl.pg3.ReinforceAgent;
+import jcog.tensor.rl.pg3.DDPGAgent;
+import jcog.tensor.rl.pg3.SACAgent;
+import jcog.tensor.rl.pg3.configs.*;
+
 
 import java.util.Random;
 
@@ -376,59 +383,356 @@ public class Agents {
     }
 
     public static Agent REINFORCE(int i, int o) {
-        float s = 3;
-        return new Reinforce(i, o, round(i * s), 6).agent();
+        float s = 3; // Scale factor for hidden units
+        int h = round(i * s); // Hidden layer size
+        int episodeLen = 16; // Default episode length for REINFORCE buffer, can be shorter
+
+        NetworkConfig policyNetworkConfig = new NetworkConfig(
+            1e-3f,          // learningRate
+            new int[]{h, h}, // hiddenLayerSizes
+            Tensor.RELU,    // hiddenActivation
+            null,           // outputActivation (GaussianPolicyNet handles its own)
+            false,          // useLayerNorm
+            null,           // weightInitializer
+            true
+        );
+
+        OptimizerConfig policyOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 1e-3f, null,null);
+        MemoryConfig memoryConfig = new MemoryConfig(episodeLen, null, null);
+
+        HyperparamConfig hyperparamConfig = new HyperparamConfig(
+            0.99f,    // gamma
+            null,     // lambda (not used)
+            1,        // epochs (REINFORCE updates once per episode)
+            false,    // normalizeAdvantages (not applicable as no baseline)
+            true,     // normalizeReturns (common for REINFORCE)
+            0.01f,    // entropyBonus
+            1
+        );
+
+        ReinforceAgentConfig agentConfig = new ReinforceAgentConfig(
+            policyNetworkConfig,
+            policyOptimizerConfig,
+            memoryConfig,
+            hyperparamConfig,
+            null // actionConfig (uses defaults)
+        );
+        return new ReinforceAgent(agentConfig, i, o);
     }
 
     public static Agent ReinforceDNC(int i, int o) {
-        float s = 3;
-        return new ReinforceDNC(i, o, round(i * s), 12, 16, 12, 1, DNCMemory.EraseMode.SCALAR).agent();
+        float s = 3; // Scale factor for hidden units from original
+        int h = round(i * s);
+        int episodeLen = 12; // From original
+
+        // DNC specific parameters from original
+        int dncMemorySize = 16;
+        int dncMemoryWords = 12;
+        int dncReadHeads = 1;
+        DNCMemory.EraseMode eraseMode = DNCMemory.EraseMode.SCALAR;
+
+        // Base ReinforceAgentConfig (some parts might be overridden or adapted by ReinforceDNCAgent constructor or DNC policy)
+        NetworkConfig policyNetworkConfig = new NetworkConfig(
+            1e-3f,
+            new int[]{h, h}, // These hidden sizes might be interpreted differently by a DNC setup
+            Tensor.RELU,
+            null,
+            false,
+            null,
+            true
+        );
+        OptimizerConfig policyOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 1e-3f, null,null);
+        MemoryConfig memoryConfig = new MemoryConfig(episodeLen, null, null);
+        HyperparamConfig hyperparamConfig = new HyperparamConfig(
+            0.99f, null, 1, false, true, 0.01f, 1
+        );
+        ReinforceAgentConfig agentConfig = new ReinforceAgentConfig(
+            policyNetworkConfig, policyOptimizerConfig, memoryConfig, hyperparamConfig, null
+        );
+
+        // This relies on ReinforceDNCAgent correctly setting up its DNC-based policy.
+        // The actual DNC model construction is within ReinforceDNCAgent.
+        // Note: The interaction between NetworkConfig and a custom DNC model in ReinforceDNCAgent needs careful implementation.
+        // The provided ReinforceDNCAgent is a skeleton.
+        return new ReinforceDNCAgent(agentConfig, i, o, dncMemorySize, dncMemoryWords, dncReadHeads, eraseMode);
     }
 
     public static Agent VPG(int i, int o) {
-        float s = 2;
-        return new VPG(i, o, round(i * s), round(i * s), 32).agent();
+        float s = 2; // Scale factor for hidden units
+        int h = round(i * s); // Hidden layer size
+        int episodeLen = 32; // Default episode length for VPG buffer
+
+        NetworkConfig sharedNetworkConfig = new NetworkConfig(
+            1e-3f,          // learningRate
+            new int[]{h, h}, // hiddenLayerSizes
+            Tensor.RELU,    // hiddenActivation
+            null,           // outputActivation
+            false,          // useLayerNorm
+            null,           // weightInitializer
+            true
+        );
+
+        OptimizerConfig policyOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 1e-3f, null,null);
+        OptimizerConfig valueOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 1e-3f, null,null);
+
+        MemoryConfig memoryConfig = new MemoryConfig(episodeLen, null, null);
+
+        HyperparamConfig hyperparamConfig = new HyperparamConfig(
+            0.99f,    // gamma
+            null,     // lambda (not used in basic VPG)
+            1,        // epochs (VPG updates once per episode typically)
+            true,     // normalizeAdvantages
+            true,     // normalizeReturns (VPG uses returns directly as targets for value net if GAE not used)
+            0.01f,    // entropyBonus
+            1
+        );
+
+        VPGAgentConfig agentConfig = new VPGAgentConfig(
+            sharedNetworkConfig, // policyNetworkConfig
+            sharedNetworkConfig, // valueNetworkConfig
+            policyOptimizerConfig,
+            valueOptimizerConfig,
+            memoryConfig,
+            hyperparamConfig,
+            null // actionConfig (uses defaults)
+        );
+
+        return new VPGAgent(agentConfig, i, o);
     }
 
     public static Agent PPO(int i, int o) {
-        var s = 4;
-        var episodes = 24;
-        var h = round(i * s);
-        return new PPO(i, o, h, h, episodes).agent();
+        var s = 4; // Scale factor for hidden units based on input size
+        var episodes = 24; // Default episode length for PPO buffer
+        var h = round(i * s); // Hidden layer size
 
-        //return new PPOAgent(new PPOAgentConfig(), i, o);
+        // Create PPOAgentConfig
+        // NetworkConfig for policy and value networks
+        NetworkConfig sharedNetworkConfig = new NetworkConfig(
+            3e-4f,          // learningRate (can be overridden by optimizer specific LR)
+            new int[]{h, h}, // hiddenLayerSizes
+            Tensor.RELU,    // hiddenActivation
+            null,           // outputActivation (GaussianPolicyNet handles its own, ValueNet typically linear)
+            false,          // useLayerNorm
+            null,           // weightInitializer
+            true            // useBiasInLastLayer for value net, policy net manages its own
+        );
+
+        OptimizerConfig policyOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 3e-4f, null,null);
+        OptimizerConfig valueOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 1e-3f, null,null); // Often slightly higher LR for value
+
+        // MemoryConfig: PPO is on-policy, uses episodeLength for its buffer
+        MemoryConfig memoryConfig = new MemoryConfig(
+            episodes, // episodeLength
+            null,     // replayBufferConfig (not used by PPOAgent directly)
+            null      // prioritizedReplayConfig (not used)
+        );
+
+        // HyperparamConfig for PPO
+        HyperparamConfig hyperparamConfig = new HyperparamConfig(
+            0.99f,    // gamma
+            0.95f,    // lambda (for GAE)
+            10,       // epochs for PPO update
+            true,     // normalizeAdvantages
+            false,    // normalizeReturns (less common for PPO, GAE handles much of it)
+            0.01f,    // entropyBonus
+            1         // numActorCriticSharedLayers - not directly used by PPOAgent like this, network config more direct
+        );
+        // PPO specific hyperparams
+        PPOAgentConfig.PPOHyperparams ppoHyperparams = new PPOAgentConfig.PPOHyperparams(
+            0.2f, // ppoClip
+            null, // valueLossCoeff (default 0.5)
+            null  // maxGradNorm (default null)
+        );
+
+        PPOAgentConfig agentConfig = new PPOAgentConfig(
+            sharedNetworkConfig, // policyNetworkConfig
+            sharedNetworkConfig, // valueNetworkConfig (can be different if needed)
+            policyOptimizerConfig,
+            valueOptimizerConfig,
+            memoryConfig,
+            hyperparamConfig,
+            ppoHyperparams,
+            null // actionConfig (uses defaults: sigmaMin=0.01, sigmaMax=1.0)
+        );
+
+        return new PPOAgent(agentConfig, i, o);
     }
 
     public static Agent StreamAC(int i, int o) {
-        var s = 4;
-        return new StreamAC(i, o, round(i * s), round(i * s)).agent();
+        var s = 4; // Scale factor from original
+        int h = round(i * s);
+
+        // StreamAC is actor-critic, so use VPGAgentConfig as a base.
+        // Modifications might be needed in StreamACAgent class for true streaming updates.
+        NetworkConfig sharedNetworkConfig = new NetworkConfig(
+            1e-3f, new int[]{h, h}, Tensor.RELU, null, false, null, true
+        );
+        OptimizerConfig policyOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 1e-3f, null,null);
+        OptimizerConfig valueOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 1e-3f, null,null);
+
+        // If StreamAC updates per step, episodeLength might be 1 or memory handled differently.
+        // For now, using a small episode length.
+        MemoryConfig memoryConfig = new MemoryConfig(
+            1, // episodeLength (or null if StreamACAgent manages memory for single step updates)
+            null, null
+        );
+
+        HyperparamConfig hyperparamConfig = new HyperparamConfig(
+            0.99f,    // gamma
+            0.95f,    // lambda (GAE might still be useful if updates are batched over small windows)
+            1,        // epochs
+            true,     // normalizeAdvantages
+            true,     // normalizeReturns
+            0.01f,    // entropyBonus
+            1
+        );
+
+        VPGAgentConfig agentConfig = new VPGAgentConfig(
+            sharedNetworkConfig, sharedNetworkConfig,
+            policyOptimizerConfig, valueOptimizerConfig,
+            memoryConfig, hyperparamConfig, null
+        );
+
+        // Relies on StreamACAgent to implement specific streaming behavior.
+        return new StreamACAgent(agentConfig, i, o);
     }
 
     public static Agent SAC(int i, int o) {
-        float s = 1;
-        return new SAC(i, o, round(i * o * s), round(i * s), 6).agent();
+        float s = 2; // Scale factor for hidden units, SAC often uses smaller networks like 256x256
+        int h = round(i * s);
+        if (h < 64) h = 64; // Ensure a minimum size
+        if (h > 256) h = 256; // Cap at a reasonable size for typical SAC
+
+        NetworkConfig policyNetworkConfig = new NetworkConfig(
+            3e-4f, new int[]{h, h}, Tensor.RELU, null, false, null, true // Output activation handled by GaussianPolicyNet
+        );
+        NetworkConfig qNetworkConfig = new NetworkConfig(
+            3e-4f, new int[]{h, h}, Tensor.RELU, null, false, null, true // Q-value output is linear
+        );
+
+        OptimizerConfig policyOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 3e-4f, null,null);
+        OptimizerConfig qOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 3e-4f, null,null);
+        OptimizerConfig alphaOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 3e-4f, null,null);
+
+
+        MemoryConfig.ReplayBufferConfig replayConfig = new MemoryConfig.ReplayBufferConfig(
+            1_000_000, // capacity
+            256        // batchSize, common for SAC
+        );
+        MemoryConfig memoryConfig = new MemoryConfig(null, replayConfig, null);
+
+        HyperparamConfig commonHyperparams = new HyperparamConfig(
+            0.99f, null, 1, false, false, 0.0f, 1 // gamma
+        );
+
+        SACAgentConfig.SACHyperparams sacSpecificHyperparams = new SACAgentConfig.SACHyperparams(
+            0.005f, // tau for target Q updates
+            0.2f,   // initialAlpha
+            true,   // automaticAlphaTuning
+            (float) -o, // targetEntropy = -action_dim
+            1,      // targetUpdateInterval
+            false   // useFixedAlpha
+        );
+
+        SACAgentConfig agentConfig = new SACAgentConfig(
+            policyNetworkConfig,
+            qNetworkConfig,
+            policyOptimizerConfig,
+            qOptimizerConfig,
+            alphaOptimizerConfig,
+            memoryConfig,
+            commonHyperparams,
+            sacSpecificHyperparams
+        );
+
+        return new SACAgent(agentConfig, i, o);
     }
 
     public static Agent DDPG(int i, int o) {
         float s = 4;
         int h = round(i*s);
 
-        //return new DDPG(i, o, h, h).agent();
+        //return new DDPG(i, o, h, h).agent(); // Old pg version
 
+        // PGBuilder and DDPGStrategy from pg2 are being replaced by pg3.DDPGAgent
+        // var hyperparams = new PGBuilder.HyperparamConfig();
+        // var actionConfig = new PGBuilder.ActionConfig();
+        // var memoryConfig = new PGBuilder.MemoryConfig(32, // episodeLength for on-policy
+        //    new PGBuilder.MemoryConfig.ReplayBufferConfig(1024, 4) // replayBuffer for off-policy
+        // );
+        // var policyNetConfig = new NetworkConfig(3e-4f, h, h);
+        // var valueNetConfig = new NetworkConfig(1e-3f, h, h);
+        // return new PolicyGradientModel(i, o, DDPGStrategy.ddpgStrategy(i, o, actionConfig, policyNetConfig, valueNetConfig, memoryConfig, hyperparams)).agent();
 
-        var hyperparams = new PGBuilder.HyperparamConfig();
-        var actionConfig = new PGBuilder.ActionConfig();
-        var memoryConfig = new PGBuilder.MemoryConfig(32, // episodeLength for on-policy
-            new PGBuilder.MemoryConfig.ReplayBufferConfig(1024, 4) // replayBuffer for off-policy
+        // New pg3 DDPGAgent
+        NetworkConfig actorNetworkConfig = new NetworkConfig(
+            1e-4f, new int[]{h, h}, Tensor.RELU, Tensor.TANH, false, null, true
         );
-        var policyNetConfig = new NetworkConfig(3e-4f, h, h);
-        var valueNetConfig = new NetworkConfig(1e-3f, h, h);
-        return new PolicyGradientModel(i, o, DDPGStrategy.ddpgStrategy(i, o, actionConfig, policyNetConfig, valueNetConfig, memoryConfig, hyperparams)).agent();
+        NetworkConfig criticNetworkConfig = new NetworkConfig(
+            1e-3f, new int[]{h, h}, Tensor.RELU, null, false, null, true // Critic output is linear
+        );
+
+        OptimizerConfig actorOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 1e-4f, null,null);
+        OptimizerConfig criticOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 1e-3f, null,null);
+
+        MemoryConfig.ReplayBufferConfig replayConfig = new MemoryConfig.ReplayBufferConfig(
+            1_000_000, // capacity
+            64         // batchSize
+        );
+        MemoryConfig memoryConfig = new MemoryConfig(null, replayConfig, null);
+
+        HyperparamConfig commonHyperparams = new HyperparamConfig(
+            0.99f, null, 1, false, false, 0.0f, 1 // gamma, other PG params less relevant for DDPG directly
+        );
+        DDPGAgentConfig.DDPGHyperparams ddpgSpecificHyperparams = new DDPGAgentConfig.DDPGHyperparams(
+            0.005f, // tau
+            0.1f,   // actionNoiseStddev
+            0.2f,   // targetPolicyNoise (more for TD3, but can be set)
+            0.5f,   // targetNoiseClip (more for TD3)
+            1       // policyUpdateFreq
+        );
+
+        DDPGAgentConfig agentConfig = new DDPGAgentConfig(
+            actorNetworkConfig,
+            criticNetworkConfig,
+            actorOptimizerConfig,
+            criticOptimizerConfig,
+            memoryConfig,
+            commonHyperparams,
+            ddpgSpecificHyperparams
+        );
+
+        return new DDPGAgent(agentConfig, i, o);
     }
 
-    public static Agent ReinforceODE(int i, int o) {
-        float s = 1;
-        return new ReinforceODE.ReinforceNeuralODE(i, o, round(i * o * s), 8, 8).agent();
+    public static Agent ReinforceODE(int i, int o) { // NeuralODE variant
+        float s = 1; // Scale factor from original
+        // The original used round(i * o * s) for hidden size, which can be very large.
+        // Let's use a more conventional scaling based on input `i` or a fixed reasonable size.
+        int odeHiddenSize = round(i * s * 2); // Adjusted scaling
+        if (odeHiddenSize == 0 && i > 0) odeHiddenSize = i; // Ensure non-zero if i is non-zero
+        if (odeHiddenSize < 32 && (i+o) > 16) odeHiddenSize = Math.min(128, Math.max(32, (i+o)*2)); // A more robust default hidden size
+        else if (odeHiddenSize == 0) odeHiddenSize = 32;
+
+
+        int odeSolverSteps = 8; // From original
+        int episodeLen = 8;     // From original ReinforceODE.ReinforceNeuralODE
+
+        NetworkConfig policyNetworkConfig = new NetworkConfig(
+            1e-3f, new int[]{odeHiddenSize}, Tensor.RELU, null, false, null, true
+        );
+        OptimizerConfig policyOptimizerConfig = new OptimizerConfig(OptimizerConfig.OptimizerType.ADAM, 1e-3f, null,null);
+        MemoryConfig memoryConfig = new MemoryConfig(episodeLen, null, null);
+        HyperparamConfig hyperparamConfig = new HyperparamConfig(
+            0.99f, null, 1, false, true, 0.01f, 1
+        );
+        ReinforceAgentConfig agentConfig = new ReinforceAgentConfig(
+            policyNetworkConfig, policyOptimizerConfig, memoryConfig, hyperparamConfig, null
+        );
+
+        // Relies on ReinforceODEAgent to set up its ODELayer-based policy.
+        // The ReinforceODEAgent skeleton needs full implementation.
+        return new ReinforceODEAgent(agentConfig, i, o, odeHiddenSize, odeSolverSteps);
     }
 
     public static Agent ReinforceLiquid(int i, int o) {

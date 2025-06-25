@@ -52,9 +52,10 @@ public class PPOAgent extends BasePolicyGradientAgent {
         return result.action();
     }
 
-    public record ActionWithLogProb(double[] action, Tensor logProb) {}
+    // public record ActionWithLogProb(double[] action, Tensor logProb) {} // Now in BasePolicyGradientAgent
 
-    public ActionWithLogProb selectActionWithLogProb(Tensor state, boolean deterministic) {
+    @Override
+    protected ActionWithLogProb selectActionWithLogProb(Tensor state, boolean deterministic) {
         try (var noGrad = Tensor.noGrad()) {
             AgentUtils.GaussianDistribution dist = policy.getDistribution(
                 state,

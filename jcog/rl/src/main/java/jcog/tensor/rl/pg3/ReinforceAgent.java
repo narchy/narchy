@@ -163,4 +163,12 @@ public class ReinforceAgent extends BasePolicyGradientAgent {
     public void clearMemory() {
         this.memory.clear();
     }
+
+    @Override
+    protected ActionWithLogProb selectActionWithLogProb(Tensor state, boolean deterministic) {
+        // Reinforce calculates logProbs during its update based on the episode's actions.
+        // The selectAction method is sufficient here, and logProb can be null for the base class's caching.
+        double[] action = selectAction(state, deterministic);
+        return new ActionWithLogProb(action, null);
+    }
 }
