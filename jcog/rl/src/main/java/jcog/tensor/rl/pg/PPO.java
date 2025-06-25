@@ -9,11 +9,8 @@ import java.util.List;
 
 /**
  * @deprecated This class represents an older PPO implementation.
- *             Please use {@link PGBuilder.PPOStrategy} (found within PGBuilder.java)
- *             by directly instantiating it with {@link PGBuilder.GaussianPolicy},
- *             {@link PGBuilder.ValueNetwork}, and other necessary components
- *             through constructor injection. The new PPOStrategy offers a more
- *             standard and flexible PPO implementation, including GAE.
+ *             Use {@link jcog.tensor.rl.pg3.PPOAgent} instead.
+ *             The new PPOAgent offers a more standard and flexible PPO implementation, including GAE.
  */
 @Deprecated
 public class PPO extends VPG {

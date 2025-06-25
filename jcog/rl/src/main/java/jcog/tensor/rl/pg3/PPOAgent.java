@@ -1,7 +1,8 @@
 package jcog.tensor.rl.pg3;
 
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg.util.Experience2;
+//import jcog.tensor.rl.pg.util.Experience2; // Old import
+import jcog.tensor.rl.pg3.memory.Experience2; // New import
 import jcog.tensor.rl.pg3.configs.PPOAgentConfig;
 import jcog.tensor.rl.pg3.memory.AgentMemory;
 import jcog.tensor.rl.pg3.memory.OnPolicyBuffer;
@@ -24,6 +25,7 @@ public class PPOAgent extends BasePolicyGradientAgent {
 
     private final Tensor.GradQueue policyGradQueue;
     private final Tensor.GradQueue valueGradQueue;
+    @Nullable private final RunningObservationNormalizer obsNormalizer;
 
     public PPOAgent(PPOAgentConfig config, int stateDim, int actionDim) {
         super(stateDim, actionDim);
@@ -41,34 +43,63 @@ public class PPOAgent extends BasePolicyGradientAgent {
         this.policyGradQueue = new Tensor.GradQueue();
         this.valueGradQueue = new Tensor.GradQueue();
 
+        if (config.obsNormConfig() != null && config.obsNormConfig().enabled()) {
+            this.obsNormalizer = new RunningObservationNormalizer(stateDim, config.obsNormConfig().history());
+        } else {
+            this.obsNormalizer = null;
+        }
+
         setTrainingMode(true); // Initialize training mode by default
     }
+
+    private Tensor normalizeState(Tensor state) {
+        if (obsNormalizer != null && this.trainingMode) { // Only normalize during training updates for PPO
+            return obsNormalizer.normalize(state);
+        }
+        // If not training or normalizer disabled, pass through.
+        // For action selection during eval, typically use fixed mean/std or no normalization.
+        // PPO updates use batches, so normalization happens on batch.
+        // For selectAction, if needed, it implies stateful normalization which is tricky.
+        // The current RunningObservationNormalizer updates stats.
+        // A separate eval-mode normalization (using fixed stats) would be needed if applied at selectAction.
+        // For PPO, it's common to normalize the batch of states before feeding to networks in update().
+        return state;
+    }
+
 
     @Override
     public double[] selectAction(Tensor state, boolean deterministic) {
         // This method is required by the interface. For PPO, it's often better to also get the logProb.
         // Callers can use selectActionWithLogProb if they need it for Experience2.
-        ActionWithLogProb result = selectActionWithLogProb(state, deterministic);
+        // Normalization for selectAction: if obsNormalizer is active, use it.
+        // Note: this updates normalizer stats. For pure eval, might want fixed stats.
+        Tensor processedState = (obsNormalizer != null) ? obsNormalizer.normalize(state.copy()) : state;
+        ActionWithLogProb result = selectActionWithLogProbInternal(processedState, deterministic);
         return result.action();
     }
 
     public record ActionWithLogProb(double[] action, Tensor logProb) {}
 
-    public ActionWithLogProb selectActionWithLogProb(Tensor state, boolean deterministic) {
+    // Renamed to selectActionWithLogProbInternal to avoid clash if we make the public one normalize
+    public ActionWithLogProb selectActionWithLogProbInternal(Tensor state, boolean deterministic) {
         try (var noGrad = Tensor.noGrad()) {
             AgentUtils.GaussianDistribution dist = policy.getDistribution(
-                state,
+                state, // Already processed state
                 config.actionConfig().sigmaMin().floatValue(),
                 config.actionConfig().sigmaMax().floatValue()
             );
             Tensor actionTensor = dist.sample(deterministic);
-            // Detach actionTensor before logProb if it's used in logProb calculation and has grad history.
-            // sample() from GaussianDistribution might or might not attach grad based on mu/sigma.
-            // dist.logProb internally handles this. Detaching logProb itself is good practice.
             Tensor logProb = dist.logProb(actionTensor.detach());
             return new ActionWithLogProb(actionTensor.clipUnitPolar().array(), logProb.detach());
         }
     }
+
+    // Public method for environment interaction loop to get action + logProb
+    public ActionWithLogProb selectActionAndLogProb(Tensor state, boolean deterministic) {
+        Tensor processedState = (obsNormalizer != null) ? obsNormalizer.normalize(state.copy()) : state;
+        return selectActionWithLogProbInternal(processedState, deterministic);
+    }
+
 
     @Override
     public void recordExperience(Experience2 experience) {
@@ -77,6 +108,7 @@ public class PPOAgent extends BasePolicyGradientAgent {
          if (!this.trainingMode) {
             return; // Do not record or update if not in training mode
         }
+        // State in experience should be the raw state. Normalization happens during update or before selectAction.
         this.memory.add(experience);
 
         boolean bufferFull = this.memory.size() >= config.memoryConfig().episodeLength().intValue();
@@ -85,7 +117,6 @@ public class PPOAgent extends BasePolicyGradientAgent {
             update(0);
             this.memory.clear();
         }
-        // Optional: else if (experience.done() && this.memory.size() > 0) { update on early done }
     }
 
     @Override
@@ -94,29 +125,44 @@ public class PPOAgent extends BasePolicyGradientAgent {
             return;
         }
 
-        List<Experience2> batch = this.memory.getAll();
+        List<Experience2> batchExperiences = this.memory.getAll();
 
-        Tensor states = Tensor.concatRows(batch.stream().map(Experience2::state).collect(Collectors.toList()));
-        Tensor actions = Tensor.concatRows(batch.stream().map(e -> Tensor.row(e.action())).collect(Collectors.toList()));
-        Tensor oldLogProbs = Tensor.concatRows(batch.stream().map(Experience2::oldLogProb).collect(Collectors.toList()));
+        // Normalize states from the batch if normalizer is active
+        Tensor states;
+        if (obsNormalizer != null) {
+            List<Tensor> normalizedStatesList = batchExperiences.stream()
+                .map(exp -> obsNormalizer.normalize(exp.state().copy())) // Normalize each state
+                .collect(Collectors.toList());
+            states = Tensor.concatRows(normalizedStatesList);
+        } else {
+            states = Tensor.concatRows(batchExperiences.stream().map(Experience2::state).collect(Collectors.toList()));
+        }
+
+        Tensor actions = Tensor.concatRows(batchExperiences.stream().map(e -> Tensor.row(e.action())).collect(Collectors.toList()));
+        Tensor oldLogProbs = Tensor.concatRows(batchExperiences.stream().map(Experience2::oldLogProb).collect(Collectors.toList()));
 
         Tensor advantages;
         Tensor valueTargets;
 
+        // Value function and GAE calculations use potentially normalized states
         try (var noGrad = Tensor.noGrad()) {
-            Tensor values = this.valueFunction.apply(states);
+            Tensor values = this.valueFunction.apply(states); // V(s_norm)
 
             Tensor lastNextValue;
-            Experience2 lastExp = batch.get(batch.size() - 1);
+            Experience2 lastExp = batchExperiences.get(batchExperiences.size() - 1);
             if (!lastExp.done() && lastExp.nextState() != null) {
-                 lastNextValue = this.valueFunction.apply(lastExp.nextState());
+                 // Normalize next_state for the last transition if normalizer is active
+                 Tensor nextStateNormalized = (obsNormalizer != null) ? obsNormalizer.normalize(lastExp.nextState().copy()) : lastExp.nextState();
+                 lastNextValue = this.valueFunction.apply(nextStateNormalized);
             } else {
                 lastNextValue = Tensor.zeros(1,1);
             }
 
-            GAEResult gaeResult = computeGAE(batch, values, lastNextValue.scalar());
+            // GAE computation needs raw rewards, but values are from normalized states.
+            // This is standard: rewards are not normalized, values are based on normalized state representations.
+            GAEResult gaeResult = computeGAE(batchExperiences, values, lastNextValue.scalar());
             advantages = gaeResult.advantages();
-            valueTargets = gaeResult.valueTargets();
+            valueTargets = gaeResult.valueTargets(); // These are targets for V(s_norm)
         }
 
         if (config.hyperparams().normalizeAdvantages()) {

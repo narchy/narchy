@@ -7,7 +7,8 @@ public record VPGAgentConfig(
     NetworkConfig policyNetworkConfig,
     NetworkConfig valueNetworkConfig, // Specific config for the value network
     ActionConfig actionConfig,
-    MemoryConfig memoryConfig
+    MemoryConfig memoryConfig,
+    @Nullable ObservationNormalizerConfig obsNormConfig // Added optional observation normalization config
 ) {
     public VPGAgentConfig {
         Objects.requireNonNull(hyperparams, "hyperparams cannot be null");
@@ -15,6 +16,7 @@ public record VPGAgentConfig(
         Objects.requireNonNull(valueNetworkConfig, "valueNetworkConfig cannot be null");
         Objects.requireNonNull(actionConfig, "actionConfig cannot be null");
         Objects.requireNonNull(memoryConfig, "memoryConfig cannot be null");
+        // obsNormConfig is optional
 
         if (memoryConfig.replayBuffer() != null) {
             // VPG is on-policy, replay buffer is not standard.
@@ -42,7 +44,8 @@ public record VPGAgentConfig(
             new ActionConfig(),     // Default action config
             new MemoryConfig(       // Default memory config for on-policy
                 MemoryConfig.DEFAULT_EPISODE_LENGTH.intValue()
-            )
+            ),
+            null // Default for obsNormConfig
         );
     }
 }

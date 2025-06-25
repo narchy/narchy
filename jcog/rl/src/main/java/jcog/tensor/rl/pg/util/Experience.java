@@ -1,5 +1,9 @@
 package jcog.tensor.rl.pg.util;
 
+/**
+ * @deprecated Use {@link jcog.tensor.rl.pg3.memory.Experience2} instead, which uses Tensors for states and supports log probabilities.
+ */
+@Deprecated
 public class Experience {
     public final double[] state;
     public final double[] action;

@@ -7,7 +7,8 @@ public record PPOAgentConfig(
     NetworkConfig policyNetworkConfig,
     NetworkConfig valueNetworkConfig,
     ActionConfig actionConfig,
-    MemoryConfig memoryConfig
+    MemoryConfig memoryConfig,
+    @Nullable ObservationNormalizerConfig obsNormConfig // Added optional observation normalization config
 ) {
     public PPOAgentConfig {
         Objects.requireNonNull(hyperparams, "hyperparams cannot be null");
@@ -15,6 +16,7 @@ public record PPOAgentConfig(
         Objects.requireNonNull(valueNetworkConfig, "valueNetworkConfig cannot be null");
         Objects.requireNonNull(actionConfig, "actionConfig cannot be null");
         Objects.requireNonNull(memoryConfig, "memoryConfig cannot be null");
+        // obsNormConfig is optional
 
         if (memoryConfig.replayBuffer() != null) {
             System.err.println("Warning: ReplayBufferConfig in MemoryConfig is present for PPOAgentConfig. " +
@@ -51,7 +53,8 @@ public record PPOAgentConfig(
             new ActionConfig(),
             new MemoryConfig(        // PPO uses on-policy memory
                 MemoryConfig.DEFAULT_EPISODE_LENGTH.intValue()
-            )
+            ),
+            null // Default for obsNormConfig
         );
     }
 }

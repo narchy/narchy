@@ -1,7 +1,8 @@
 package jcog.tensor.rl.pg3;
 
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg.util.Experience2;
+//import jcog.tensor.rl.pg.util.Experience2; // Old import
+import jcog.tensor.rl.pg3.memory.Experience2; // New import
 import jcog.tensor.rl.pg3.configs.ReinforceAgentConfig;
 import jcog.tensor.rl.pg3.memory.AgentMemory;
 import jcog.tensor.rl.pg3.memory.OnPolicyBuffer;
@@ -20,6 +21,7 @@ public class ReinforceAgent extends BasePolicyGradientAgent {
     public final AgentMemory memory;
 
     private final Tensor.GradQueue policyGradQueue;
+    @Nullable private final RunningObservationNormalizer obsNormalizer;
 
     public ReinforceAgent(ReinforceAgentConfig config, int stateDim, int actionDim) {
         super(stateDim, actionDim);
@@ -34,21 +36,25 @@ public class ReinforceAgent extends BasePolicyGradientAgent {
 
         this.policyGradQueue = new Tensor.GradQueue();
 
+        if (config.obsNormConfig() != null && config.obsNormConfig().enabled()) {
+            this.obsNormalizer = new RunningObservationNormalizer(stateDim, config.obsNormConfig().history());
+        } else {
+            this.obsNormalizer = null;
+        }
+
         setTrainingMode(true); // Initialize training mode by default
     }
 
     @Override
     public double[] selectAction(Tensor state, boolean deterministic) {
-        // Policy is set to eval mode (train(false)) if agent is not in training mode by setTrainingMode method.
-        // No need to toggle here unless specific per-action logic is needed outside agent's global training state.
+        Tensor processedState = (obsNormalizer != null) ? obsNormalizer.normalize(state.copy()) : state;
         try (var noGrad = Tensor.noGrad()) { // Ensure no gradients are computed during action selection
             AgentUtils.GaussianDistribution dist = policy.getDistribution(
-                state,
+                processedState,
                 config.actionConfig().sigmaMin().floatValue(),
                 config.actionConfig().sigmaMax().floatValue()
             );
             Tensor action = dist.sample(deterministic);
-            // Assuming actions should be clipped to a standard range like [-1, 1] for continuous control.
             return action.clipUnitPolar().array();
         }
     }
@@ -57,18 +63,15 @@ public class ReinforceAgent extends BasePolicyGradientAgent {
     public void recordExperience(Experience2 experience) {
         Objects.requireNonNull(experience, "Experience cannot be null");
         if (!this.trainingMode) {
-            // If not in training mode, typically don't record experience or update.
-            // However, some evaluation phases might still want to log/store for analysis.
-            // For REINFORCE, training updates are episode-based, so this check is crucial.
             return;
         }
+        // Store raw state in memory; normalization happens during update or selectAction
         this.memory.add(experience);
 
         if (experience.done()) {
             if (this.memory.size() > 0) {
-                update(0); // totalSteps is not strictly needed by this REINFORCE update logic
+                update(0);
             }
-            // Crucially, clear memory after episode processing for on-policy REINFORCE
             this.memory.clear();
         }
     }

@@ -50,7 +50,9 @@ public record ActionConfig(
             /** Simple Gaussian (normal) noise. */
             GAUSSIAN,
             /** Ornstein-Uhlenbeck process, often used for temporally correlated noise in continuous control. */
-            OU
+            OU,
+            /** Perlin noise for temporally correlated, smoother noise patterns. */
+            PERLIN
         }
 
         /** Default noise type: Gaussian. */

@@ -1,7 +1,8 @@
 package jcog.tensor.rl.pg3;
 
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg.util.Experience2;
+//import jcog.tensor.rl.pg.util.Experience2; // Old import
+import jcog.tensor.rl.pg3.memory.Experience2; // New import
 import jcog.tensor.rl.pg3.configs.VPGAgentConfig;
 import jcog.tensor.rl.pg3.memory.AgentMemory;
 import jcog.tensor.rl.pg3.memory.OnPolicyBuffer;
@@ -24,6 +25,7 @@ public class VPGAgent extends BasePolicyGradientAgent {
 
     private final Tensor.GradQueue policyGradQueue;
     private final Tensor.GradQueue valueGradQueue;
+    @Nullable private final RunningObservationNormalizer obsNormalizer;
 
     public VPGAgent(VPGAgentConfig config, int stateDim, int actionDim) {
         super(stateDim, actionDim);
@@ -41,14 +43,21 @@ public class VPGAgent extends BasePolicyGradientAgent {
         this.policyGradQueue = new Tensor.GradQueue();
         this.valueGradQueue = new Tensor.GradQueue();
 
+        if (config.obsNormConfig() != null && config.obsNormConfig().enabled()) {
+            this.obsNormalizer = new RunningObservationNormalizer(stateDim, config.obsNormConfig().history());
+        } else {
+            this.obsNormalizer = null;
+        }
+
         setTrainingMode(true); // Initialize training mode by default
     }
 
     @Override
     public double[] selectAction(Tensor state, boolean deterministic) {
+        Tensor processedState = (obsNormalizer != null) ? obsNormalizer.normalize(state.copy()) : state;
         try (var noGrad = Tensor.noGrad()) {
             AgentUtils.GaussianDistribution dist = policy.getDistribution(
-                state,
+                processedState,
                 config.actionConfig().sigmaMin().floatValue(),
                 config.actionConfig().sigmaMax().floatValue()
             );
@@ -63,13 +72,14 @@ public class VPGAgent extends BasePolicyGradientAgent {
          if (!this.trainingMode) {
             return; // Do not record or update if not in training mode
         }
+        // Store raw state in memory
         this.memory.add(experience);
 
         if (experience.done()) {
             if (this.memory.size() > 0) {
-                update(0); // totalSteps not critical for this VPG update logic
+                update(0);
             }
-            this.memory.clear(); // Clear memory after episode processing
+            this.memory.clear();
         }
     }
 
@@ -79,14 +89,22 @@ public class VPGAgent extends BasePolicyGradientAgent {
             return;
         }
 
-        List<Experience2> episode = this.memory.getAll(); // Get a copy
+        List<Experience2> episode = this.memory.getAll();
 
         Tensor returns = computeReturns(episode);
 
-        List<Tensor> statesList = episode.stream().map(Experience2::state).collect(Collectors.toList());
-        Tensor statesBatch = Tensor.concatRows(statesList);
+        Tensor statesBatch;
+        if (obsNormalizer != null) {
+            List<Tensor> normalizedStatesList = episode.stream()
+                .map(exp -> obsNormalizer.normalize(exp.state().copy()))
+                .collect(Collectors.toList());
+            statesBatch = Tensor.concatRows(normalizedStatesList);
+        } else {
+            statesBatch = Tensor.concatRows(episode.stream().map(Experience2::state).collect(Collectors.toList()));
+        }
 
         // 1. Update Value Function
+        // Value function learns to predict returns from (potentially normalized) states
         Tensor predictedValues = this.valueFunction.apply(statesBatch);
         Tensor valueLoss = predictedValues.loss(returns.detach(), Tensor.Loss.MeanSquared);
 
@@ -95,9 +113,10 @@ public class VPGAgent extends BasePolicyGradientAgent {
         valueGradQueue.optimize(valueOptimizer);
 
         // 2. Calculate Advantages (A(s,a) = R_t - V(s_t))
+        // Advantages are based on returns (from raw rewards) and predicted values (from normalized states)
         Tensor advantages = returns.sub(predictedValues.detach());
         if (config.hyperparams().normalizeAdvantages()) {
-            double[] advantagesArray = advantages.array().clone(); // Clone to normalize a copy
+            double[] advantagesArray = advantages.array().clone();
             AgentUtils.normalize(advantagesArray);
             advantages = Tensor.row(advantagesArray).transpose();
         }
@@ -106,6 +125,7 @@ public class VPGAgent extends BasePolicyGradientAgent {
         List<Tensor> actionsList = episode.stream().map(e -> Tensor.row(e.action())).collect(Collectors.toList());
         Tensor actionsBatch = Tensor.concatRows(actionsList);
 
+        // Policy operates on (potentially normalized) states
         AgentUtils.GaussianDistribution dist = policy.getDistribution(
             statesBatch,
             config.actionConfig().sigmaMin().floatValue(),

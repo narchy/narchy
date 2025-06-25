@@ -5,7 +5,11 @@ import jcog.data.list.Lst;
 import java.util.List;
 import java.util.Random;
 
-/** untested */
+/**
+ * untested
+ * @deprecated Use {@link jcog.tensor.rl.pg3.memory.PrioritizedReplayBuffer} instead, which uses {@link jcog.tensor.rl.pg3.memory.Experience2} and has more features.
+ */
+@Deprecated
 public class ReplayBufferPrioritized {
     private final List<Experience> buffer;
     private final List<Double> priorities;

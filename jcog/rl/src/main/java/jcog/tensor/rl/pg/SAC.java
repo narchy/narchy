@@ -12,6 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
+/**
+ * @deprecated Use {@link jcog.tensor.rl.pg3.SACAgent} instead.
+ */
+@Deprecated
 public class SAC extends AbstractPG {
 
     public final IntRange episode = new IntRange(3, 1, 128);

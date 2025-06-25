@@ -6,6 +6,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * @deprecated Use {@link jcog.tensor.rl.pg3.memory.ReplayBuffer} instead.
+ */
+@Deprecated
 public class ReplayBuffer2 implements Memory {
     private final Experience2[] buffer;
     private final int capacity;

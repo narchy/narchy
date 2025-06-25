@@ -6,13 +6,16 @@ public record ReinforceAgentConfig(
     HyperparamConfig hyperparams,
     NetworkConfig policyNetworkConfig, // For the policy network
     ActionConfig actionConfig,
-    MemoryConfig memoryConfig // For episodeLength / buffer capacity
+    MemoryConfig memoryConfig, // For episodeLength / buffer capacity
+    @Nullable ObservationNormalizerConfig obsNormConfig // Added optional observation normalization config
 ) {
     public ReinforceAgentConfig {
         Objects.requireNonNull(hyperparams, "hyperparams cannot be null");
         Objects.requireNonNull(policyNetworkConfig, "policyNetworkConfig cannot be null");
         Objects.requireNonNull(actionConfig, "actionConfig cannot be null");
         Objects.requireNonNull(memoryConfig, "memoryConfig cannot be null");
+        // obsNormConfig is optional
+
         if (memoryConfig.replayBuffer() != null) {
             // REINFORCE is on-policy, replay buffer is not standard.
             // Allow it but note that episodeLength from memoryConfig is primary.
@@ -37,7 +40,8 @@ public record ReinforceAgentConfig(
             new ActionConfig(),     // Default action config
             new MemoryConfig(       // Default memory config for on-policy
                 MemoryConfig.DEFAULT_EPISODE_LENGTH.intValue()
-            )
+            ),
+            null // Default for obsNormConfig
         );
     }
 }

@@ -17,6 +17,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.UnaryOperator;
 import java.util.random.RandomGenerator;
 
+/**
+ * @deprecated Use {@link jcog.tensor.rl.pg3.DDPGAgent} instead.
+ */
+@Deprecated
 public class DDPG extends AbstractPG {
 
     /** 'actor' */

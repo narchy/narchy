@@ -4,6 +4,10 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Random;
 
+/**
+ * @deprecated Use {@link jcog.tensor.rl.pg3.memory.ReplayBuffer} instead, which uses {@link jcog.tensor.rl.pg3.memory.Experience2}.
+ */
+@Deprecated
 public class ReplayBuffer {
     private final Deque<Experience> buffer;
     private final int capacity;

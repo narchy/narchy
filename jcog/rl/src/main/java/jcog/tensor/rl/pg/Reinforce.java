@@ -12,7 +12,9 @@ import java.util.function.UnaryOperator;
  *             Please use {@link PGBuilder.ReinforceStrategy} (found within PGBuilder.java)
  *             for a standard REINFORCE algorithm, instantiated with {@link PGBuilder.GaussianPolicy}
  *             and other components via constructor injection. This old version has a non-standard policy network structure.
+ * @deprecated Use {@link jcog.tensor.rl.pg3.ReinforceAgent} instead.
  */
+@Deprecated
 public class Reinforce extends AbstractReinforce {
 
     final UnaryOperator<Tensor> policyActivation =

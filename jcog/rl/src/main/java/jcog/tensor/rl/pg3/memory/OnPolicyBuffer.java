@@ -1,7 +1,8 @@
 package jcog.tensor.rl.pg3.memory;
 
 import jcog.data.list.Lst;
-import jcog.tensor.rl.pg.util.Experience2;
+//import jcog.tensor.rl.pg.util.Experience2; // Old import
+import jcog.tensor.rl.pg3.memory.Experience2; // New import
 
 import java.util.ArrayList;
 import java.util.List;
