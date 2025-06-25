@@ -8,6 +8,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
+/**
+ * A PPO (Proximal Policy Optimization) strategy implementation within the `pg2` system.
+ *
+ * @deprecated This class is part of an older API. Prefer using {@link jcog.tensor.rl.pg3.PPOAgent}
+ *             from the `pg3` package for new development, which offers a more standardized and
+ *             configurable PPO implementation.
+ */
+@Deprecated
 public class PPOStrategy extends AbstractStrategy {
     public final PGBuilder.HyperparamConfig h;
     public final PGBuilder.ActionConfig a;

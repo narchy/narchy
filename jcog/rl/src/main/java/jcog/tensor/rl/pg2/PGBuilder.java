@@ -120,7 +120,13 @@ enum RLUtils {
  * have been removed as they were part of the old builder pattern.
  * Their logic will be handled by direct instantiation or moved to static factory methods
  * on the respective components if complex creation logic is still needed.
+ *
+ * @deprecated The `PGBuilder` class and the `pg2` component and strategy system it contains are superseded
+ *             by the `jcog.tensor.rl.pg3` API. Prefer using `pg3` agents (e.g., {@link jcog.tensor.rl.pg3.PPOAgent}),
+ *             configurations (e.g., {@link jcog.tensor.rl.pg3.configs.PPOAgentConfig}), and networks
+ *             (e.g., {@link jcog.tensor.rl.pg3.networks.GaussianPolicyNet}) for new development.
  */
+@Deprecated
 public class PGBuilder { // Class name retained to minimize disruption, though it's no longer a builder.
                          // Consider renaming to something like PolicyGradientComponents or RLAgentFactoryUtils in the future.
 
@@ -710,6 +716,10 @@ class OnPolicyEpisodeBuffer implements Memory {
     }
 }
 
+/**
+ * @deprecated Superseded by `pg3` agent architecture. See {@link PGBuilder} deprecation.
+ */
+@Deprecated
 abstract class AbstractStrategy implements PGStrategy {
     protected PolicyGradientModel model;
     protected boolean trainingMode = true;
@@ -736,6 +746,10 @@ abstract class AbstractStrategy implements PGStrategy {
     }
 }
 
+/**
+ * @deprecated Superseded by {@link jcog.tensor.rl.pg3.ReinforceAgent}. See {@link PGBuilder} deprecation.
+ */
+@Deprecated
 class ReinforceStrategy extends AbstractStrategy {
     public final HyperparamConfig h;
     public final ActionConfig a;
@@ -834,6 +848,10 @@ class ReinforceStrategy extends AbstractStrategy {
     }
 }
 
+/**
+ * @deprecated Superseded by `pg3` agent architecture. See {@link PGBuilder} deprecation.
+ */
+@Deprecated
 abstract class OffPolicyStrategy extends AbstractStrategy {
     public final MemoryConfig m;
     public final Memory memory; // Changed to Memory interface
@@ -868,6 +886,10 @@ abstract class OffPolicyStrategy extends AbstractStrategy {
     }
 }
 
+/**
+ * @deprecated Superseded by `pg3` agent architecture. Consider implementing SAC using `pg3` components if needed. See {@link PGBuilder} deprecation.
+ */
+@Deprecated
 class SACStrategy extends OffPolicyStrategy {
     public final HyperparamConfig h;
     public final ActionConfig a;

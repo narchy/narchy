@@ -3,6 +3,16 @@ package jcog.tensor.rl.pg;
 import jcog.tensor.Tensor;
 import jcog.tensor.model.DNCMemory;
 
+/**
+ * An older REINFORCE variant using Differentiable Neural Computer (DNC) memory.
+ * This class is part of an older API.
+ *
+ * @deprecated This class is part of an older API. For similar functionality, consider building custom agents
+ *             using `jcog.tensor.rl.pg3` components, potentially by creating a custom policy network
+ *             that incorporates DNC memory and using it with {@link jcog.tensor.rl.pg3.ReinforceAgent}
+ *             or {@link jcog.tensor.rl.pg3.VPGAgent}. The `pg3` package is the focus for new development.
+ */
+@Deprecated
 public class ReinforceDNC extends Reinforce {
 
     public final DNCMemory mem;

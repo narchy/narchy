@@ -44,6 +44,17 @@ import static jcog.tensor.Tensor.compose;
  *
  * Add normalizing flows to the policy for modeling complex action distributions.
  */
+/**
+ * An older REINFORCE variant using Ordinary Differential Equations (ODEs) in the policy.
+ * This class and its inner classes (`ReinforceNeuralODE`, `ReinforceLiquid`) are part of an older API.
+ *
+ * @deprecated This class is part of an older API. For similar functionality, consider building custom agents
+ *             using `jcog.tensor.rl.pg3` components. The `pg3` package is the focus for new development.
+ *             Functionality like ODEs within policies can be achieved by designing custom policy networks
+ *             (e.g., by composing `jcog.tensor.model.ODELayer` with other layers) and using them with
+ *             standard `pg3` agents like {@link jcog.tensor.rl.pg3.ReinforceAgent} or {@link jcog.tensor.rl.pg3.VPGAgent}.
+ */
+@Deprecated
 public abstract class ReinforceODE extends AbstractReinforce {
 
     public final IntRange steps;

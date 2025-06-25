@@ -12,6 +12,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
+/**
+ * An older implementation of the Soft Actor-Critic (SAC) algorithm.
+ * This class is part of an older API.
+ *
+ * @deprecated This class is part of an older API. For SAC or similar off-policy actor-critic algorithms,
+ *             consider using or developing solutions based on the `jcog.tensor.rl.pg3` components and patterns,
+ *             or using the `jcog.tensor.rl.pg2.SACStrategy` if it's still maintained and suitable.
+ *             The `pg3` package is the focus for new development.
+ */
+@Deprecated
 public class SAC extends AbstractPG {
 
     public final IntRange episode = new IntRange(3, 1, 128);

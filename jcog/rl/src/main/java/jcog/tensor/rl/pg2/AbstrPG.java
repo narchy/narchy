@@ -14,6 +14,14 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * An abstract base class used by older policy gradient model wrappers in `pg` and `pg2` packages.
+ *
+ * @deprecated This class is part of an older API. Prefer using `jcog.tensor.rl.pg3`
+ *             components and agent architecture (e.g., {@link jcog.tensor.rl.pg3.BasePolicyGradientAgent})
+ *             for new development.
+ */
+@Deprecated
 public abstract class AbstrPG {
     public final int inputs; // Changed to public final
     public final int outputs; // Changed to public final

@@ -17,6 +17,16 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.UnaryOperator;
 import java.util.random.RandomGenerator;
 
+/**
+ * An older implementation of the Deep Deterministic Policy Gradient (DDPG) algorithm.
+ * This class is part of an older API.
+ *
+ * @deprecated This class is part of an older API. For DDPG or similar off-policy actor-critic algorithms,
+ *             consider using or developing solutions based on the `jcog.tensor.rl.pg3` components and patterns,
+ *             or using the `jcog.tensor.rl.pg2.DDPGStrategy` if it's still maintained and suitable.
+ *             The `pg3` package is the focus for new development.
+ */
+@Deprecated
 public class DDPG extends AbstractPG {
 
     /** 'actor' */

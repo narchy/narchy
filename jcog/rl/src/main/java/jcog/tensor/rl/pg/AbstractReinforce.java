@@ -11,6 +11,15 @@ import jcog.util.ArrayUtil;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
+/**
+ * Base class for older REINFORCE-style agent implementations in the `pg` package.
+ * This class and its subclasses are part of an older API.
+ *
+ * @deprecated This class is part of an older API. Prefer using components from the `jcog.tensor.rl.pg3`
+ *             package for new development, such as {@link jcog.tensor.rl.pg3.ReinforceAgent}
+ *             or {@link jcog.tensor.rl.pg3.VPGAgent}.
+ */
+@Deprecated
 public abstract class AbstractReinforce extends AbstractPG {
 
     public UnaryOperator<Tensor> policy;

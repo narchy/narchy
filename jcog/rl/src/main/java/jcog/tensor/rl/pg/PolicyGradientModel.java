@@ -9,6 +9,15 @@ import jcog.tensor.rl.pg2.PPOStrategy;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * A model class that wraps a {@link jcog.tensor.rl.pg2.PGStrategy} to adapt it to an older agent API.
+ * This class is part of an older system.
+ *
+ * @deprecated This class and the underlying {@link jcog.tensor.rl.pg2.PGStrategy} system are superseded
+ *             by the `pg3` agent implementations (e.g., {@link jcog.tensor.rl.pg3.PPOAgent},
+ *             {@link jcog.tensor.rl.pg3.ReinforceAgent}) which should be used directly.
+ */
+@Deprecated
 public class PolicyGradientModel extends AbstrPG {
     public final PGStrategy strategy; // Made public final
     public final boolean isOffPolicy; // Made public final

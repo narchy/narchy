@@ -17,8 +17,15 @@ import static jcog.tensor.rl.pg.util.StreamXUtil.*;
 
 
 /**
- * Stream Actor-Critic(λ) implementation with separate policy and value networks
+ * Stream Actor-Critic(λ) implementation with separate policy and value networks.
+ * This class is part of an older API.
+ *
+ * @deprecated This class is part of an older API. For actor-critic algorithms,
+ *             consider using or developing solutions based on the `jcog.tensor.rl.pg3` components and patterns
+ *             (e.g., {@link jcog.tensor.rl.pg3.VPGAgent} for a basic actor-critic, or {@link jcog.tensor.rl.pg3.PPOAgent}).
+ *             The `pg3` package is the focus for new development.
  */
+@Deprecated
 public class StreamAC extends AbstractPG {
 
     public final FloatRange policyLr = new FloatRange(1, 0, 4);

@@ -17,6 +17,15 @@ import java.util.function.UnaryOperator;
 
 import static java.lang.Math.PI;
 
+/**
+ * Base class for older policy gradient agent implementations in the `pg` package.
+ * This class and its subclasses are part of an older API.
+ *
+ * @deprecated This class is part of an older API. Prefer using components from the `jcog.tensor.rl.pg3`
+ *             package for new development, such as {@link jcog.tensor.rl.pg3.BasePolicyGradientAgent}
+ *             and its concrete agent implementations.
+ */
+@Deprecated
 public abstract class AbstractPG {
 
     protected final int inputs, outputs;

@@ -18,6 +18,15 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.UnaryOperator;
 import java.util.random.RandomGenerator;
 
+/**
+ * An older implementation of DDPG with adaptive noise features.
+ * This class is part of an older API.
+ *
+ * @deprecated This class is part of an older API. For DDPG or similar off-policy actor-critic algorithms,
+ *             consider using or developing solutions based on the `jcog.tensor.rl.pg3` components and patterns.
+ *             The `pg3` package is the focus for new development.
+ */
+@Deprecated
 public class DDPGAuto extends AbstractPG {
 
     /** 'actor' */

@@ -12,6 +12,15 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import java.util.random.RandomGenerator;
 
+/**
+ * A DDPG (Deep Deterministic Policy Gradient) strategy implementation within the `pg2` system.
+ *
+ * @deprecated This class is part of an older API. The `pg3` package is the focus for new development.
+ *             For DDPG or similar algorithms, consider building custom solutions using `pg3` components
+ *             (e.g., {@link jcog.tensor.rl.pg3.networks.GaussianPolicyNet} adapted for deterministic actions,
+ *             {@link jcog.tensor.rl.pg3.networks.ValueNet} potentially adapted for Q-values, and custom update logic).
+ */
+@Deprecated
 public class DDPGStrategy extends OffPolicyStrategy {
     public final PGBuilder.HyperparamConfig h;
     public final PGBuilder.ActionConfig a; // Added to store the action config

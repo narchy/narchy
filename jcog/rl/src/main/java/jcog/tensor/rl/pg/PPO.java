@@ -8,12 +8,12 @@ import jcog.tensor.rl.pg2.PGBuilder;
 import java.util.List;
 
 /**
- * @deprecated This class represents an older PPO implementation.
- *             Please use {@link PGBuilder.PPOStrategy} (found within PGBuilder.java)
- *             by directly instantiating it with {@link PGBuilder.GaussianPolicy},
- *             {@link PGBuilder.ValueNetwork}, and other necessary components
- *             through constructor injection. The new PPOStrategy offers a more
- *             standard and flexible PPO implementation, including GAE.
+ * This class represents an older PPO implementation.
+ * It is superseded by the `pg3` API.
+ *
+ * @deprecated This class is part of an older API. Prefer using {@link jcog.tensor.rl.pg3.PPOAgent}
+ *             from the `pg3` package for new development, which offers a more standardized,
+ *             configurable, and up-to-date PPO implementation (including GAE).
  */
 @Deprecated
 public class PPO extends VPG {
