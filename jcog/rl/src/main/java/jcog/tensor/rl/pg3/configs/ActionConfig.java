@@ -36,10 +36,14 @@ public record ActionConfig(
      *
      * @param type The type of noise to apply (e.g., Gaussian, Ornstein-Uhlenbeck).
      * @param stddev The standard deviation of the noise. For OU noise, this might be an initial magnitude.
+     * @param ouTheta The mean reversion rate for Ornstein-Uhlenbeck noise.
+     * @param ouDt The time step for Ornstein-Uhlenbeck noise.
      */
     public record NoiseConfig(
         Type type,
-        FloatRange stddev
+        FloatRange stddev,
+        @Nullable FloatRange ouTheta, // Optional: only relevant for OU noise
+        @Nullable FloatRange ouDt     // Optional: only relevant for OU noise
     ) {
         /**
          * Defines the type of noise process.
@@ -59,6 +63,10 @@ public record ActionConfig(
         public static final Type DEFAULT_NOISE_TYPE = Type.GAUSSIAN;
         /** Default noise standard deviation: 0.1, range [0, 1]. */
         public static final FloatRange DEFAULT_NOISE_STDDEV = new FloatRange(0.1f, 0.0f, 1.0f);
+        /** Default OU theta: 0.15, range [0.01, 1.0]. */
+        public static final FloatRange DEFAULT_OU_THETA = new FloatRange(0.15f, 0.01f, 1.0f);
+        /** Default OU dt: 0.01, range [0.001, 0.1]. */
+        public static final FloatRange DEFAULT_OU_DT = new FloatRange(0.01f, 0.001f, 0.1f);
 
         /**
          * Validates noise configuration.
@@ -66,25 +74,47 @@ public record ActionConfig(
         public NoiseConfig {
             Objects.requireNonNull(type, "Noise type cannot be null");
             Objects.requireNonNull(stddev, "Noise stddev cannot be null");
+            // ouTheta and ouDt can be null if type is not OU
             if (stddev.floatValue() < 0 && type != Type.NONE) {
                 throw new IllegalArgumentException("Noise stddev must be non-negative for GAUSSIAN or OU noise.");
+            }
+            if (type == Type.OU) {
+                Objects.requireNonNull(ouTheta, "ouTheta cannot be null for OU noise type");
+                Objects.requireNonNull(ouDt, "ouDt cannot be null for OU noise type");
+                if (ouTheta.floatValue() <= 0) throw new IllegalArgumentException("ouTheta must be positive for OU noise.");
+                if (ouDt.floatValue() <= 0) throw new IllegalArgumentException("ouDt must be positive for OU noise.");
             }
         }
 
         /**
          * Creates a default NoiseConfig (Gaussian noise with stddev 0.1).
+         * For OU noise, it uses default theta and dt values.
          */
         public NoiseConfig() {
-            this(DEFAULT_NOISE_TYPE, DEFAULT_NOISE_STDDEV);
+            this(DEFAULT_NOISE_TYPE, DEFAULT_NOISE_STDDEV, DEFAULT_OU_THETA, DEFAULT_OU_DT);
         }
 
         /** Returns a new NoiseConfig with the specified type. */
-        public NoiseConfig withType(Type type) { return new NoiseConfig(type, this.stddev); }
+        public NoiseConfig withType(Type type) { return new NoiseConfig(type, this.stddev, this.ouTheta, this.ouDt); }
         /** Returns a new NoiseConfig with the specified stddev range. */
-        public NoiseConfig withStddev(FloatRange stddev) { return new NoiseConfig(this.type, stddev); }
+        public NoiseConfig withStddev(FloatRange stddev) { return new NoiseConfig(this.type, stddev, this.ouTheta, this.ouDt); }
         /** Returns a new NoiseConfig with the specified stddev value, retaining existing min/max from the current stddev range. */
         public NoiseConfig withStddev(float stddevValue) {
-            return new NoiseConfig(this.type, new FloatRange(stddevValue, this.stddev.min, this.stddev.max));
+            return new NoiseConfig(this.type, new FloatRange(stddevValue, this.stddev.min, this.stddev.max), this.ouTheta, this.ouDt);
+        }
+        /** Returns a new NoiseConfig with the specified ouTheta range. */
+        public NoiseConfig withOuTheta(FloatRange ouTheta) { return new NoiseConfig(this.type, this.stddev, ouTheta, this.ouDt); }
+        /** Returns a new NoiseConfig with the specified ouTheta value. */
+        public NoiseConfig withOuTheta(float ouThetaValue) {
+            FloatRange currentOuTheta = this.ouTheta != null ? this.ouTheta : DEFAULT_OU_THETA;
+            return new NoiseConfig(this.type, this.stddev, new FloatRange(ouThetaValue, currentOuTheta.min, currentOuTheta.max), this.ouDt);
+        }
+        /** Returns a new NoiseConfig with the specified ouDt range. */
+        public NoiseConfig withOuDt(FloatRange ouDt) { return new NoiseConfig(this.type, this.stddev, this.ouTheta, ouDt); }
+        /** Returns a new NoiseConfig with the specified ouDt value. */
+        public NoiseConfig withOuDt(float ouDtValue) {
+            FloatRange currentOuDt = this.ouDt != null ? this.ouDt : DEFAULT_OU_DT;
+            return new NoiseConfig(this.type, this.stddev, this.ouTheta, new FloatRange(ouDtValue, currentOuDt.min, currentOuDt.max));
         }
     }
 

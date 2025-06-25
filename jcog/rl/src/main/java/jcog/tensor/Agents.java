@@ -410,19 +410,89 @@ public class Agents {
 
     public static Agent DDPG(int i, int o) {
         float s = 4;
-        int h = round(i*s);
+        int h = Math.round(i * s);
 
-        //return new DDPG(i, o, h, h).agent();
-
-
-        var hyperparams = new PGBuilder.HyperparamConfig();
-        var actionConfig = new PGBuilder.ActionConfig();
-        var memoryConfig = new PGBuilder.MemoryConfig(32, // episodeLength for on-policy
-            new PGBuilder.MemoryConfig.ReplayBufferConfig(1024, 4) // replayBuffer for off-policy
+        // 1. Common Hyperparameters
+        // Start with pg3 defaults, then customize.
+        var commonHyperparams = new jcog.tensor.rl.pg3.configs.HyperparamConfig();
+        // DDPG typically doesn't use lambda, entropyBonus, ppoClip, epochs directly from this top-level config.
+        // It uses policyLR and valueLR. Tau and policyUpdateFreq are specific to DDPGAgentConfig.
+        commonHyperparams = new jcog.tensor.rl.pg3.configs.HyperparamConfig(
+            commonHyperparams.gamma(),
+            commonHyperparams.lambda(),
+            commonHyperparams.entropyBonus(),
+            commonHyperparams.ppoClip(),
+            new jcog.signal.FloatRange(jcog.tensor.rl.pg3.configs.DDPGAgentConfig.DEFAULT_TAU), // Placeholder, DDPGAgentConfig has its own tau
+            new jcog.signal.FloatRange(3e-4f), // Actor LR (example)
+            new jcog.signal.FloatRange(1e-3f), // Critic LR (example)
+            commonHyperparams.epochs(),
+            new jcog.signal.IntRange(jcog.tensor.rl.pg3.configs.DDPGAgentConfig.DEFAULT_POLICY_UPDATE_FREQ), // Placeholder
+            commonHyperparams.normalizeAdvantages(),
+            commonHyperparams.normalizeReturns(),
+            commonHyperparams.learnableAlpha()
         );
-        var policyNetConfig = new NetworkConfig(3e-4f, h, h);
-        var valueNetConfig = new NetworkConfig(1e-3f, h, h);
-        return new PolicyGradientModel(i, o, DDPGStrategy.ddpgStrategy(i, o, actionConfig, policyNetConfig, valueNetConfig, memoryConfig, hyperparams)).agent();
+
+        // 2. Network Configurations
+        var actorNetworkConfig = new jcog.tensor.rl.pg3.configs.NetworkConfig(
+            new jcog.tensor.rl.pg3.configs.OptimizerConfig( // Optimizer for actor, LR from commonHyperparams
+                jcog.tensor.rl.pg3.configs.OptimizerConfig.Type.ADAM,
+                commonHyperparams.policyLR().floatValue()
+            ),
+            h, h // Hidden layers
+        ).withOutputActivation(Tensor.TANH); // DDPG actions usually bounded by tanh
+
+        var criticNetworkConfig = new jcog.tensor.rl.pg3.configs.NetworkConfig(
+            new jcog.tensor.rl.pg3.configs.OptimizerConfig( // Optimizer for critic, LR from commonHyperparams
+                jcog.tensor.rl.pg3.configs.OptimizerConfig.Type.ADAM,
+                commonHyperparams.valueLR().floatValue()
+            ),
+            h, h // Hidden layers for critic
+        );
+
+        // 3. Optimizer Configurations (these are primary for DDPGAgentConfig)
+        var actorOptimizerConfig = new jcog.tensor.rl.pg3.configs.OptimizerConfig(
+            jcog.tensor.rl.pg3.configs.OptimizerConfig.Type.ADAM,
+            commonHyperparams.policyLR().floatValue()
+        );
+        var criticOptimizerConfig = new jcog.tensor.rl.pg3.configs.OptimizerConfig(
+            jcog.tensor.rl.pg3.configs.OptimizerConfig.Type.ADAM,
+            commonHyperparams.valueLR().floatValue()
+        );
+
+        // 4. Memory Configuration
+        var memoryConfig = new jcog.tensor.rl.pg3.configs.MemoryConfig(
+            new jcog.tensor.rl.pg3.configs.MemoryConfig.ReplayBufferConfig(
+                new jcog.signal.IntRange(100_000), // capacity
+                new jcog.signal.IntRange(64),      // batch_size
+                new jcog.signal.IntRange(1),       // update_every_n_steps
+                new jcog.signal.IntRange(1)        // gradient_steps_per_update
+            )
+        );
+
+        // 5. Noise Configuration
+        var noiseConfig = new jcog.tensor.rl.pg3.configs.ActionConfig.NoiseConfig(
+            jcog.tensor.rl.pg3.configs.ActionConfig.NoiseConfig.Type.OU,
+            new jcog.signal.FloatRange(0.2f),   // stddev
+            new jcog.signal.FloatRange(0.15f),  // ouTheta
+            new jcog.signal.FloatRange(0.01f)   // ouDt
+        );
+
+        // 6. DDPG Agent Configuration
+        var ddpgAgentConfig = new jcog.tensor.rl.pg3.configs.DDPGAgentConfig(
+            commonHyperparams,
+            actorNetworkConfig,
+            criticNetworkConfig,
+            actorOptimizerConfig,
+            criticOptimizerConfig,
+            memoryConfig,
+            null, // perConfig - no PER by default
+            noiseConfig,
+            null, // tau - use DDPGAgentConfig default
+            null, // policyUpdateFreq - use DDPGAgentConfig default
+            "Created by jcog.tensor.Agents.DDPG factory"
+        );
+
+        return new jcog.tensor.rl.pg3.DDPGAgent(ddpgAgentConfig, i, o);
     }
 
     public static Agent ReinforceODE(int i, int o) {

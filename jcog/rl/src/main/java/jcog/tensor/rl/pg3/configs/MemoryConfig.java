@@ -24,15 +24,24 @@ public record MemoryConfig(
      *
      * @param capacity The maximum number of experiences the buffer can store.
      * @param batchSize The number of experiences to sample from the buffer during each learning update.
+     * @param updateEveryNSteps Frequency of learning updates (e.g., update networks every N environment steps).
+     * @param gradientStepsPerUpdate Number of gradient descent steps to perform per learning update.
      */
     public record ReplayBufferConfig(
         IntRange capacity,
-        IntRange batchSize
+        IntRange batchSize,
+        IntRange updateEveryNSteps,
+        IntRange gradientStepsPerUpdate
     ) {
         /** Default replay buffer capacity: 100,000. Range [1000, 1,000,000]. */
         public static final IntRange DEFAULT_CAPACITY = new IntRange(100_000, 1_000, 1_000_000);
         /** Default replay buffer sample batch size: 256. Range [32, 2048]. */
         public static final IntRange DEFAULT_BATCH_SIZE = new IntRange(256, 32, 2048);
+        /** Default update frequency: update every 1 environment step. Range [1, 1000]. */
+        public static final IntRange DEFAULT_UPDATE_EVERY_N_STEPS = new IntRange(1, 1, 1000);
+        /** Default gradient steps per update: 1. Range [1, 100]. */
+        public static final IntRange DEFAULT_GRADIENT_STEPS_PER_UPDATE = new IntRange(1, 1, 100);
+
 
         /**
          * Validates replay buffer configuration.
@@ -40,31 +49,56 @@ public record MemoryConfig(
         public ReplayBufferConfig {
             Objects.requireNonNull(capacity, "Capacity cannot be null");
             Objects.requireNonNull(batchSize, "Batch size cannot be null");
+            Objects.requireNonNull(updateEveryNSteps, "updateEveryNSteps cannot be null");
+            Objects.requireNonNull(gradientStepsPerUpdate, "gradientStepsPerUpdate cannot be null");
+
             if (capacity.intValue() <= 0) throw new IllegalArgumentException("Buffer capacity must be positive");
             if (batchSize.intValue() <= 0) throw new IllegalArgumentException("Batch size must be positive");
             if (batchSize.intValue() > capacity.intValue()) {
                 throw new IllegalArgumentException("Batch size cannot be larger than buffer capacity");
             }
+            if (updateEveryNSteps.intValue() <= 0) throw new IllegalArgumentException("updateEveryNSteps must be positive.");
+            if (gradientStepsPerUpdate.intValue() <= 0) throw new IllegalArgumentException("gradientStepsPerUpdate must be positive.");
         }
 
         /**
          * Creates a default {@code ReplayBufferConfig}.
          */
         public ReplayBufferConfig() {
-            this(DEFAULT_CAPACITY, DEFAULT_BATCH_SIZE);
+            this(DEFAULT_CAPACITY, DEFAULT_BATCH_SIZE, DEFAULT_UPDATE_EVERY_N_STEPS, DEFAULT_GRADIENT_STEPS_PER_UPDATE);
         }
 
         /** Returns a new ReplayBufferConfig with the specified capacity range. */
-        public ReplayBufferConfig withCapacity(IntRange capacity) { return new ReplayBufferConfig(capacity, this.batchSize); }
+        public ReplayBufferConfig withCapacity(IntRange capacity) {
+            return new ReplayBufferConfig(capacity, this.batchSize, this.updateEveryNSteps, this.gradientStepsPerUpdate);
+        }
         /** Returns a new ReplayBufferConfig with the specified capacity value, retaining current min/max from its range. */
         public ReplayBufferConfig withCapacity(int capacityValue) {
-            return new ReplayBufferConfig(new IntRange(capacityValue, this.capacity.min, this.capacity.max), this.batchSize);
+            return new ReplayBufferConfig(new IntRange(capacityValue, this.capacity.min, this.capacity.max), this.batchSize, this.updateEveryNSteps, this.gradientStepsPerUpdate);
         }
         /** Returns a new ReplayBufferConfig with the specified batch size range. */
-        public ReplayBufferConfig withBatchSize(IntRange batchSize) { return new ReplayBufferConfig(this.capacity, batchSize); }
+        public ReplayBufferConfig withBatchSize(IntRange batchSize) {
+            return new ReplayBufferConfig(this.capacity, batchSize, this.updateEveryNSteps, this.gradientStepsPerUpdate);
+        }
         /** Returns a new ReplayBufferConfig with the specified batch size value, retaining current min/max from its range. */
         public ReplayBufferConfig withBatchSize(int batchSizeValue) {
-            return new ReplayBufferConfig(this.capacity, new IntRange(batchSizeValue, this.batchSize.min, this.batchSize.max));
+            return new ReplayBufferConfig(this.capacity, new IntRange(batchSizeValue, this.batchSize.min, this.batchSize.max), this.updateEveryNSteps, this.gradientStepsPerUpdate);
+        }
+        /** Returns a new ReplayBufferConfig with the specified updateEveryNSteps range. */
+        public ReplayBufferConfig withUpdateEveryNSteps(IntRange updateEveryNSteps) {
+            return new ReplayBufferConfig(this.capacity, this.batchSize, updateEveryNSteps, this.gradientStepsPerUpdate);
+        }
+        /** Returns a new ReplayBufferConfig with the specified updateEveryNSteps value. */
+        public ReplayBufferConfig withUpdateEveryNSteps(int value) {
+            return new ReplayBufferConfig(this.capacity, this.batchSize, new IntRange(value, this.updateEveryNSteps.min, this.updateEveryNSteps.max), this.gradientStepsPerUpdate);
+        }
+        /** Returns a new ReplayBufferConfig with the specified gradientStepsPerUpdate range. */
+        public ReplayBufferConfig withGradientStepsPerUpdate(IntRange gradientStepsPerUpdate) {
+            return new ReplayBufferConfig(this.capacity, this.batchSize, this.updateEveryNSteps, gradientStepsPerUpdate);
+        }
+        /** Returns a new ReplayBufferConfig with the specified gradientStepsPerUpdate value. */
+        public ReplayBufferConfig withGradientStepsPerUpdate(int value) {
+            return new ReplayBufferConfig(this.capacity, this.batchSize, this.updateEveryNSteps, new IntRange(value, this.gradientStepsPerUpdate.min, this.gradientStepsPerUpdate.max));
         }
     }
 

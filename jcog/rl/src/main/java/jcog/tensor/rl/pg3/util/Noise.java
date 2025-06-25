@@ -45,17 +45,21 @@ public final class Noise {
             Objects.requireNonNull(config, "NoiseConfig cannot be null");
             Util.validate(actionDim, ad -> ad > 0, "Action dimension must be positive");
 
-            // Assuming PerlinNoiseConfig might be part of ActionConfig.NoiseConfig in the future,
-            // or these parameters are added to NoiseConfig directly.
-            // For now, using some defaults for Perlin timeStep if not in config.
-            // A more robust solution would be to have Perlin-specific params in NoiseConfig.
-            float perlinTimeStep = config.ouDt() != null ? config.ouDt().floatValue() : 0.1f; // Reuse ouDt for now, or add dedicated param
-
             return switch (config.type()) {
-                case OU -> new OrnsteinUhlenbeckNoise(actionDim, config.stddev().floatValue(),
-                                                      config.ouTheta().floatValue(), config.ouDt().floatValue());
+                case OU -> {
+                    Objects.requireNonNull(config.ouTheta(), "ouTheta must be configured for OU noise.");
+                    Objects.requireNonNull(config.ouDt(), "ouDt must be configured for OU noise.");
+                    yield new OrnsteinUhlenbeckNoise(actionDim, config.stddev().floatValue(),
+                                                     config.ouTheta().floatValue(), config.ouDt().floatValue());
+                }
                 case GAUSSIAN -> new GaussianNoise(config.stddev().floatValue());
-                case PERLIN -> new PerlinNoise.PerlinNoiseStrategy(actionDim, config.stddev().floatValue(), perlinTimeStep);
+                case PERLIN -> {
+                    // For Perlin, if ouDt is available use it, otherwise a default.
+                    // This assumes Perlin might also benefit from a time step like parameter.
+                    // A dedicated perlinTimeStep in NoiseConfig would be cleaner.
+                    float perlinTimeStep = (config.ouDt() != null) ? config.ouDt().floatValue() : 0.1f;
+                    yield new PerlinNoise.PerlinNoiseStrategy(actionDim, config.stddev().floatValue(), perlinTimeStep);
+                }
                 case NONE -> new NoneNoise();
             };
         }
