@@ -25,11 +25,11 @@ public class OnPolicyBuffer implements AgentMemory {
     @Override
     public void add(Experience2 experience) {
         Objects.requireNonNull(experience, "Experience cannot be null.");
-        if (buffer.size() < this.capacity) {
-            buffer.add(experience);
-        }
-        // If buffer is full, new experiences are not added.
-        // The agent is expected to process and clear the buffer.
+        // The buffer is allowed to grow. Agents are responsible for checking size
+        // against their configured episode/batch length and clearing the buffer after processing.
+        // The 'capacity' field can serve as a hint for initial allocation or for agents
+        // that might have other reasons to inspect it, but it doesn't strictly limit additions here.
+        buffer.add(experience);
     }
 
     @Override

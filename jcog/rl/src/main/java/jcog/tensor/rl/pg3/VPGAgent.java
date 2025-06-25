@@ -65,7 +65,11 @@ public class VPGAgent extends BasePolicyGradientAgent {
         }
         this.memory.add(experience);
 
-        if (experience.done()) {
+        // If done is always false from apply(), we need another trigger for updates.
+        // Using buffer size, similar to PPOAgent, based on configured episodeLength.
+        boolean bufferFull = this.memory.size() >= config.memoryConfig().episodeLength().intValue();
+
+        if (bufferFull || experience.done()) { // Retain done() check in case it's used differently later
             if (this.memory.size() > 0) {
                 update(0); // totalSteps not critical for this VPG update logic
             }
