@@ -11,11 +11,9 @@ import java.util.function.UnaryOperator;
 
 public class GaussianPolicyNet extends Models.Layers {
     public final NetworkConfig config;
-    public final int inputs;
-    public final int outputs;
+    public final int inputs, outputs;
     public final Models.Layers body;
-    public final Linear muHead;
-    public final Linear logSigmaHead;
+    public final Linear muHead, logSigmaHead;
 
     private static int getLastLayerSize(NetworkConfig config, int inputs) {
         if (config.hiddenLayers() == null || config.hiddenLayers().length == 0) {

@@ -39,14 +39,16 @@ public record PPOAgentConfig(
      * Learning rates for policy and value networks are taken from HyperparamConfig defaults.
      * PPO specific parameters like clip range, epochs, lambda are also from HyperparamConfig defaults.
      */
-    public PPOAgentConfig(int episodeLen) {
+    public PPOAgentConfig(int[] layers, int episodeLen) {
         this(
             new HyperparamConfig(),
             new NetworkConfig(
-                OptimizerConfig.of(new HyperparamConfig().policyLR().floatValue())
+                OptimizerConfig.of(new HyperparamConfig().policyLR().floatValue()),
+                layers
             ),
             new NetworkConfig(
-                OptimizerConfig.of(new HyperparamConfig().valueLR().floatValue())
+                OptimizerConfig.of(new HyperparamConfig().valueLR().floatValue()),
+                layers
             ),
             new ActionConfig(),
             new MemoryConfig(        // PPO uses on-policy memory

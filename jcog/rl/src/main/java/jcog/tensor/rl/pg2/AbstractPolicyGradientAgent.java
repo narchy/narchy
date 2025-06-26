@@ -52,7 +52,7 @@ public abstract class AbstractPolicyGradientAgent extends Agent implements Polic
     final RandomGenerator rng = new XoRoShiRo128PlusRandom();
 
     public final AgentMemory memory;
-    protected final MetricCollector metricCollector;
+    protected MetricCollector metricCollector;
 
     public AbstractPolicyGradientAgent(int i, int o, AgentMemory memory, @Nullable MetricCollector metricCollector) {
         super(i, o);
@@ -64,6 +64,10 @@ public abstract class AbstractPolicyGradientAgent extends Agent implements Polic
         } else {
             this.metricCollector = metricCollector;
         }
+    }
+
+    public void setMetricCollector(MetricCollector metricCollector) {
+        this.metricCollector = metricCollector;
     }
 
     /**

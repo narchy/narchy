@@ -20,7 +20,6 @@ import org.ejml.ops.MatrixIO;
 import org.ejml.simple.ConstMatrix;
 import org.ejml.simple.SimpleMatrix;
 import org.ejml.simple.SimpleOperations;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
@@ -303,18 +302,28 @@ public class Tensor {
     }
 
     public static Stream<Tensor> parameters(Object x) {
-        if (x instanceof Models.Layers l) {
-            return Stream.concat(l.layer.stream().flatMap(Tensor::parameters), parametersReflect(x));
-        }
-
-        return parametersReflect(x);
+        return _parameters(x).distinct();
     }
 
-    private static @NotNull Stream<Tensor> parametersReflect(Object x) {
+    private static Stream<Tensor> _parameters(Object x) {
+        if (x instanceof Tensor t && t.parameter)
+            return Stream.of(t);
+
+        if (x instanceof Models.Layers l)
+            return l.layer.stream().flatMap(Tensor::parameters);
+
         return Reflect.on(x).fieldsRecursive(true, false, false,
-                        (fieldName, obj, parent) -> obj instanceof Tensor t && t.parameter)
-                .stream().map(y -> (Tensor) ((Reflect) y).object);
+                        (fieldName, obj, parent) -> obj!=null)
+                .stream().flatMap(y -> {
+                    return parameters(((Reflect)y).object);
+                });
     }
+
+//    private static Stream<Tensor> parametersReflect(Object x) {
+//        return Reflect.on(x).fieldsRecursive(true, false, false,
+//                        (fieldName, obj, parent) -> obj instanceof Tensor t && t.parameter)
+//                .stream().map(y -> (Tensor) ((Reflect) y).object);
+//    }
 
     public static Tensor stack(Tensor[] tensors, int dim) {
         if (dim != 1)
