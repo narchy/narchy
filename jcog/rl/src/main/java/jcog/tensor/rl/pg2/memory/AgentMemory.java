@@ -1,4 +1,4 @@
-package jcog.tensor.rl.pg3.memory;
+package jcog.tensor.rl.pg2.memory;
 
 import jcog.tensor.rl.pg.util.Experience2;
 
@@ -48,4 +48,6 @@ public interface AgentMemory {
      * @return The maximum number of experiences the buffer can hold.
      */
     int capacity();
+
+
 }

@@ -1,4 +1,4 @@
-package jcog.tensor.rl.pg3.configs;
+package jcog.tensor.rl.pg2.configs;
 
 import jcog.signal.IntRange;
 

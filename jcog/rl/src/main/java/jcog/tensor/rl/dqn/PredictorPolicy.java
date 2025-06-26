@@ -36,8 +36,7 @@ public abstract class PredictorPolicy implements Policy {
     protected PredictorPolicy(Supplier<Predictor> p, @Nullable Supplier<Predictor> pTarget) {
         this.p = p.get();
         this.pTarget = pTarget != null ? p.get() : this.p;
-        transferRate = p != pTarget ?
-            new FloatRange(0.05f, 0, 1) : null;
+        transferRate = p == pTarget ? null : new FloatRange(0.05f, 0, 1);
     }
 
     @Override

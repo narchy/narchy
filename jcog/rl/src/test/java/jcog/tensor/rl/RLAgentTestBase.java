@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
 import java.util.Random;
+import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
 public abstract class RLAgentTestBase {
@@ -14,7 +15,7 @@ public abstract class RLAgentTestBase {
     protected static final double LEARNING_THRESHOLD_IMPROVEMENT = 0.1; // Min improvement factor
     protected static final double MIN_PERFORMANCE_MATCHING_TASK = -0.1; // For the matching task specifically
 
-    protected Random random = new Random(12345); // For environment and reproducible tests
+    protected RandomGenerator random = new Random(12345); // For environment and reproducible tests
 
 
 
@@ -23,7 +24,7 @@ public abstract class RLAgentTestBase {
      * This is a simple argmax implementation.
      */
     protected int selectDiscreteAction(double[] continuousAction, int numDiscreteActions) {
-        if (continuousAction.length != numDiscreteActions && continuousAction.length == 1 && numDiscreteActions > 1) {
+        if (continuousAction.length == 1 && numDiscreteActions > 1) {
             // If agent outputs a single value for a multi-action discrete space,
             // this is likely an error in setup or agent type.
             // However, for robustness, we can try to map it.
@@ -84,9 +85,9 @@ public abstract class RLAgentTestBase {
                     result = env.step(actionVec);
                 }
 
-                currentState = result.nextState;
-                episodeReward += result.reward;
-                lastEvalReward = result.reward; // Store for next call to act
+                currentState = result.nextState();
+                episodeReward += result.reward();
+                lastEvalReward = result.reward(); // Store for next call to act
                 //lastEvalDone = result.done;     // Store for next call to act
             }
             totalReward += episodeReward;

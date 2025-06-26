@@ -1,4 +1,4 @@
-package jcog.tensor.rl.pg3.configs;
+package jcog.tensor.rl.pg2.configs;
 
 import java.util.Objects;
 
@@ -30,18 +30,20 @@ public record VPGAgentConfig(
      * Default constructor that initializes with default configurations.
      * Learning rates for policy and value networks are taken from HyperparamConfig defaults.
      */
-    public VPGAgentConfig() {
+    public VPGAgentConfig(int[] layers, int episodeLen) {
         this(
             new HyperparamConfig(), // Default hyperparameters
             new NetworkConfig( // Default network config for policy
-                OptimizerConfig.of(new HyperparamConfig().policyLR().floatValue()) // Uses default policy LR
+                OptimizerConfig.of(new HyperparamConfig().policyLR().floatValue()), // Uses default policy LR
+                layers
             ),
             new NetworkConfig( // Default network config for value function
-                OptimizerConfig.of(new HyperparamConfig().valueLR().floatValue()) // Uses default value LR
+                OptimizerConfig.of(new HyperparamConfig().valueLR().floatValue()), // Uses default value LR
+                layers
             ),
             new ActionConfig(),     // Default action config
             new MemoryConfig(       // Default memory config for on-policy
-                MemoryConfig.DEFAULT_EPISODE_LENGTH.intValue()
+                episodeLen
             )
         );
     }

@@ -408,7 +408,7 @@ public class DDPG extends AbstractPG {
         /**
          * Helper class to store sampled batch data
          */
-        public class SampleBatch {
+        public static class SampleBatch {
             public final List<Experience> experiences;
             public final IntArrayList indices;
             public final float[] importanceSamplingWeights;

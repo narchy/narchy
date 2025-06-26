@@ -136,7 +136,7 @@ public class StreamAC extends AbstractPG {
         this.policyTraces = new EligibilityTraces(gamma, lambda);
         this.valueTraces = new EligibilityTraces(gamma, lambda);
 
-        var weightClip = this.weightClip!=0 ? new Optimizers.WeightClip(this.weightClip) : null;
+        var weightClip = StreamAC.weightClip !=0 ? new Optimizers.WeightClip(StreamAC.weightClip) : null;
 
         this.policyOptimizer = new ObGD(policyLr, kappaPolicy, policyTraces, TD_ERR, weightClip).optimizer();
         this.valueOptimizer = new ObGD(valueLr, kappaValue, valueTraces, TD_ERR, weightClip).optimizer();

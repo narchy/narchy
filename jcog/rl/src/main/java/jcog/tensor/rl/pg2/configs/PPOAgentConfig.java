@@ -1,4 +1,4 @@
-package jcog.tensor.rl.pg3.configs;
+package jcog.tensor.rl.pg2.configs;
 
 import java.util.Objects;
 
@@ -39,7 +39,7 @@ public record PPOAgentConfig(
      * Learning rates for policy and value networks are taken from HyperparamConfig defaults.
      * PPO specific parameters like clip range, epochs, lambda are also from HyperparamConfig defaults.
      */
-    public PPOAgentConfig() {
+    public PPOAgentConfig(int episodeLen) {
         this(
             new HyperparamConfig(),
             new NetworkConfig(
@@ -50,7 +50,7 @@ public record PPOAgentConfig(
             ),
             new ActionConfig(),
             new MemoryConfig(        // PPO uses on-policy memory
-                MemoryConfig.DEFAULT_EPISODE_LENGTH.intValue()
+                episodeLen
             )
         );
     }

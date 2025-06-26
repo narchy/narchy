@@ -8,8 +8,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class Agent {
 
-    public final int inputs;
-    public final int actions;
+    public final int inputs, actions;
     public final double[] actionPrev, actionNext, inputPrev;
 
     public transient float reward = Float.NaN;

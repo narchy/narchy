@@ -437,7 +437,7 @@ public class DDPGAuto extends AbstractPG {
             var cumsum = 0.0f;
             for (var i = 0; i < actualSize; i++) {
                 cumsum += probabilities[i] / sum;
-                cumulativeSum[i] = (float)cumsum;
+                cumulativeSum[i] = cumsum;
             }
 
             var effectiveBatchSize = Math.min(batchSize, actualSize);
@@ -523,7 +523,7 @@ public class DDPGAuto extends AbstractPG {
             return experiences.size();
         }
 
-        public class SampleBatch {
+        public static class SampleBatch {
             public final List<Experience> experiences;
             public final IntArrayList indices;
             public final float[] importanceSamplingWeights;

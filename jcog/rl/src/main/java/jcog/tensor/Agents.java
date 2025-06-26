@@ -8,15 +8,15 @@ import jcog.tensor.rl.blackbox.CMAESZeroPolicy;
 import jcog.tensor.rl.blackbox.PopulationPolicy;
 import jcog.tensor.rl.dqn.PolicyAgent;
 import jcog.tensor.rl.pg.*;
-import jcog.tensor.rl.pg2.DDPGStrategy;
-import jcog.tensor.rl.pg2.PGBuilder;
-import jcog.tensor.rl.pg3.configs.NetworkConfig;
+import jcog.tensor.rl.pg2.VPGAgent;
+import jcog.tensor.rl.pg2.configs.VPGAgentConfig;
 
 import java.util.Random;
 
 import static java.lang.Math.round;
 
-public class Agents {
+public enum Agents {
+    ;
 
 
 //    public static Agent DQmlp(int inputs, int actions) {
@@ -386,21 +386,28 @@ public class Agents {
     }
 
     public static Agent VPG(int i, int o) {
-        float s = 2;
-        return new VPG(i, o, round(i * s), round(i * s), 32).agent();
+        float s = 3;
+        var h = round(i * s);
+        var episodeLen = 16;
+        //return new VPG(i, o, h, h, episodeLen).agent();
+        return new VPGAgent(new VPGAgentConfig(new int[]{
+            //h, h, h
+            //h, h
+            h, h, h/2
+        }, episodeLen), i, o);
     }
 
     public static Agent PPO(int i, int o) {
-        var s = 4;
-        var episodes = 24;
+        float s = 4;
+        var episodeLen = 24;
         var h = round(i * s);
-        return new PPO(i, o, h, h, episodes).agent();
+        return new PPO(i, o, h, h, episodeLen).agent();
 
         //return new PPOAgent(new PPOAgentConfig(), i, o);
     }
 
     public static Agent StreamAC(int i, int o) {
-        var s = 4;
+        float s = 4;
         return new StreamAC(i, o, round(i * s), round(i * s)).agent();
     }
 
@@ -413,17 +420,7 @@ public class Agents {
         float s = 4;
         int h = round(i*s);
 
-        //return new DDPG(i, o, h, h).agent();
-
-
-        var hyperparams = new PGBuilder.HyperparamConfig();
-        var actionConfig = new PGBuilder.ActionConfig();
-        var memoryConfig = new PGBuilder.MemoryConfig(32, // episodeLength for on-policy
-            new PGBuilder.MemoryConfig.ReplayBufferConfig(1024, 4) // replayBuffer for off-policy
-        );
-        var policyNetConfig = new NetworkConfig(3e-4f, h, h);
-        var valueNetConfig = new NetworkConfig(1e-3f, h, h);
-        return new PolicyGradientModel(i, o, DDPGStrategy.ddpgStrategy(i, o, actionConfig, policyNetConfig, valueNetConfig, memoryConfig, hyperparams)).agent();
+        return new DDPG(i, o, h, h).agent();
     }
 
     public static Agent ReinforceODE(int i, int o) {

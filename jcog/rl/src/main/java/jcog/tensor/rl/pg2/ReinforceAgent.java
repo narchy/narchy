@@ -1,36 +1,30 @@
-package jcog.tensor.rl.pg3;
+package jcog.tensor.rl.pg2;
 
 import jcog.tensor.Tensor;
 import jcog.tensor.rl.pg.util.Experience2;
-import jcog.tensor.rl.pg3.configs.ReinforceAgentConfig;
-import jcog.tensor.rl.pg3.memory.AgentMemory;
-import jcog.tensor.rl.pg3.memory.OnPolicyBuffer;
-import jcog.tensor.rl.pg3.networks.GaussianPolicyNet;
-import jcog.tensor.rl.pg3.util.AgentUtils;
+import jcog.tensor.rl.pg2.configs.ReinforceAgentConfig;
+import jcog.tensor.rl.pg2.memory.OnPolicyBuffer;
+import jcog.tensor.rl.pg2.networks.GaussianPolicyNet;
+import jcog.tensor.rl.pg2.util.AgentUtils;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class ReinforceAgent extends BasePolicyGradientAgent {
 
     public final ReinforceAgentConfig config;
     public final GaussianPolicyNet policy;
     public final Tensor.Optimizer policyOptimizer;
-    public final AgentMemory memory;
 
     private final Tensor.GradQueue policyGradQueue;
 
     public ReinforceAgent(ReinforceAgentConfig config, int stateDim, int actionDim) {
-        super(stateDim, actionDim);
+        super(stateDim, actionDim, new OnPolicyBuffer(config.memoryConfig().episodeLength().intValue()));
         Objects.requireNonNull(config, "Agent configuration cannot be null");
         this.config = config;
 
         this.policy = new GaussianPolicyNet(config.policyNetworkConfig(), stateDim, actionDim);
         this.policyOptimizer = config.policyNetworkConfig().optimizer().build();
-
-        // Ensure memoryConfig.episodeLength() is not null due to ReinforceAgentConfig constructor validation
-        this.memory = new OnPolicyBuffer(config.memoryConfig().episodeLength().intValue());
 
         this.policyGradQueue = new Tensor.GradQueue();
 
@@ -54,26 +48,6 @@ public class ReinforceAgent extends BasePolicyGradientAgent {
     }
 
     @Override
-    public void recordExperience(Experience2 experience) {
-        Objects.requireNonNull(experience, "Experience cannot be null");
-        if (!this.trainingMode) {
-            // If not in training mode, typically don't record experience or update.
-            // However, some evaluation phases might still want to log/store for analysis.
-            // For REINFORCE, training updates are episode-based, so this check is crucial.
-            return;
-        }
-        this.memory.add(experience);
-
-        if (experience.done()) {
-            if (this.memory.size() > 0) {
-                update(0); // totalSteps is not strictly needed by this REINFORCE update logic
-            }
-            // Crucially, clear memory after episode processing for on-policy REINFORCE
-            this.memory.clear();
-        }
-    }
-
-    @Override
     public void update(long totalSteps) {
         if (!this.trainingMode || this.memory.size() == 0) {
             return;
@@ -83,8 +57,8 @@ public class ReinforceAgent extends BasePolicyGradientAgent {
 
         Tensor returns = computeReturns(episode);
 
-        List<Tensor> statesList = episode.stream().map(Experience2::state).collect(Collectors.toList());
-        List<Tensor> actionsList = episode.stream().map(e -> Tensor.row(e.action())).collect(Collectors.toList());
+        List<Tensor> statesList = episode.stream().map(Experience2::state).toList();
+        List<Tensor> actionsList = episode.stream().map(e -> Tensor.row(e.action())).toList();
 
         // It's generally more efficient to batch forward passes if possible.
         Tensor statesBatch = Tensor.concatRows(statesList);

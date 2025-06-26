@@ -1,10 +1,21 @@
-package jcog.tensor.rl.pg3;
+package jcog.tensor.rl.pg2;
 
 // Removed unused imports for Tensor and Experience2 as they are not directly used in this abstract class's code.
 // Subclasses will import them as needed.
 
+import jcog.Fuzzy;
+import jcog.Util;
 import jcog.agent.Agent;
+import jcog.math.normalize.FloatNormalizer;
+import jcog.random.XoRoShiRo128PlusRandom;
+import jcog.tensor.Tensor;
+import jcog.tensor.rl.pg.util.Experience2;
+import jcog.tensor.rl.pg2.memory.AgentMemory;
+import org.eclipse.collections.api.block.function.primitive.FloatToFloatFunction;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
+import java.util.random.RandomGenerator;
 
 /**
  * An abstract base class for implementing {@link PolicyGradientAgent}.
@@ -17,6 +28,11 @@ import org.jetbrains.annotations.Nullable;
  * to propagate the training mode to their internal neural network components.</p>
  */
 public abstract class BasePolicyGradientAgent extends Agent implements PolicyGradientAgent {
+
+    //public final FloatRange actionRevise = FloatRange.unit(1.0f);
+    private final FloatToFloatFunction rewardNorm = new FloatNormalizer(2, 1000);
+    @Deprecated private final double[] lastAction;
+    public boolean rewardNormalize, inputPolarize, rewardPolarize;
 
     /**
      * Flag indicating whether the agent is in training mode. Defaults to true.
@@ -31,10 +47,25 @@ public abstract class BasePolicyGradientAgent extends Agent implements PolicyGra
      */
     protected long updateCount = 0;
 
-    public BasePolicyGradientAgent(int i, int o) {
+    final RandomGenerator rng = new XoRoShiRo128PlusRandom();
+
+    public final AgentMemory memory;
+
+    public BasePolicyGradientAgent(int i, int o, AgentMemory memory) {
         super(i, o);
+        this.memory = memory;
+        this.lastAction = new double[o];
     }
 
+    @Override
+    public final void recordExperience(Experience2 experience) {
+        Objects.requireNonNull(experience, "Experience cannot be null");
+        if (!this.trainingMode)
+            return; // Do not record or update if not in training mode
+
+        this.memory.add(experience);
+        update(0); // totalSteps not critical for this VPG update logic
+    }
     /**
      * {@inheritDoc}
      * <p>This implementation returns the current value of the protected {@code trainingMode} field.</p>
@@ -93,6 +124,24 @@ public abstract class BasePolicyGradientAgent extends Agent implements PolicyGra
 
     @Override
     public void apply(@Nullable double[] inputPrev, double[] actionPrev, float reward, double[] input, double[] actionNext) {
-
+        Util.replaceNaNwithRandom(input, rng);
+        double r = Double.isNaN(reward) ? rng.nextFloat() : reward;
+        if (inputPolarize) Fuzzy.polarize(input);
+        //if (rng.nextBoolean(actionRevise.asFloat())) pg.reviseAction(this.lastAction);
+        if (rewardNormalize) r = rewardNorm.valueOf((float) r);
+        if (rewardPolarize) r = Fuzzy.polarize(r);
+        double[] a = act(inputPrev, actionPrev, r, input, false);
+        Fuzzy.unpolarize(a);
+        System.arraycopy(a, 0, actionNext, 0, actionNext.length);
+        System.arraycopy(a, 0, this.lastAction, 0, a.length);
     }
+
+    private double[] act(double[] inputPrev, double[] actionPrev, double reward, double[] input, boolean done) {
+        var S = Tensor.row(input);
+        var action = selectAction(S, false);
+        recordExperience(new Experience2(inputPrev!=null ? Tensor.row(inputPrev) : null, actionPrev, reward, S, done));
+        return action;
+    }
+
+
 }

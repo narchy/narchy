@@ -4,7 +4,6 @@ import jcog.math.FloatSupplier;
 import jcog.tensor.Models;
 import jcog.tensor.Optimizers;
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg2.PGBuilder;
 import jcog.tensor.util.TensorUtil;
 
 import java.util.function.UnaryOperator;
@@ -25,26 +24,22 @@ import static jcog.tensor.Models.Layers.layerLerp;
 @Deprecated
 public class VPG extends Reinforce {
 
-    public final UnaryOperator<Tensor> value;
-
-    final FloatSupplier valueLearning = ()->policyLearning.floatValue()*(10/3f);
-
-    final Tensor.Optimizer valueOpt =
-        new Optimizers.ADAM(valueLearning).get();
-        //new Optimizers.SGD(valueLearning).get();
-        //new Optimizers.LION(valueLearning).get(5);
-        //new Optimizers.Ranger(valueLearning).get(256);
-        //new Optimizers.SGDMomentum(valueLearning, 0.9f).get(256);
-
     private static final Tensor.Loss valueLossFn =
-        Tensor.Loss.MeanSquared
-        //Tensor.Loss.Huber
-        ;
-
+            Tensor.Loss.MeanSquared
+            //Tensor.Loss.Huber
+            ;
+    public final UnaryOperator<Tensor> value;
+    final FloatSupplier valueLearning = () -> policyLearning.floatValue() * (10 / 3f);
+    //new Optimizers.SGD(valueLearning).get();
+    //new Optimizers.LION(valueLearning).get(5);
+    //new Optimizers.Ranger(valueLearning).get(256);
+    //new Optimizers.SGDMomentum(valueLearning, 0.9f).get(256);
+    final Tensor.Optimizer valueOpt =
+            new Optimizers.ADAM(valueLearning).get();
     public double valueLoss;
 
     UnaryOperator<Tensor> valueActivation =
-        policyActivation;
+            policyActivation;
 
     public VPG(int inputs, int outputs, int hiddenPolicy, int hiddenValue, int episodeLen) {
         super(inputs, outputs, hiddenPolicy, episodeLen);
@@ -64,8 +59,9 @@ public class VPG extends Reinforce {
      * A high or increasing value loss indicates that the value predictions are inaccurate,
      * signaling issues in learning.
      */
-    @Override protected final void updateValue(Tensor returns) {
-        train(value, ()-> {
+    @Override
+    protected final void updateValue(Tensor returns) {
+        train(value, () -> {
             var s = states.size();
             this.valueLoss = TensorUtil.sumParallel(s, i -> Math.abs(minimizeValue(returns, i))) / s;
             ctx.div(s).optimize(valueOpt);
@@ -74,9 +70,9 @@ public class VPG extends Reinforce {
 
     double minimizeValue(Tensor returns, int i) {
         return value(states.get(i))
-            .loss(returns.slice(i), valueLossFn)
-            .minimize(ctx)
-            .scalar();
+                .loss(returns.slice(i), valueLossFn)
+                .minimize(ctx)
+                .scalar();
     }
 
     protected Tensor value(Tensor s) {
@@ -87,9 +83,10 @@ public class VPG extends Reinforce {
         return value(states.get(i)).scalar();
     }
 
-    @Override protected double[] values(int r) {
+    @Override
+    protected double[] values(int r) {
         var vals = new double[r + 1];
-        TensorUtil.runParallel(0, r, (s, e)->{
+        TensorUtil.runParallel(0, r, (s, e) -> {
             for (var i = s; i < e; i++)
                 vals[i] = baselineValue(i);
         });

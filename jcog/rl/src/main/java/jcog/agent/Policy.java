@@ -54,6 +54,5 @@ import java.util.Random;
 ////                    alpha * ((action[a] * (reward + gq)) - qPrev[a])
 //                    //alpha * (action[a] * reward + (1-action[a]) * (1-reward) + gq - qPrev[a])
 ////                    alpha * action[a] * (reward + gq)
-;
 //experimental
 //            Q[a] += alpha * action[a] * ((Fuzzy.polarize(reward) * (1-gamma)) + (qNext[a]-qPrev[a]) * gamma);

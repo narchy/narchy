@@ -3,18 +3,15 @@ package jcog.tensor.rl.util;
 import jcog.tensor.Models;
 import jcog.tensor.Models.Linear;
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg3.configs.NetworkConfig;
+import jcog.tensor.rl.pg2.configs.NetworkConfig;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
-public final class RLNetworkUtils {
-
-    private RLNetworkUtils() {
-        // Utility class, not to be instantiated
-    }
+public enum RLNetworkUtils {
+    ;
 
     /**
      * Creates a Multi-Layer Perceptron (MLP) with specific initialization and dropout settings

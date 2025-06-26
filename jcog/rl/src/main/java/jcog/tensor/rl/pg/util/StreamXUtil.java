@@ -19,7 +19,8 @@ import java.util.random.RandomGenerator;
 /**
  * Base components shared between StreamTD and StreamAC implementations
  */
-public class StreamXUtil {
+public enum StreamXUtil {
+    ;
 
     public static final float layerNormRate =
         1e-3f; //PAPER

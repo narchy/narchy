@@ -238,7 +238,7 @@ public abstract class AbstractPG {
         //sigma = Tensor.max(sigma, Tensor.zerosShaped(sigma).fill(0.242 * sigmaMin)); //ensure non-negative
 
         //return sigma.log().mean().add((Math.log(2 * Math.PI) + 1)/2);
-        return Tensor.max(Tensor.scalar(0), sigma.log().mean().add((Math.log(2 * Math.PI) + 1)/2));
+        return Tensor.max(Tensor.scalar(0), sigma.log().mean().add((Math.log(2 * PI) + 1)/2));
         //return sigma.log().add(Math.log(Math.sqrt(2 * PI * Math.E)) / 2).mean();
         //return sigma.log().mean().add(-Math.log(sigmaMin) + (Math.log(2 * Math.PI) + 1)/2);
         //return sigma.log().add(-Math.log(sigmaMin) + (Math.log(2 * Math.PI) + 1)/2).mean();

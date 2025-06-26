@@ -3,19 +3,17 @@ package jcog.tensor.rl.pg;
 import jcog.data.list.Lst;
 import jcog.signal.FloatRange;
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg2.PGBuilder;
 
 import java.util.List;
 
 /**
- * @deprecated This class represents an older PPO implementation.
+ * This class represents an older PPO implementation.
  *             Please use {@link PGBuilder.PPOStrategy} (found within PGBuilder.java)
  *             by directly instantiating it with {@link PGBuilder.GaussianPolicy},
  *             {@link PGBuilder.ValueNetwork}, and other necessary components
  *             through constructor injection. The new PPOStrategy offers a more
  *             standard and flexible PPO implementation, including GAE.
  */
-@Deprecated
 public class PPO extends VPG {
 
     public final Clipping clipping =
@@ -86,7 +84,7 @@ public class PPO extends VPG {
     }
 
     /** epsilon = (0, 1] */
-    @Deprecated private Tensor clip(Tensor x, double epsilon, Clipping c) {
+    @Deprecated private static Tensor clip(Tensor x, double epsilon, Clipping c) {
         double min = 1 - epsilon, max = 1 + epsilon;
         return switch (c) {
             case HARD    -> x.clip(min, max);

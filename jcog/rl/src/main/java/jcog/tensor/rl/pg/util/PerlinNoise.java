@@ -3,9 +3,10 @@ package jcog.tensor.rl.pg.util;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class PerlinNoise {
+public enum PerlinNoise {
+    ;
     private static final int PERMUTATION_SIZE = 256;
-    private static int[] permutations = new int[PERMUTATION_SIZE * 2];
+    private static final int[] permutations = new int[PERMUTATION_SIZE * 2];
 
     static {
         Random random = ThreadLocalRandom.current();

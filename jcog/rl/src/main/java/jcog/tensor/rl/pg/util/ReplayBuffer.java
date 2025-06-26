@@ -2,7 +2,7 @@ package jcog.tensor.rl.pg.util;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 public class ReplayBuffer {
     private final Deque<Experience> buffer;
@@ -19,7 +19,7 @@ public class ReplayBuffer {
         buffer.addLast(e);
     }
 
-    public Experience sample(Random rng) {
+    public Experience sample(RandomGenerator rng) {
         return buffer.stream().skip(rng.nextInt(buffer.size())).findFirst().orElseThrow();
     }
 

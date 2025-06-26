@@ -1,11 +1,10 @@
-package jcog.tensor.rl.pg3.memory;
+package jcog.tensor.rl.pg2.memory;
 
 import jcog.data.list.Lst;
 import jcog.tensor.rl.pg.util.Experience2;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class OnPolicyBuffer implements AgentMemory {
 
@@ -22,14 +21,13 @@ public class OnPolicyBuffer implements AgentMemory {
         this.buffer = new Lst<>(capacity);
     }
 
+
     @Override
     public void add(Experience2 experience) {
-        Objects.requireNonNull(experience, "Experience cannot be null.");
-        if (buffer.size() < this.capacity) {
-            buffer.add(experience);
-        }
-        // If buffer is full, new experiences are not added.
-        // The agent is expected to process and clear the buffer.
+        while (buffer.size() + 1 >= this.capacity)
+            buffer.removeFirst();
+
+        buffer.add(experience);
     }
 
     @Override

@@ -1,8 +1,9 @@
-package jcog.tensor.rl.pg3.util; // New package
+package jcog.tensor.rl.pg2.util; // New package
 
 import jcog.Util;
 import jcog.tensor.Tensor;
 
+import java.util.Arrays;
 import java.util.function.UnaryOperator;
 
 public enum AgentUtils { // Using enum for utility class style
@@ -28,9 +29,7 @@ public enum AgentUtils { // Using enum for utility class style
             // Normalizing would lead to NaNs or Infs.
             // Set all elements to 0 in this case, or leave as is if that's preferred.
             // For advantages, setting to 0 if all are same (so stddev is 0) is common.
-            for (int i = 0; i < x.length; i++) {
-                x[i] = 0.0;
-            }
+            Arrays.fill(x, 0.0);
             return;
         }
         for (var i = 0; i < x.length; i++) {
@@ -90,7 +89,7 @@ public enum AgentUtils { // Using enum for utility class style
         }
 
         public Tensor logProb(Tensor action) {
-            var variance = sigma.sqr().add((float) AgentUtils.EPSILON);
+            var variance = sigma.sqr().add((float) EPSILON);
             var diffSq = action.sub(mu).sqr();
             var term1 = diffSq.div(variance);
             var term2 = variance.log().add(Math.log(2 * Math.PI));
@@ -104,7 +103,7 @@ public enum AgentUtils { // Using enum for utility class style
         }
 
         public Tensor entropy() {
-            var logSigma = sigma.add((float)AgentUtils.EPSILON).log();
+            var logSigma = sigma.add((float) EPSILON).log();
             var entropyPerDim = logSigma.add(0.5 * (1.0 + Math.log(2 * Math.PI)));
 
             if (entropyPerDim.cols() > 1 && entropyPerDim.rows() > 0) { // Ensure not scalar and has columns to sum

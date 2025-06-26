@@ -1,8 +1,8 @@
-package jcog.tensor.rl.pg3.networks;
+package jcog.tensor.rl.pg2.networks;
 
 import jcog.tensor.Models;
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg3.configs.NetworkConfig;
+import jcog.tensor.rl.pg2.configs.NetworkConfig;
 import jcog.tensor.rl.util.RLNetworkUtils;
 
 import java.util.Objects;

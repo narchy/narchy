@@ -3,7 +3,6 @@ package jcog.tensor.rl.pg;
 import jcog.tensor.Models;
 import jcog.tensor.Optimizers;
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg2.PGBuilder;
 
 import java.util.function.UnaryOperator;
 

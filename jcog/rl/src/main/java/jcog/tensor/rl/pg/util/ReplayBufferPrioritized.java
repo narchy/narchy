@@ -3,7 +3,7 @@ package jcog.tensor.rl.pg.util;
 import jcog.data.list.Lst;
 
 import java.util.List;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /** untested */
 public class ReplayBufferPrioritized {
@@ -29,7 +29,7 @@ public class ReplayBufferPrioritized {
         maxPriority = Math.max(maxPriority, priority);
     }
 
-    public Experience sample(Random rng) {
+    public Experience sample(RandomGenerator rng) {
         double sum = priorities.stream().mapToDouble(p -> Math.pow(p / maxPriority, 0.6)).sum();
         double prefixSum = 0.0;
         double randomValue = rng.nextDouble() * sum;

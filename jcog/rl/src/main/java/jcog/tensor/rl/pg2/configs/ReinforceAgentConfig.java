@@ -1,4 +1,4 @@
-package jcog.tensor.rl.pg3.configs;
+package jcog.tensor.rl.pg2.configs;
 
 import java.util.Objects;
 
@@ -28,7 +28,7 @@ public record ReinforceAgentConfig(
      * Default constructor that initializes with default configurations.
      * Policy learning rate is taken from the default HyperparamConfig.
      */
-    public ReinforceAgentConfig() {
+    public ReinforceAgentConfig(int episodeLen) {
         this(
             new HyperparamConfig(), // Default hyperparameters
             new NetworkConfig( // Default network config for policy
@@ -36,7 +36,7 @@ public record ReinforceAgentConfig(
             ),
             new ActionConfig(),     // Default action config
             new MemoryConfig(       // Default memory config for on-policy
-                MemoryConfig.DEFAULT_EPISODE_LENGTH.intValue()
+                episodeLen
             )
         );
     }

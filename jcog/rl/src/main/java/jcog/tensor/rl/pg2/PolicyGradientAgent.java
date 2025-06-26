@@ -1,10 +1,10 @@
-package jcog.tensor.rl.pg3;
+package jcog.tensor.rl.pg2;
 
 import jcog.tensor.Tensor;
 import jcog.tensor.rl.pg.util.Experience2;
-import jcog.tensor.rl.pg3.configs.PPOAgentConfig;
-import jcog.tensor.rl.pg3.networks.GaussianPolicyNet;
-import jcog.tensor.rl.pg3.networks.ValueNet;
+import jcog.tensor.rl.pg2.configs.PPOAgentConfig;
+import jcog.tensor.rl.pg2.networks.GaussianPolicyNet;
+import jcog.tensor.rl.pg2.networks.ValueNet;
 
 /**
  * Core interface for Policy Gradient (PG) reinforcement learning agents.

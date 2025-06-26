@@ -10,12 +10,13 @@ import jcog.tensor.util.TensorUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.DoubleSupplier;
 import java.util.function.UnaryOperator;
 
 public class SAC extends AbstractPG {
 
     public final IntRange episode = new IntRange(3, 1, 128);
-    public final FloatRange entropy = new FloatRange(0.01f, -0.15f, 0.15f);
+    public final DoubleSupplier entropy = new FloatRange(0.01f, -0.15f, 0.15f);
 
     public final Models.Layers policy, q1, q2;
 
@@ -24,7 +25,7 @@ public class SAC extends AbstractPG {
     private final List<Double> rewards = new ArrayList<>();
 
     public final FloatRange gamma = new FloatRange(0.9f, 0, 0.9999f);
-    public final FloatRange lambda = new FloatRange(0.95f, 0, 1);
+    public final DoubleSupplier lambda = new FloatRange(0.95f, 0, 1);
 
     private final Tensor.Optimizer policyOpt, q1Opt, q2Opt;
 
@@ -71,7 +72,7 @@ public class SAC extends AbstractPG {
         q2Opt = new Optimizers.ADAM(valueLearn).get();
     }
 
-    private Models.Layers qNetwork(int inputSize, int hidden, int actions, int n) {
+    private static Models.Layers qNetwork(int inputSize, int hidden, int actions, int n) {
         int[] layerSizes = {
             inputSize + actions,
             //hidden,

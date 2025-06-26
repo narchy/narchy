@@ -1,4 +1,4 @@
-package jcog.tensor.rl.pg3.configs;
+package jcog.tensor.rl.pg2.configs;
 
 import jcog.signal.IntRange;
 
@@ -68,8 +68,6 @@ public record MemoryConfig(
         }
     }
 
-    /** Default episode/batch length for on-policy data collection: 2048. Range [64, 8192]. */
-    public static final IntRange DEFAULT_EPISODE_LENGTH = new IntRange(2048, 64, 8192);
     /** Default replay buffer configuration (used if an agent supports off-policy learning). */
     public static final ReplayBufferConfig DEFAULT_REPLAY_BUFFER_CONFIG = new ReplayBufferConfig();
 
@@ -100,7 +98,7 @@ public record MemoryConfig(
      * @param episodeLengthValue The number of steps to collect before an update.
      */
     public MemoryConfig(int episodeLengthValue) {
-        this(new IntRange(episodeLengthValue, DEFAULT_EPISODE_LENGTH.min, DEFAULT_EPISODE_LENGTH.max), null);
+        this(new IntRange(episodeLengthValue, 1, 256), null);
     }
 
     /**
@@ -111,21 +109,12 @@ public record MemoryConfig(
         this(null, replayBufferConfig);
     }
 
-    /**
-     * Default constructor. Initializes with a default episode length (for on-policy)
-     * and a default replay buffer configuration (for potential off-policy use).
-     * Specific agents should typically use a more tailored constructor.
-     */
-    public MemoryConfig() {
-        this(DEFAULT_EPISODE_LENGTH, DEFAULT_REPLAY_BUFFER_CONFIG);
-    }
-
     // Withers for MemoryConfig
     /** Returns a new MemoryConfig with the specified episode length range. */
     public MemoryConfig withEpisodeLength(IntRange episodeLength) { return new MemoryConfig(episodeLength, this.replayBuffer); }
     /** Returns a new MemoryConfig with the specified episode length value. */
     public MemoryConfig withEpisodeLength(int episodeLengthValue) {
-        IntRange currentMinMax = this.episodeLength != null ? this.episodeLength : DEFAULT_EPISODE_LENGTH;
+        IntRange currentMinMax = this.episodeLength;
         return new MemoryConfig(new IntRange(episodeLengthValue, currentMinMax.min, currentMinMax.max), this.replayBuffer);
     }
     /** Returns a new MemoryConfig with the specified replay buffer configuration. */

@@ -171,8 +171,7 @@ import static jcog.Util.sumAbs;
         double errTotal = sumAbs(qd);
         errMean = errTotal / qd.length;
         double errMin = Double.POSITIVE_INFINITY, errMax = Double.NEGATIVE_INFINITY;
-        for (int i = 0, qdLength = qd.length; i < qdLength; i++) {
-            double x = qd[i];
+        for (double x : qd) {
             double xAbs = Math.abs(x);
             errMin = Math.min(errMin, xAbs);
             errMax = Math.max(errMax, xAbs);

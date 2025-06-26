@@ -1,13 +1,12 @@
-package jcog.tensor.rl.pg3;
+package jcog.tensor.rl.pg2;
 
 import jcog.tensor.Tensor;
 import jcog.tensor.rl.pg.util.Experience2;
-import jcog.tensor.rl.pg3.configs.VPGAgentConfig;
-import jcog.tensor.rl.pg3.memory.AgentMemory;
-import jcog.tensor.rl.pg3.memory.OnPolicyBuffer;
-import jcog.tensor.rl.pg3.networks.GaussianPolicyNet;
-import jcog.tensor.rl.pg3.networks.ValueNet;
-import jcog.tensor.rl.pg3.util.AgentUtils;
+import jcog.tensor.rl.pg2.configs.VPGAgentConfig;
+import jcog.tensor.rl.pg2.memory.OnPolicyBuffer;
+import jcog.tensor.rl.pg2.networks.GaussianPolicyNet;
+import jcog.tensor.rl.pg2.networks.ValueNet;
+import jcog.tensor.rl.pg2.util.AgentUtils;
 
 import java.util.List;
 import java.util.Objects;
@@ -20,13 +19,12 @@ public class VPGAgent extends BasePolicyGradientAgent {
     public final ValueNet valueFunction;
     public final Tensor.Optimizer policyOptimizer;
     public final Tensor.Optimizer valueOptimizer;
-    public final AgentMemory memory;
 
     private final Tensor.GradQueue policyGradQueue;
     private final Tensor.GradQueue valueGradQueue;
 
     public VPGAgent(VPGAgentConfig config, int stateDim, int actionDim) {
-        super(stateDim, actionDim);
+        super(stateDim, actionDim, new OnPolicyBuffer(config.memoryConfig().episodeLength().intValue()));
         Objects.requireNonNull(config, "Agent configuration cannot be null");
         this.config = config;
 
@@ -35,8 +33,6 @@ public class VPGAgent extends BasePolicyGradientAgent {
 
         this.policyOptimizer = config.policyNetworkConfig().optimizer().build();
         this.valueOptimizer = config.valueNetworkConfig().optimizer().build();
-
-        this.memory = new OnPolicyBuffer(config.memoryConfig().episodeLength().intValue());
 
         this.policyGradQueue = new Tensor.GradQueue();
         this.valueGradQueue = new Tensor.GradQueue();
@@ -57,21 +53,6 @@ public class VPGAgent extends BasePolicyGradientAgent {
         }
     }
 
-    @Override
-    public void recordExperience(Experience2 experience) {
-        Objects.requireNonNull(experience, "Experience cannot be null");
-         if (!this.trainingMode) {
-            return; // Do not record or update if not in training mode
-        }
-        this.memory.add(experience);
-
-        if (experience.done()) {
-            if (this.memory.size() > 0) {
-                update(0); // totalSteps not critical for this VPG update logic
-            }
-            this.memory.clear(); // Clear memory after episode processing
-        }
-    }
 
     @Override
     public void update(long totalSteps) {
@@ -83,7 +64,12 @@ public class VPGAgent extends BasePolicyGradientAgent {
 
         Tensor returns = computeReturns(episode);
 
-        List<Tensor> statesList = episode.stream().map(Experience2::state).collect(Collectors.toList());
+        List<Tensor> statesList = episode.stream().map(Experience2::state).filter(Objects::nonNull).toList();
+        if (statesList.isEmpty())
+            return;
+        if (statesList.size()!=returns.volume())
+            return; //?
+
         Tensor statesBatch = Tensor.concatRows(statesList);
 
         // 1. Update Value Function

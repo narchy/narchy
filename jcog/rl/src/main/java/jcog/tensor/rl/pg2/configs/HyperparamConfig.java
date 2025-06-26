@@ -1,4 +1,4 @@
-package jcog.tensor.rl.pg3.configs;
+package jcog.tensor.rl.pg2.configs;
 
 import jcog.signal.FloatRange;
 import jcog.signal.IntRange;
@@ -43,9 +43,9 @@ public record HyperparamConfig(
 ) {
 
     /** Default discount factor (gamma): 0.99. Range [0.0, 1.0]. */
-    public static final FloatRange DEFAULT_GAMMA = new FloatRange(0.99f, 0.0f, 1.0f);
+    public static final FloatRange DEFAULT_GAMMA = new FloatRange(0.9f, 0.0f, 1.0f);
     /** Default GAE lambda: 0.95. Range [0.0, 1.0]. */
-    public static final FloatRange DEFAULT_LAMBDA = new FloatRange(0.95f, 0.0f, 1.0f);
+    public static final FloatRange DEFAULT_LAMBDA = new FloatRange(0.5f, 0.0f, 1.0f);
     /** Default entropy bonus coefficient: 0.01. Range [0.0, 1.0]. */
     public static final FloatRange DEFAULT_ENTROPY_BONUS = new FloatRange(0.01f, 0.0f, 1.0f);
     /** Default PPO clipping epsilon: 0.2. Range [0.01, 0.5]. */
@@ -57,7 +57,7 @@ public record HyperparamConfig(
     /** Default value function learning rate: 1e-3. Range [1e-6, 1e-2]. */
     public static final FloatRange DEFAULT_VALUE_LR = new FloatRange(1e-3f, 1e-6f, 1e-2f);
     /** Default number of PPO epochs: 10. Range [1, 100]. */
-    public static final IntRange DEFAULT_EPOCHS = new IntRange(10, 1, 100);
+    public static final IntRange DEFAULT_EPOCHS = new IntRange(1, 1, 100);
     /** Default policy update frequency (e.g., for DDPG/SAC): 1 (update policy as often as critic). Range [1, 1000]. */
     public static final IntRange DEFAULT_POLICY_UPDATE_FREQ = new IntRange(1, 1, 1000);
     /** Default for normalizing advantages: true. */
