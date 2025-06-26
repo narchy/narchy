@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class VPGAgent extends BasePolicyGradientAgent {
+public class VPGAgent extends AbstractPolicyGradientAgent {
 
     public final VPGAgentConfig config;
     public final GaussianPolicyNet policy;
@@ -24,7 +24,7 @@ public class VPGAgent extends BasePolicyGradientAgent {
     private final Tensor.GradQueue valueGradQueue;
 
     public VPGAgent(VPGAgentConfig config, int stateDim, int actionDim) {
-        super(stateDim, actionDim, new OnPolicyBuffer(config.memoryConfig().episodeLength().intValue()));
+        super(stateDim, actionDim, new OnPolicyBuffer(config.memoryConfig().episodeLength().intValue()), null);
         Objects.requireNonNull(config, "Agent configuration cannot be null");
         this.config = config;
 

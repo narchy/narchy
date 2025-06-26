@@ -29,7 +29,7 @@ import java.util.random.RandomGenerator;
  * memory buffers, and configurations. They must also override {@link #setTrainingMode(boolean)}
  * to propagate the training mode to their internal neural network components.</p>
  */
-public abstract class BasePolicyGradientAgent extends Agent implements PolicyGradientAgent {
+public abstract class AbstractPolicyGradientAgent extends Agent implements PolicyGradientAgent {
 
     //public final FloatRange actionRevise = FloatRange.unit(1.0f);
     private final FloatToFloatFunction rewardNorm = new FloatNormalizer(2, 1000);
@@ -54,7 +54,7 @@ public abstract class BasePolicyGradientAgent extends Agent implements PolicyGra
     public final AgentMemory memory;
     protected final MetricCollector metricCollector;
 
-    public BasePolicyGradientAgent(int i, int o, AgentMemory memory, @Nullable MetricCollector metricCollector) {
+    public AbstractPolicyGradientAgent(int i, int o, AgentMemory memory, @Nullable MetricCollector metricCollector) {
         super(i, o);
         this.memory = Objects.requireNonNull(memory, "AgentMemory cannot be null");
         this.lastAction = new double[o];

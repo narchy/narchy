@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class PPOAgent extends BasePolicyGradientAgent {
+public class PPOAgent extends AbstractPolicyGradientAgent {
 
     public final PPOAgentConfig config;
     public final GaussianPolicyNet policy;
@@ -167,9 +167,9 @@ public class PPOAgent extends BasePolicyGradientAgent {
 
             // Record sigma stats from the *last epoch's* distribution
             if (epoch == config.hyperparams().epochs().intValue() - 1) {
-                Tensor sigmas = dist.stddev(); // Assuming stddev() gives the sigma tensor
+                Tensor sigmas = dist.sigma();
                 recordMetric("policy_sigma_mean", sigmas.mean().scalar());
-                recordMetric("policy_sigma_std", sigmas.std(false).scalar()); // Population stddev of the sigmas
+                recordMetric("policy_sigma_std", sigmas.std().scalar()); // Population stddev of the sigmas
             }
         }
 

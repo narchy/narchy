@@ -31,7 +31,6 @@ public abstract class Agent {
      */
     public abstract void apply(@Nullable double[] inputPrev, double[] actionPrev, float reward, double[] input, double[] actionNext);
 
-
     private void reset() {
         inputPrev[0] = Double.NaN; //HACK
     }
@@ -69,7 +68,7 @@ public abstract class Agent {
     }
 
     @Deprecated
-    public final int act(float reward, double[] input, Decide d) {
+    public final int actDiscrete(float reward, double[] input, Decide d) {
         throw new UnsupportedOperationException();
     }
 }

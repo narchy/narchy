@@ -27,7 +27,7 @@ public class InputMatchesChoice extends AbstractAgentTest {
 
             boolean which = rng.nextBoolean();
 
-            int action = agent.act(nextReward, new double[]{which ? 1 : 0, which ? 0 : 1}, deciding );
+            int action = agent.actDiscrete(nextReward, new double[]{which ? 1 : 0, which ? 0 : 1}, deciding );
 
 
             nextReward = (action == (which ? 1 : 0)) ? +1 : -1;

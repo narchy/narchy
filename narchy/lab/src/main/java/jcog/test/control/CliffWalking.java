@@ -83,7 +83,7 @@ public class CliffWalking extends AbstractAgentTest {
 //                    }
 //                }
 
-            int action = a.act(reward, map, deciding);
+            int action = a.actDiscrete(reward, map, deciding);
 
             switch (action) {
                 case LEFT -> x = Util.clamp(x - 1, 0, shapeX - 1);

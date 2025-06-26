@@ -10,7 +10,7 @@ import jcog.tensor.rl.pg2.util.AgentUtils;
 import java.util.List;
 import java.util.Objects;
 
-public class ReinforceAgent extends BasePolicyGradientAgent {
+public class ReinforceAgent extends AbstractPolicyGradientAgent {
 
     public final ReinforceAgentConfig config;
     public final GaussianPolicyNet policy;
@@ -19,7 +19,7 @@ public class ReinforceAgent extends BasePolicyGradientAgent {
     private final Tensor.GradQueue policyGradQueue;
 
     public ReinforceAgent(ReinforceAgentConfig config, int stateDim, int actionDim) {
-        super(stateDim, actionDim, new OnPolicyBuffer(config.memoryConfig().episodeLength().intValue()));
+        super(stateDim, actionDim, new OnPolicyBuffer(config.memoryConfig().episodeLength().intValue()), null);
         Objects.requireNonNull(config, "Agent configuration cannot be null");
         this.config = config;
 

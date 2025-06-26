@@ -33,7 +33,7 @@ public class OneObviousChoice0 extends AbstractAgentTest {
                 easy ? 0 : r.nextFloat()
             };
 
-            int action = agent.act(nextReward, distraction, deciding);
+            int action = agent.actDiscrete(nextReward, distraction, deciding);
 
             acts.addToValue(action, 1);
             nextReward = switch (action) {
