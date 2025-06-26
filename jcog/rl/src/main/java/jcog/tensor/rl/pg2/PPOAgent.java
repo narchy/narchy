@@ -6,7 +6,9 @@ import jcog.tensor.rl.pg2.configs.PPOAgentConfig;
 import jcog.tensor.rl.pg2.memory.OnPolicyBuffer;
 import jcog.tensor.rl.pg2.networks.GaussianPolicyNet;
 import jcog.tensor.rl.pg2.networks.ValueNet;
+import jcog.tensor.rl.pg2.stats.MetricCollector;
 import jcog.tensor.rl.pg2.util.AgentUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Objects;
@@ -23,8 +25,8 @@ public class PPOAgent extends BasePolicyGradientAgent {
     private final Tensor.GradQueue policyGradQueue;
     private final Tensor.GradQueue valueGradQueue;
 
-    public PPOAgent(PPOAgentConfig config, int stateDim, int actionDim) {
-        super(stateDim, actionDim, new OnPolicyBuffer(config.memoryConfig().episodeLength().intValue()));
+    public PPOAgent(PPOAgentConfig config, int stateDim, int actionDim, @Nullable MetricCollector metricCollector) {
+        super(stateDim, actionDim, new OnPolicyBuffer(config.memoryConfig().episodeLength().intValue()), metricCollector);
         Objects.requireNonNull(config, "Agent configuration cannot be null");
         this.config = config;
 
@@ -81,6 +83,11 @@ public class PPOAgent extends BasePolicyGradientAgent {
         Tensor advantages;
         Tensor valueTargets;
 
+        // Record mean of GAE advantages before normalization
+        // However, advantages are computed inside the noGrad block and potentially normalized later.
+        // It's better to record the version of advantages actually used for policy updates.
+        // Let's record raw GAE advantages (before normalization) and normalized GAE advantages if normalization is applied.
+
         try (var noGrad = Tensor.noGrad()) {
             Tensor values = this.valueFunction.apply(states);
 
@@ -97,29 +104,47 @@ public class PPOAgent extends BasePolicyGradientAgent {
             valueTargets = gaeResult.valueTargets();
         }
 
+        // Record raw GAE advantages (mean)
+        recordMetric("gae_advantages_raw_mean", advantages.mean().scalar());
+
+
         if (config.hyperparams().normalizeAdvantages()) {
-            double[] advantagesArray = advantages.array().clone();
+            double[] advantagesArray = advantages.array().clone(); // Operate on a copy
             AgentUtils.normalize(advantagesArray);
-            advantages = Tensor.row(advantagesArray).transpose();
+            advantages = Tensor.row(advantagesArray).transpose(); // advantages variable is now normalized
+            recordMetric("gae_advantages_normalized_mean", advantages.mean().scalar());
         }
 
-        for (int i = 0; i < config.hyperparams().epochs().intValue(); ++i) {
-            Tensor currentPredictedValues = this.valueFunction.apply(states); // Re-evaluate V(s) for current value net params
+
+        // Temporary variables to accumulate losses over epochs for averaging, if desired.
+        // Or, record loss of the last epoch, or average loss.
+        // For now, record loss from each epoch, differentiated by an epoch tag if multi-epoch recording is too verbose.
+        // Simpler: record the final losses after all epochs for this update step.
+
+        Tensor finalPolicyLoss = null;
+        Tensor finalValueLoss = null;
+        Tensor finalEntropy = null; // Average entropy over states for the last epoch
+
+        for (int epoch = 0; epoch < config.hyperparams().epochs().intValue(); ++epoch) {
+            // Value Function Update
+            Tensor currentPredictedValues = this.valueFunction.apply(states);
             Tensor valueLoss = currentPredictedValues.loss(valueTargets.detach(), Tensor.Loss.MeanSquared);
 
             valueGradQueue.clear();
             valueLoss.minimize(valueGradQueue);
             valueGradQueue.optimize(valueOptimizer);
+            finalValueLoss = valueLoss; // Keep track of the last one
 
+            // Policy Function Update
             AgentUtils.GaussianDistribution dist = policy.getDistribution(
                 states,
                 config.actionConfig().sigmaMin().floatValue(),
                 config.actionConfig().sigmaMax().floatValue()
             );
-            Tensor newLogProbs = dist.logProb(actions); // log pi_new(a|s)
-            Tensor ratio = newLogProbs.sub(oldLogProbs.detach()).exp(); // (pi_new / pi_old)
+            Tensor newLogProbs = dist.logProb(actions);
+            Tensor ratio = newLogProbs.sub(oldLogProbs.detach()).exp();
 
-            Tensor detachedAdvantages = advantages.detach(); // Advantages don't depend on policy params being optimized here
+            Tensor detachedAdvantages = advantages.detach();
 
             Tensor surrogate1 = ratio.mul(detachedAdvantages);
             Tensor surrogate2 = ratio.clip(
@@ -127,18 +152,58 @@ public class PPOAgent extends BasePolicyGradientAgent {
                 1.0f + config.hyperparams().ppoClip().floatValue()
             ).mul(detachedAdvantages);
 
-            Tensor policyLoss = Tensor.min(surrogate1, surrogate2).mean().neg();
+            Tensor policyLoss = Tensor.min(surrogate1, surrogate2).mean().neg(); // Negative because we minimize, but loss is typically positive.
+            finalEntropy = dist.entropy().mean(); // Calculate entropy for this batch
 
             if (config.hyperparams().entropyBonus().floatValue() > 0) {
-                Tensor entropy = dist.entropy().mean();
-                policyLoss = policyLoss.sub(entropy.mul(config.hyperparams().entropyBonus().floatValue()));
+                policyLoss = policyLoss.sub(finalEntropy.mul(config.hyperparams().entropyBonus().floatValue()));
             }
+            finalPolicyLoss = policyLoss; // Keep track of the last one
+
 
             policyGradQueue.clear();
-            policyLoss.minimize(policyGradQueue);
+            finalPolicyLoss.minimize(policyGradQueue);
             policyGradQueue.optimize(policyOptimizer);
+
+            // Record sigma stats from the *last epoch's* distribution
+            if (epoch == config.hyperparams().epochs().intValue() - 1) {
+                Tensor sigmas = dist.stddev(); // Assuming stddev() gives the sigma tensor
+                recordMetric("policy_sigma_mean", sigmas.mean().scalar());
+                recordMetric("policy_sigma_std", sigmas.std(false).scalar()); // Population stddev of the sigmas
+            }
         }
-        incrementUpdateCount();
+
+        // Record final losses and entropy after all epochs for this update step
+        if (finalPolicyLoss != null) {
+            // The policy loss is negative of the objective function (we maximize objective = minimize -objective)
+            // So, record -finalPolicyLoss.scalar() if it was negated for minimization.
+            // Current PPO policyLoss is already `Tensor.min(surrogate1, surrogate2).mean().neg();`
+            // If entropy bonus was subtracted, it's part of this loss.
+            // It's conventional to report positive loss values that are minimized.
+            // If policyLoss is `L = - (objective - entropy_bonus)`, then we record `L`.
+            // If it's `L = objective - entropy_bonus` and we maximize, then we record `-L`.
+            // Given standard PPO, policyLoss is -(ClippedSurrogateObjective - c2*Entropy). We minimize this.
+            // So, the raw value of policyLoss is what we record.
+            recordMetric("policy_loss", finalPolicyLoss.scalar());
+        }
+        if (finalValueLoss != null) {
+            recordMetric("value_loss", finalValueLoss.scalar());
+        }
+        if (finalEntropy != null && config.hyperparams().entropyBonus().floatValue() > 0) {
+            recordMetric("entropy", finalEntropy.scalar());
+        }
+
+
+        incrementUpdateCount(); // This should be called once per `update` call.
+                                // Metrics are recorded with the `updateCount` *before* this increment,
+                                // representing the state for which this update was performed.
+                                // The `recordMetric` in BasePolicyGradientAgent uses `this.updateCount`.
+                                // So, metrics for update N are logged with step N. Then updateCount becomes N+1. This is correct.
+    }
+
+    // Constructor that takes PPOAgentConfig, stateDim, actionDim, and defaults MetricCollector to null
+    public PPOAgent(PPOAgentConfig config, int stateDim, int actionDim) {
+        this(config, stateDim, actionDim, null);
     }
 
     private record GAEResult(Tensor advantages, Tensor valueTargets) {}
