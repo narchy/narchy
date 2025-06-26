@@ -11,6 +11,8 @@ import jcog.random.XoRoShiRo128PlusRandom;
 import jcog.tensor.Tensor;
 import jcog.tensor.rl.pg.util.Experience2;
 import jcog.tensor.rl.pg2.memory.AgentMemory;
+import jcog.tensor.rl.pg2.stats.DefaultMetricCollector;
+import jcog.tensor.rl.pg2.stats.MetricCollector;
 import org.eclipse.collections.api.block.function.primitive.FloatToFloatFunction;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,11 +52,26 @@ public abstract class BasePolicyGradientAgent extends Agent implements PolicyGra
     final RandomGenerator rng = new XoRoShiRo128PlusRandom();
 
     public final AgentMemory memory;
+    protected final MetricCollector metricCollector;
 
-    public BasePolicyGradientAgent(int i, int o, AgentMemory memory) {
+    public BasePolicyGradientAgent(int i, int o, AgentMemory memory, @Nullable MetricCollector metricCollector) {
         super(i, o);
-        this.memory = memory;
+        this.memory = Objects.requireNonNull(memory, "AgentMemory cannot be null");
         this.lastAction = new double[o];
+        if (metricCollector == null) {
+            //System.err.println("Warning: No MetricCollector provided to " + getClass().getSimpleName() + ". Using DefaultMetricCollector.");
+            this.metricCollector = new DefaultMetricCollector(); // Fallback to default if null
+        } else {
+            this.metricCollector = metricCollector;
+        }
+    }
+
+    /**
+     * Gets the metric collector associated with this agent.
+     * @return The {@link MetricCollector} instance.
+     */
+    public MetricCollector getMetricCollector() {
+        return this.metricCollector;
     }
 
     @Override
@@ -117,6 +134,20 @@ public abstract class BasePolicyGradientAgent extends Agent implements PolicyGra
      */
     protected void incrementUpdateCount() {
         this.updateCount++;
+    }
+
+    /**
+     * Records a metric using the agent's {@link MetricCollector}.
+     * This is a convenience method for subclasses.
+     *
+     * @param metricName The name of the metric.
+     * @param value The value of the metric.
+     */
+    protected void recordMetric(String metricName, double value) {
+        // The step for metrics recorded during an update is typically the current updateCount.
+        // If called outside an update, the step context might need to be different.
+        // For now, assume it's called when updateCount is relevant.
+        this.metricCollector.record(metricName, value, this.updateCount);
     }
 
     // Abstract methods from PolicyGradientAgent (selectAction, recordExperience, update,
