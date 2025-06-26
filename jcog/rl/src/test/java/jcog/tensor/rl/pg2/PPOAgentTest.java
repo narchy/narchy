@@ -2,8 +2,7 @@ package jcog.tensor.rl.pg2;
 
 import jcog.Util;
 import jcog.tensor.Tensor;
-import jcog.tensor.rl.pg.util.Experience2;
-import jcog.tensor.rl.pg2.configs.VPGAgentConfig;
+import jcog.tensor.rl.pg2.configs.*;
 import jcog.tensor.rl.pg2.stats.DefaultMetricCollector;
 import jcog.tensor.rl.pg2.stats.MetricCollector;
 import org.junit.jupiter.api.Test;
@@ -12,11 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static java.lang.Math.round;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PolicyGradientTest {
+public class PPOAgentTest {
 
     // Simple environment for testing: PointNavigation1D
     static class PointNavigation1D {
@@ -39,58 +37,62 @@ public class PolicyGradientTest {
             return Tensor.scalar(this.currentState);
         }
 
-        // Returns <NextState, Reward, Done>
         public Triplet<Tensor, Double, Boolean> step(double[] action) {
             var move = Util.clamp(action[0], -stepSize, stepSize);
             this.currentState = Util.clamp(this.currentState + move, stateMin, stateMax);
             this.currentStepInEpisode++;
-
-            var reward = -Math.abs(this.currentState - this.targetState); // Negative distance to target
-
+            var reward = -Math.abs(this.currentState - this.targetState);
             var done = this.currentStepInEpisode >= this.maxStepsPerEpisode || Math.abs(this.currentState - targetState) < 0.01;
-
             if (Math.abs(this.currentState - targetState) < 0.01) {
                 reward += 10.0; // Bonus for reaching target
             }
-
-            // Small penalty for existing
-            // reward -= 0.01;
-
             return new Triplet<>(Tensor.scalar(this.currentState), reward, done);
         }
 
-        public int getStateDim() {
-            return 1;
-        }
-
-        public int getActionDim() {
-            return 1;
-        }
+        public int getStateDim() { return 1; }
+        public int getActionDim() { return 1; }
     }
 
-    // Helper record for environment step results
     record Triplet<S, R, D>(S state, R reward, D done) {}
 
+    private PPOAgent createPPOAgent(int stateDim, int actionDim, MetricCollector metricCollector) {
+        var policyNetConfig = new NetworkConfig(new int[]{64, 64}, "relu", "tanh", new OptimizerConfig("adam", 3e-4, 0.9, 0.999, 1e-7, 0.0));
+        var valueNetConfig = new NetworkConfig(new int[]{64, 64}, "relu", null, new OptimizerConfig("adam", 1e-3, 0.9, 0.999, 1e-7, 0.0)); // Value net output is scalar
+        var actionConfig = new ActionConfig(0.05, 0.5, "gaussian"); // Adjusted sigma for potentially more stable exploration
+        var memoryConfig = new MemoryConfig(256, "on_policy"); // Buffer size for PPO updates
+        var hyperparamConfig = new HyperparamConfig(
+            0.99,  // gamma
+            0.95,  // lambda (for GAE)
+            0.2,   // ppoClip
+            0.01,  // entropyBonus
+            10,    // epochs for PPO update
+            true,  // normalizeReturns (PPO often normalizes advantages, which implies returns are processed for GAE)
+            true   // normalizeAdvantages
+        );
+
+        var agentConfig = new PPOAgentConfig(policyNetConfig, valueNetConfig, actionConfig, memoryConfig, hyperparamConfig);
+        // PPOAgent constructor takes MetricCollector
+        return new PPOAgent(agentConfig, stateDim, actionDim, metricCollector);
+    }
+
     @Test
-    void testVPGAgentLearnsOnPointNavigation() { // Renamed from testPPOAgentLearnsOnPointNavigation
+    void testPPOAgentLearnsOnPointNavigation() {
         var env = new PointNavigation1D();
         var stateDim = env.getStateDim();
         var actionDim = env.getActionDim();
         MetricCollector metrics = new DefaultMetricCollector();
 
-        // This agent factory creates a VPGAgent
-        var agent = agent(stateDim, actionDim, metrics);
+        var agent = createPPOAgent(stateDim, actionDim, metrics);
+        // MetricCollector is passed to PPOAgent, so 'metrics' object will be populated.
 
         agent.setTrainingMode(true);
 
-        var numEpisodes = 200;
-        // var maxUpdates = numEpisodes * env.maxStepsPerEpisode / agent.config.memoryConfig().episodeLength().intValue(); // Approx - not strictly needed for test logic
+        var numEpisodes = 200; // PPO might learn faster or with fewer episodes than REINFORCE
 
         List<Double> episodeRewards = new ArrayList<>();
         double totalRewardLast50Episodes = 0;
 
-        System.out.println("Starting VPG Agent training on PointNavigation1D...");
-
+        System.out.println("Starting PPO Agent training on PointNavigation1D...");
         long globalStep = 0;
 
         for (var episode = 0; episode < numEpisodes; episode++) {
@@ -99,48 +101,42 @@ public class PolicyGradientTest {
 
             Tensor previousStateTensor = null;
             double[] previousActionArray = null;
-            double rewardFromPreviousStep = 0.0; // Reward for (previousStateTensor, previousActionArray) -> currentStateTensor
-
+            double rewardFromPreviousStep = 0.0;
             boolean firstStepInEpisode = true;
 
             for (var t = 0; t < env.maxStepsPerEpisode; t++) {
                 globalStep++;
-
                 double[] currentActionArray = new double[actionDim];
 
-                // On the first step, prevAction and prevReward are not really meaningful for the agent's internal experience of THAT step.
-                // The agent.apply call will receive (null, null, 0.0, initialState, actionToFill).
-                // The first experience recorded will be (null, null, 0.0, initialState, done=false, logProb=null_for_vpg).
-                // This is okay; the first state has no preceding action/reward leading to it.
-                // Alternatively, one could argue the "reward" leading to the initial state is 0.
+                // agent.apply will use the PPOAgent's overridden act method,
+                // which handles selectActionWithLogProb and stores experience with logProb.
                 agent.apply(
                     firstStepInEpisode ? null : previousStateTensor,
                     firstStepInEpisode ? null : previousActionArray,
-                    (float) rewardFromPreviousStep, // This is the reward from (S_t-1, A_t-1) leading to S_t
+                    (float) rewardFromPreviousStep,
                     currentStateTensor,
-                    currentActionArray // Action to be filled by agent.apply
+                    currentActionArray
                 );
 
                 Triplet<Tensor, Double, Boolean> stepResult = env.step(currentActionArray);
                 Tensor nextStateTensor = stepResult.state();
-                double currentReward = stepResult.reward(); // This is R_t for (S_t, A_t) -> S_t+1
+                double currentReward = stepResult.reward();
                 boolean done = stepResult.done();
 
-                // Update for the next iteration's agent.apply call:
-                // The experience just recorded by agent.apply was for (S_t-1, A_t-1) -> S_t, with R_t-1.
-                // Now, S_t becomes previousState, A_t becomes previousAction, and R_t becomes rewardFromPreviousStep.
                 previousStateTensor = currentStateTensor;
-                previousActionArray = currentActionArray.clone(); // Clone because currentActionArray might be reused/modified
-                rewardFromPreviousStep = currentReward; // This reward is for the (state,action) that was just executed
+                previousActionArray = currentActionArray.clone();
+                rewardFromPreviousStep = currentReward;
 
                 currentStateTensor = nextStateTensor;
                 currentEpisodeReward += currentReward;
                 firstStepInEpisode = false;
 
-
+                // PPO updates when its buffer (memory) is full.
                 if (agent.memory.size() >= agent.config.memoryConfig().episodeLength().intValue()) {
-                    agent.update(globalStep);
-                    agent.memory.clear(); // For on-policy
+                    if (agent.memory.size() > 0) {
+                        agent.update(globalStep);
+                        agent.memory.clear(); // Standard for on-policy PPO
+                    }
                 }
 
                 if (done) break;
@@ -156,10 +152,14 @@ public class PolicyGradientTest {
                         episodeRewards.subList(Math.max(0, episodeRewards.size()-20), episodeRewards.size())
                                 .stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN),
                         agent.getUpdateCount());
-
+                // PPOAgent is expected to record these metrics.
                 metrics.getSummary("policy_loss").ifPresent(s -> System.out.printf("  Policy Loss: %.4f%n", s.getMean()));
                 metrics.getSummary("value_loss").ifPresent(s -> System.out.printf("  Value Loss: %.4f%n", s.getMean()));
                 metrics.getSummary("entropy").ifPresent(s -> System.out.printf("  Entropy: %.4f%n", s.getMean()));
+                metrics.getSummary("gae_advantages_raw_mean").ifPresent(s -> System.out.printf("  GAE Raw Mean: %.4f%n", s.getMean()));
+                metrics.getSummary("gae_advantages_normalized_mean").ifPresent(s -> System.out.printf("  GAE Norm Mean: %.4f%n", s.getMean()));
+                metrics.getSummary("policy_sigma_mean").ifPresent(s -> System.out.printf("  Sigma Mean: %.4f%n", s.getMean()));
+
 
             }
         }
@@ -167,48 +167,33 @@ public class PolicyGradientTest {
         System.out.println("Training finished.");
         System.out.println("Total updates: " + agent.getUpdateCount());
 
-        // Assertions
         assertTrue(agent.getUpdateCount() > 0, "Agent should have performed updates.");
 
         var policyLossSummaryOpt = metrics.getSummary("policy_loss");
         assertTrue(policyLossSummaryOpt.isPresent(), "Policy loss should have been recorded.");
-        System.out.printf("Policy Loss Summary: %s%n", policyLossSummaryOpt.get());
+        assertFalse(Double.isNaN(policyLossSummaryOpt.get().getMean()), "Policy loss mean should not be NaN.");
 
         var valueLossSummaryOpt = metrics.getSummary("value_loss");
         assertTrue(valueLossSummaryOpt.isPresent(), "Value loss should have been recorded.");
-        System.out.printf("Value Loss Summary: %s%n", valueLossSummaryOpt.get());
+        assertFalse(Double.isNaN(valueLossSummaryOpt.get().getMean()), "Value loss mean should not be NaN.");
 
-        // Check that average reward in the last 50 episodes is significantly better than the first 50
-        // This is a basic check for learning. More sophisticated checks might look at loss curves.
+        var entropySummaryOpt = metrics.getSummary("entropy");
+        assertTrue(entropySummaryOpt.isPresent(), "Entropy should have been recorded if entropy bonus > 0.");
+        if (agent.config.hyperparams().entropyBonus() > 0) {
+            assertFalse(Double.isNaN(entropySummaryOpt.get().getMean()), "Entropy mean should not be NaN.");
+        }
+
+
         var avgRewardFirst50 = episodeRewards.subList(0, Math.min(50, episodeRewards.size()))
                                     .stream().mapToDouble(r -> r).average().orElse(Double.NEGATIVE_INFINITY);
-        var avgRewardLast50 = totalRewardLast50Episodes / Math.min(50, episodeRewards.size() - (numEpisodes - 50) );
+        int last50StartIndex = Math.max(0, numEpisodes - 50);
+        int numActualLastEpisodes = episodeRewards.size() - last50StartIndex;
+        var avgRewardLast50 = totalRewardLast50Episodes / Math.max(1, numActualLastEpisodes);
 
         System.out.printf("Avg Reward First 50 Episodes: %.2f%n", avgRewardFirst50);
         System.out.printf("Avg Reward Last 50 Episodes: %.2f%n", avgRewardLast50);
 
-        // A simple environment like PointNavigation should show clear improvement.
-        // The exact values depend heavily on reward structure and hyperparameters.
-        // We expect last 50 to be substantially higher than first 50 if learning occurred.
-        // Initial rewards are around -25 to -50 (avg -0.5 to -1 per step for 50 steps).
-        // Optimal reward is close to 10 (reaching target quickly).
-        assertTrue(avgRewardLast50 > avgRewardFirst50 + 5, // Expect at least some improvement. This threshold might need tuning.
-                "Average reward in later episodes should be significantly higher than in early episodes." +
-                " Last50: " + avgRewardLast50 + ", First50: " + avgRewardFirst50);
-
-        // Check if loss values are sensible (not NaN or Infinity)
-        // Further checks could involve storing initial vs final loss values and asserting decrease.
-        // For now, checking presence and getting the mean is a start.
-        assertFalse(Double.isNaN(policyLossSummaryOpt.get().getMean()), "Policy loss mean should not be NaN.");
-        assertFalse(Double.isNaN(valueLossSummaryOpt.get().getMean()), "Value loss mean should not be NaN.");
-    }
-
-    private static VPGAgent agent(int i, int o, MetricCollector metricCollector) {
-        float s = 4;
-        var h = round(i * s);
-        var episodeLen = 2;
-        return new VPGAgent(new VPGAgentConfig(new int[]{
-            h, h
-        }, episodeLen), i, o);
+        assertTrue(avgRewardLast50 > avgRewardFirst50 + 10, // PPO might show more significant improvement
+                "Average reward in later episodes should be significantly higher. Last50: " + avgRewardLast50 + ", First50: " + avgRewardFirst50);
     }
 }

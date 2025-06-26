@@ -81,7 +81,7 @@ public abstract class AbstractPolicyGradientAgent extends Agent implements Polic
             return; // Do not record or update if not in training mode
 
         this.memory.add(experience);
-        update(0); // totalSteps not critical for this VPG update logic
+        // update(0); // totalSteps not critical for this VPG update logic // REMOVED: Update call is now managed by the training loop
     }
     /**
      * {@inheritDoc}
@@ -167,7 +167,7 @@ public abstract class AbstractPolicyGradientAgent extends Agent implements Polic
         System.arraycopy(a, 0, this.lastAction, 0, a.length);
     }
 
-    private double[] act(double[] inputPrev, double[] actionPrev, double reward, double[] input, boolean done) {
+    protected double[] act(double[] inputPrev, double[] actionPrev, double reward, double[] input, boolean done) {
         var S = Tensor.row(input);
         var action = selectAction(S, false);
         recordExperience(new Experience2(inputPrev!=null ? Tensor.row(inputPrev) : null, actionPrev, reward, S, done));

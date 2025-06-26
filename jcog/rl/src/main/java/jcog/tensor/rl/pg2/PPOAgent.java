@@ -244,6 +244,24 @@ public class PPOAgent extends AbstractPolicyGradientAgent {
     @Override public Object getConfig() { return this.config; }
 
 
+    @Override
+    protected double[] act(double[] inputPrev, double[] actionPrev, double reward, double[] input, boolean done) {
+        Tensor S = Tensor.row(input);
+        ActionWithLogProb actionWithLogProb = selectActionWithLogProb(S, false); // Assuming 'false' for non-deterministic action during training collection
+        Tensor currentLogProb = actionWithLogProb.logProb();
+
+        // Create Experience2, ensuring inputPrev is converted to Tensor if not null
+        Tensor inputPrevTensor = (inputPrev != null) ? Tensor.row(inputPrev) : null;
+        Experience2 experience = new Experience2(inputPrevTensor, actionPrev, reward, S, done, currentLogProb);
+
+        // Add experience to memory directly. The base class's recordExperience() is not called to avoid its logic if it changes.
+        // Also, the base `act` calls `recordExperience` which we are overriding.
+        if (this.trainingMode) {
+            this.memory.add(experience);
+        }
+
+        return actionWithLogProb.action();
+    }
 
     @Override
     public void setTrainingMode(boolean training) {
