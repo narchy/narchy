@@ -96,6 +96,10 @@ public class Launcher {
                     try {
                         g = env.getConstructor(NAR.class).newInstance(p.nar);
                     } catch (Exception e3) {
+                        try {
+                            g = env.getConstructor(String.class).newInstance($.uuid().toString());
+                        } catch (Exception e4) {
+                        }
                     }
                 }
             }
